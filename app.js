@@ -1872,7 +1872,7 @@ let drag = null;
    обычное действие, движение — перенос, удержание корпуса — контекстное меню.
    Второй палец переводит жест в масштабирование, сохраняя черновик провода. */
 const touchPointers=new Map();
-let touchGesture=null,touchPanMode=false,touchPlacement=null,touchMoveFrame=0,touchMoveEvent=null;
+let touchGesture=null,touchPlacement=null,touchMoveFrame=0,touchMoveEvent=null,touchViewFrame=0;
 function mobileTouchLayout(){
   return typeof window.matchMedia==='function'
     && window.matchMedia('(pointer: coarse) and (hover: none)').matches;
@@ -1980,16 +1980,29 @@ function touchPair(){
 function moveTouchView(){
   if(!touchGesture)return;
   const g=touchGesture;
+  if(!touchPointers.size||(g.pinch&&touchPointers.size<2))return;
   const pair=g.pinch?touchPair():Array.from(touchPointers.values())[0];
   const cx=g.pinch?pair.x:pair.clientX,cy=g.pinch?pair.y:pair.clientY;
   const width=Math.max(Z_MIN,Math.min(Z_MAX,g.width*(g.pinch?g.distance/pair.distance:1)));
-  const rect=scene.getBoundingClientRect(),scale=rect.width/width;
+  const rect=scene.getBoundingClientRect();
+  // SVG xMidYMid meet может оставлять поля сбоку или сверху. Якорь жеста
+  // должен оставаться под пальцами и в портретной, и в альбомной компоновке.
+  const height=width*viewAspect(),scale=Math.min(rect.width/width,rect.height/height);
+  if(!(scale>0))return;
+  const offsetX=(rect.width-width*scale)/2,offsetY=(rect.height-height*scale)/2;
   view.w=width;view.h=width*viewAspect();
-  view.x=g.anchor.x-(cx-rect.left)/scale;view.y=g.anchor.y-(cy-rect.top)/scale;
+  view.x=g.anchor.x-(cx-rect.left-offsetX)/scale;view.y=g.anchor.y-(cy-rect.top-offsetY)/scale;
   clampView();applyView();
 }
-function startTouchView(pinch,session){
-  const pair=pinch?touchPair():{x:session.sx,y:session.sy};
+function flushTouchView(){
+  if(touchViewFrame){cancelAnimationFrame(touchViewFrame);touchViewFrame=0;moveTouchView();}
+}
+function queueTouchView(){
+  if(!touchViewFrame)touchViewFrame=requestAnimationFrame(function(){touchViewFrame=0;moveTouchView();});
+}
+function startTouchView(pinch,session,continuing){
+  flushTouchView();
+  const pair=pinch?touchPair():{x:continuing?session.clientX:session.sx,y:continuing?session.clientY:session.sy};
   touchGesture={pinch:pinch,width:view.w,distance:pair.distance,anchor:screenToScene(pair.x,pair.y)};
   touchPointers.forEach(function(s){cancelTouchAction(s);s.mode='gesture';clearTimeout(s.timer);});
   hideWireMenu();hideObjectMenu();
@@ -2014,7 +2027,6 @@ function onTouchStart(evt){
   if(typeof scene.setPointerCapture==='function')try{scene.setPointerCapture(s.id);}catch(e){}
   if(touchPointers.size===2){startTouchView(true,s);return;}
   if(touchPointers.size>2){s.mode='gesture';return;}
-  if(!tray&&touchPanMode&&!touchPlacement){startTouchView(false,s);return;}
   if(touchPlacement)return;
   const hold=s.target.closest('[data-pb],[data-zone="manual-contactor"],[data-vfd-control],[data-tp-control]');
   if(hold){startTouchAction(s,evt);return;}
@@ -2032,11 +2044,13 @@ function onTouchMove(evt){
   if(evt.pointerType!=='touch'||evt.touchReplay)return;
   const s=touchPointers.get(evt.pointerId);if(!s)return;
   stopTouchEvent(evt);s.clientX=evt.clientX;s.clientY=evt.clientY;
-  if(touchGesture){if(touchPointers.size>=2||!touchGesture.pinch)moveTouchView();return;}
+  if(touchGesture){if(touchPointers.size>=2||!touchGesture.pinch)queueTouchView();return;}
   if(s.mode==='gesture'||s.mode==='menu'||touchPlacement)return;
   if(s.mode==='waiting'&&Math.hypot(s.clientX-s.sx,s.clientY-s.sy)>8){
     clearTimeout(s.timer);
-    if(!s.tray&&!pending&&!s.target.closest('.term')&&!touchObjectTarget(s.target)&&!s.target.closest('[data-wid]')){startTouchView(false,s);moveTouchView();return;}
+    const object=touchObjectTarget(s.target);
+    const background=!object||(object.key==='panel'&&panelIsFixed(panelById(object.id)));
+    if(!s.tray&&!pending&&!s.target.closest('.term')&&background&&!s.target.closest('[data-wid]')){startTouchView(false,s);queueTouchView();return;}
     if(pending&&!s.target.closest('.term'))s.mode='route';
     else startTouchAction(s,evt);
   }
@@ -2057,6 +2071,7 @@ function onTouchEnd(evt){
   const s=touchPointers.get(evt.pointerId);if(!s)return;
   stopTouchEvent(evt);clearTimeout(s.timer);
   s.clientX=evt.clientX;s.clientY=evt.clientY;
+  flushTouchView();
   if(evt.type==='pointercancel')cancelTouchAction(s);
   else if(!touchGesture&&s.mode!=='menu'&&s.mode!=='gesture'){
     flushTouchMove();
@@ -2071,8 +2086,11 @@ function onTouchEnd(evt){
   }
   touchPointers.delete(s.id);
   if(typeof scene.releasePointerCapture==='function')try{scene.releasePointerCapture(s.id);}catch(e){}
-  // Оставшийся палец после pinch не становится кликом или переносом.
-  if(touchPointers.size<2&&touchGesture&&touchGesture.pinch)touchGesture=null;
+  // Перебазируем якорь при изменении числа пальцев: без скачка масштаба
+  // и без ложного клика оставшийся палец продолжает перенос рабочего поля.
+  if(touchGesture&&touchGesture.pinch&&touchPointers.size){
+    startTouchView(touchPointers.size>=2,Array.from(touchPointers.values())[0],true);
+  }
   if(!touchPointers.size)touchGesture=null;
   touchStatus(touchPlacement?'Коснитесь места установки.':(pending?'Коснитесь клеммы или добавьте точку маршрута.':''));
 }
@@ -2090,12 +2108,13 @@ function initTouchControls(){
   document.addEventListener('pointerup',onTouchEnd,{capture:true,passive:false});
   document.addEventListener('pointercancel',onTouchEnd,{capture:true,passive:false});
   scene.addEventListener('contextmenu',function(e){if(e.pointerType==='touch'||touchPointers.size){e.preventDefault();e.stopImmediatePropagation();}},true);
-  const panButton=document.getElementById('touchPanToggle');
-  if(panButton)panButton.addEventListener('click',function(){touchPanMode=!touchPanMode;panButton.setAttribute('aria-pressed',String(touchPanMode));panButton.classList.toggle('on',touchPanMode);});
   const cancel=document.getElementById('touchCancel');
   if(cancel)cancel.addEventListener('click',function(){touchPlacement=null;cancelWire();hideWireMenu();hideObjectMenu();touchStatus('');});
   document.getElementById('tray').addEventListener('click',function(e){const button=e.target.closest('.tray-add');if(button)chooseTouchPlacement(button.closest('.tray-item'));});
-  if(typeof window.addEventListener==='function')window.addEventListener('blur',function(){touchPointers.forEach(cancelTouchAction);touchPointers.clear();touchGesture=null;});
+  if(typeof window.addEventListener==='function')window.addEventListener('blur',function(){
+    if(touchViewFrame)cancelAnimationFrame(touchViewFrame);touchViewFrame=0;
+    touchPointers.forEach(cancelTouchAction);touchPointers.clear();touchGesture=null;
+  });
 }
 initTouchControls();
 
@@ -5774,14 +5793,12 @@ let pan = null;
 const Z_MIN = VW/8, Z_MAX = VW*1.4;
 
 /* Геометрия viewBox одинакова на ПК и мобильных устройствах. Адаптация экрана
-   выполняется интерфейсом, а не изменением координат сцены: так колесо мыши,
-   кнопки масштаба и предельное отдаление остаются прежними. */
+   выполняется интерфейсом, а не изменением координат сцены: так колесо мыши
+   и предельное отдаление остаются прежними. */
 function viewAspect(){return VH/VW;}
 
 function applyView(){
   scene.setAttribute('viewBox', view.x+' '+view.y+' '+view.w+' '+view.h);
-  const z = document.getElementById('zval');
-  if (z) z.textContent = Math.round(VW/view.w*100) + '%';
 }
 function clampView(){
   view.w = Math.max(Z_MIN, Math.min(Z_MAX, view.w));
@@ -5843,11 +5860,6 @@ document.addEventListener('pointerup', function(evt){
   const st = document.querySelector('.stage');
   if (st && st.classList) st.classList.remove('panning');
 });
-if (typeof document.getElementById('zin').addEventListener === 'function'){
-  document.getElementById('zin').addEventListener('click', function(){ zoomAt(0.8); });
-  document.getElementById('zout').addEventListener('click', function(){ zoomAt(1.25); });
-  document.getElementById('zfit').addEventListener('click', resetView);
-}
 
 /* ============================================================
    9. ПАНЕЛЬ: ЛОТОК ДЕТАЛЕЙ

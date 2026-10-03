@@ -26,14 +26,8 @@
       <g id="clampLayer"></g>
       </g>
     </svg>
-    <div class="zoomctl">
-      <button id="zin" title="Приблизить" aria-label="Приблизить">+</button>
-      <button id="zout" title="Отдалить" aria-label="Отдалить">−</button>
-      <button id="zfit" title="Показать весь стенд" aria-label="Показать весь стенд">⤢</button>
-      <span id="zval">100%</span>
-    </div>
     <div class="wire-defaults" aria-label="Настройки новых проводов">
-      <button id="wireToolsToggle" type="button" class="wire-defaults-title" aria-expanded="false">Новый провод <span class="touch-only">⌃</span></button>
+      <button id="wireToolsToggle" type="button" class="wire-defaults-title" aria-expanded="false">Провод <span class="touch-only">⌃</span></button>
       <div class="wire-defaults-menu">
         <div class="wire-default-sub" id="wireShapeDefault">
           <button type="button" class="wire-default-trigger"><span class="wire-trigger-title">Форма провода</span><i class="wire-current-shape">∿</i><span class="wire-trigger-arrow">▶</span></button>
@@ -67,10 +61,7 @@
         </div>
       </div>
       <button type="button" id="guideToggle" class="guide-toggle" aria-pressed="false"><i></i><span>Направляющие клемм</span></button>
-    </div>
-    <div class="touch-controls">
-      <button id="touchPanToggle" type="button" aria-pressed="false">✥ Перемещение</button>
-      <button id="touchCancel" type="button" disabled>Отмена</button>
+      <button id="touchCancel" class="touch-cancel" type="button" disabled>Отменить действие</button>
     </div>
     <div id="touchStatus" class="touch-status" role="status" aria-live="polite"></div>
   </section>
