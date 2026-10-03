@@ -106,7 +106,7 @@ console.log('— показания на индикаторе —');
     && y-size>=LCD.y && y<=146);
 });
 const zero = markup('probe');
-ok('замер 220 В показан с единицами', /220/.test(zero.s.api.measureNow().display) && /В<\/text>/.test(zero.svg));
+ok('фазное напряжение показано точно и с единицами', Math.abs(parseFloat(zero.s.api.measureNow().display)-380/Math.sqrt(3))<.1 && /В<\/text>/.test(zero.svg));
 ok('на индикаторе есть режим AC', />AC<\/text>/.test(zero.svg));
 
 console.log('— щупы в гнёздах —');

@@ -19,7 +19,24 @@ const PAD_W      = 34;               // ширина приставной кол
 const WC = { L1:'#8b5a2b', L2:'#1c1c1c', L3:'#8d939a', N:'#2a6fd6', PE:'#e8d800', C:'#d64545', C2:'#2f8fd6' };
 /* цвета проводов ввода: фазы — красный, жёлтый, зелёный */
 const WCF = { L1:'#d32f2f', L2:'#e0b800', L3:'#1f9d3a', N:'#2a6fd6', PE:'#e8d800' };
-const wireDefaults = { shape:'smooth', color:'#1c1c1c' };
+const WIRE_SECTIONS_MM2=[0.5,0.75,1,1.5,2.5,4,6,10,16,25,35];
+const wireDefaults = { shape:'smooth', color:'#1c1c1c', sectionMm2:2.5 };
+function normalizeWireSection(value){
+  const section=Number(value);
+  return WIRE_SECTIONS_MM2.includes(section)?section:2.5;
+}
+function wireSectionOf(wire){return normalizeWireSection(wire&&wire.sectionMm2);}
+function wireVisualWidth(wire){
+  // Условный масштаб: 2,5 мм² сохраняет прежнюю толщину 4 px.
+  return Number((4*Math.pow(wireSectionOf(wire)/2.5,0.35)).toFixed(2));
+}
+function wireSectionLabel(value){return String(normalizeWireSection(value)).replace('.',',')+' мм²';}
+function wireSectionButtons(attribute,selected){
+  return WIRE_SECTIONS_MM2.map(function(section){
+    const active=section===normalizeWireSection(selected);
+    return '<button type="button" '+attribute+'="'+section+'"'+(active?' class="selected"':'')+' aria-pressed="'+active+'"><i aria-hidden="true">○</i>'+wireSectionLabel(section)+'</button>';
+  }).join('');
+}
 const RCD_CURRENTS=[16,25,32,40,50,63,80,100];
 const RCD_LEAKAGE_CURRENTS=[10,30,100,300];
 function syncRcdRatings(obj){
@@ -1650,14 +1667,15 @@ function inboxInner(withCable){
 }
 
 /* обводки провода: цвет, для PE — жёлтый с зелёными штрихами */
-function wireStrokeGeom(d, color, cls, dashed){
+function wireStrokeGeom(d, color, cls, dashed, width){
+  width=Number(width)||4;
   const c = cls ? ' class="'+cls+'"' : '';
   const ds = dashed ? ' stroke-dasharray="10 6"' : '';
   if (color === WC.PE){
-    return '<path'+c+' d="'+d+'" fill="none" stroke="#e8d800" stroke-width="4" stroke-linecap="round"'+ds+'/>'
-         + '<path class="wire-stripe" d="'+d+'" fill="none" stroke="#1f9d3a" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 7"/>';
+    return '<path'+c+' d="'+d+'" fill="none" stroke="#e8d800" stroke-width="'+width+'" stroke-linecap="round"'+ds+'/>'
+         + '<path class="wire-stripe" d="'+d+'" fill="none" stroke="#1f9d3a" stroke-width="'+width+'" stroke-linecap="round" stroke-dasharray="7 7"/>';
   }
-  return '<path'+c+' d="'+d+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linecap="round"'+ds+'/>';
+  return '<path'+c+' d="'+d+'" fill="none" stroke="'+color+'" stroke-width="'+width+'" stroke-linecap="round"'+ds+'/>';
 }
 function renderInbox(){
   if(!state.special.inbox){boxLayer.innerHTML='';return;}
@@ -3454,54 +3472,19 @@ function outletVoltage(outlet){return voltageBetweenTerminals(outlet,'L','N');}
 function applianceVoltage(appliance){return voltageBetweenTerminals(appliance,'L','N');}
 function meterVoltage(meter){return voltageBetweenTerminals(meter,'L_in','N_in');}
 
-/* Определяем нагрузки именно после выбранного счётчика. Собственные перемычки
-   1–2 и 3–4 временно исключаются, чтобы входная сеть не попала в защищённую зону. */
+/* Активная мощность через выход прибора: Re(U * conj(I)). */
 function meterPowerW(meter){
-  const map=potentialMap();
-  if(map.conflict||!voltageIsOperating(meterVoltage(meter),meter,220))return 0;
-  const adj={};
-  function add(a,b){
-    const ka=nodeKey(a),kb=nodeKey(b);
-    (adj[ka]=adj[ka]||[]).push(kb);
-    (adj[kb]=adj[kb]||[]).push(ka);
-  }
-  function ownLink(pair){
-    const a=pair[0],b=pair[1];
-    if(String(a.devId)!==String(meter.id)||String(b.devId)!==String(meter.id))return false;
-    const keys=[a.key,b.key].sort().join('|');
-    return keys==='L_in|L_out'||keys==='N_in|N_out';
-  }
-  internalLinks().forEach(function(pair){if(!ownLink(pair))add(pair[0],pair[1]);});
-  state.wires.forEach(function(w){add(w.a,w.b);});
-  function component(start){
-    const seen={},queue=[nodeKey(start)];
-    while(queue.length){const k=queue.shift();if(seen[k])continue;seen[k]=true;(adj[k]||[]).forEach(function(n){if(!seen[n])queue.push(n);});}
-    return seen;
-  }
-  const phase=component({devId:meter.id,key:'L_out'});
-  const neutral=component({devId:meter.id,key:'N_out'});
-  function across(devId,a,b){
-    const ka=nodeKey({devId:devId,key:a}),kb=nodeKey({devId:devId,key:b});
-    const routed=(phase[ka]&&neutral[kb])||(phase[kb]&&neutral[ka]);
-    if(!routed)return null;
-    const va=map.pot[ka],vb=map.pot[kb];
-    const u=va&&vb?Math.hypot(va.r-vb.r,va.i-vb.i):0;
-    return u;
-  }
-  let watts=0;
-  state.devices.forEach(function(d){
-    let u=null,basePower=0,available=true;
-    if(d.type==='lamp'){u=across(d.id,'t0','b0');basePower=Number(d.ratedPower)||1;available=!d.burned;}
-    if(d.type==='bulb'){u=across(d.id,'L','N');basePower=Number(d.ratedPower)||100;available=!d.burned;}
-    if(TYPES[d.type].kind==='appliance'){u=across(d.id,'L','N');basePower=Number(d.ratedPower)||TYPES[d.type].defaultPower;available=!!d.applianceOn&&!d.applianceBurned;}
-    if(d.type==='km1'){u=across(d.id,'A1','A2');basePower=Number(d.ratedPower)||8;available=!d.coilBurned;}
-    if(d.type==='timer'){u=across(d.id,'A1','A2');basePower=Number(d.ratedPower)||4;available=!d.timerBurned;}
-    if(u!==null&&available&&voltageIsOperating(u,d,220)){
-      const ratio=u/ratedVoltageOf(d,220);
-      watts+=basePower*ratio*ratio;
-    }
+  const map=potentialMap();if(map.conflict)return 0;
+  const a=map.pot[nodeKey({devId:meter.id,key:'L_out'})],b=map.pot[nodeKey({devId:meter.id,key:'N_out'})];
+  if(!a||!b)return 0;
+  const currents=clampWireCurrents();let r=0,i=0;
+  state.wires.forEach(function(w){
+    const value=currents.phasors&&currents.phasors[w.id];if(!value)return;
+    const sign=String(w.a.devId)===String(meter.id)&&w.a.key==='L_out'?1:
+      (String(w.b.devId)===String(meter.id)&&w.b.key==='L_out'?-1:0);
+    r+=sign*value.r;i+=sign*value.i;
   });
-  return watts;
+  return Math.max(0,(a.r-b.r)*r+(a.i-b.i)*i);
 }
 
 let energyMeterLast=performance.now();
@@ -3526,7 +3509,7 @@ function energyMeterTick(){
     });
     state.devices.filter(function(d){return d.type==='sensor';}).forEach(function(d){
       const voltage=meterVoltage(d),power=meterPowerW(d);
-      const current=voltageIsOperating(voltage,d,220)&&voltage>0?power/voltage:0;
+      const current=voltage>0?power/voltage:0;
       d.sensorVoltage=voltage;
       d.sensorCurrentA=current;
       const g=deviceLayer.querySelector('.dev[data-id="'+d.id+'"]');
@@ -4433,6 +4416,7 @@ function renderWires(){
     const a = terminal(wr.a.devId, wr.a.key), b = terminal(wr.b.devId, wr.b.key);
     if (!a || !b) return;
     const wireColor = wr.color || a.color;
+    const width=wireVisualWidth(wr);
     const d = wirePathD(a, b, wr);
     const grabbing = (wireGrab && wireGrab.id === wr.id) ? ' grabbing' : '';
     let dots = '';
@@ -4440,10 +4424,11 @@ function renderWires(){
       dots += '<circle class="wire-dot" cx="'+p.x+'" cy="'+p.y+'" r="4.5" fill="'+wireColor+'" stroke="#ffffff" stroke-width="1.2" pointer-events="none"/>';
     });
     s += '<g class="wireG'+grabbing+'" data-wid="'+wr.id+'">'
-       +   '<path class="wire" d="'+d+'" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="6.5" stroke-linecap="round"/>'
-       +   wireStrokeGeom(d, wireColor, 'wire')
+       +   '<title>Провод №'+wr.id+' · медь · '+wireSectionLabel(wireSectionOf(wr))+'</title>'
+       +   '<path class="wire" d="'+d+'" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="'+(width+2.5)+'" stroke-linecap="round"/>'
+       +   wireStrokeGeom(d, wireColor, 'wire',false,width)
        +   dots
-       +   '<path class="wire-hit" d="'+d+'" fill="none" stroke="transparent" stroke-width="16" stroke-linecap="round" pointer-events="stroke"/>'
+       +   '<path class="wire-hit" d="'+d+'" fill="none" stroke="transparent" stroke-width="'+Math.max(16,width+6)+'" stroke-linecap="round" pointer-events="stroke"/>'
        + '</g>';
   });
   if (pending && pending.pt){
@@ -4451,8 +4436,9 @@ function renderWires(){
     if (a){
       const d = wirePathD(a, { x:pending.pt.x, y:pending.pt.y }, { pts:pending.pts || [], shape:pending.shape || wireDefaults.shape });
       const pendingColor = pending.color || wireDefaults.color;
-      s += '<path d="'+d+'" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="6.5" stroke-linecap="round"/>';
-      s += wireStrokeGeom(d, pendingColor, null, true);
+      const width=wireVisualWidth(pending);
+      s += '<path d="'+d+'" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="'+(width+2.5)+'" stroke-linecap="round"/>';
+      s += wireStrokeGeom(d, pendingColor, null, true,width);
       (pending.pts || []).forEach(function(p){
         s += '<circle cx="'+p.x+'" cy="'+p.y+'" r="4.5" fill="'+pendingColor+'" stroke="#fff" stroke-width="1.2" pointer-events="none"/>';
       });
@@ -4591,8 +4577,9 @@ function connectTerminals(devId, key){
   }
   state.wires.push({ id: wireSeq++, a:{ devId:a.devId, key:a.key }, b:{ devId:b.devId, key:b.key },
                      color:pending.color || wireDefaults.color, shape:pending.shape || wireDefaults.shape,
+                     sectionMm2:normalizeWireSection(pending.sectionMm2),
                      pts:(pending.pts || []).map(function(p){ return {x:p.x,y:p.y}; }) });
-  log('Провод проложен: ' + tagOf(a.devId)+' : '+a.label + ' — ' + tagOf(b.devId)+' : '+b.label + '.', 'ok');
+  log('Провод проложен: ' + tagOf(a.devId)+' : '+a.label + ' — ' + tagOf(b.devId)+' : '+b.label + ' · '+wireSectionLabel(pending.sectionMm2)+'.', 'ok');
   pending = null;
   renderAll();
 }
@@ -4619,7 +4606,7 @@ termLayer.addEventListener('pointerdown', function(evt){
   if (pending){ connectTerminals(id, key); return; }
   const t = terminal(id, key);
   if (!t) return;
-  pending = { from:{ devId:id, key:key }, pt:{ x:t.x, y:t.y }, pts:[], color:wireStartColor(t), shape:wireDefaults.shape, guideX:null, guideY:null };
+  pending = { from:{ devId:id, key:key }, pt:{ x:t.x, y:t.y }, pts:[], color:wireStartColor(t), shape:wireDefaults.shape, sectionMm2:wireDefaults.sectionMm2, guideX:null, guideY:null };
   log('Провод: начало на зажиме ' + tagOf(id)+' : '+t.label + ' — ЛКМ на поле добавляет точку маршрута; клик по второй клемме завершает провод.', 'info');
   renderTerminalGuides();
   renderWires();
@@ -4714,6 +4701,9 @@ function showWireMenu(wid, clientX, clientY, sp){
   wireMenu = { wid:wid, x:sp.x, y:sp.y };
   const m = document.getElementById('wireMenu');
   if (!m) return;
+  const selected=currentMenuWire(),section=wireSectionOf(selected);
+  document.getElementById('wireSectionMenu').innerHTML=wireSectionButtons('data-wire-section',section);
+  document.getElementById('wireSectionCurrent').textContent=wireSectionLabel(section);
   m.style.display = 'block';
   m.classList.toggle('flip-sub', clientX + 380 > window.innerWidth);
   m.classList.toggle('raise-sub', clientY + 430 > window.innerHeight);
@@ -4795,6 +4785,13 @@ function changeWireColor(color){
   trace('Цвет провода изменён.');
   renderAll();
 }
+function changeWireSection(section){
+  const wr=currentMenuWire();hideWireMenu();
+  if(!wr)return;
+  wr.sectionMm2=normalizeWireSection(section);
+  log('Провод №'+wr.id+': сечение '+wireSectionLabel(wr.sectionMm2)+'.','info');
+  renderAll();
+}
 function changeWireShape(shape){
   const wr = currentMenuWire();
   hideWireMenu();
@@ -4828,6 +4825,8 @@ wireLayer.addEventListener('contextmenu', function(evt){
     if (shapeButton){ changeWireShape(shapeButton.getAttribute('data-wire-shape')); return; }
     const colorButton = evt.target.closest ? evt.target.closest('[data-wire-color]') : null;
     if (colorButton){ changeWireColor(colorButton.getAttribute('data-wire-color')); return; }
+    const sectionButton=evt.target.closest?evt.target.closest('[data-wire-section]'):null;
+    if(sectionButton){changeWireSection(sectionButton.getAttribute('data-wire-section'));return;}
     const b = evt.target.closest ? evt.target.closest('[data-act]') : null;
     if (!b) return;
     const act = b.dataset.act;
@@ -5131,6 +5130,81 @@ function tpInputState(d,pot){
   const nominal=ratedVoltageOf(d,380),balanced=lines.every(function(v){return v>=nominal*.8&&v<=nominal*1.18;});
   return {ready:balanced,lineVoltageRms:average,frequencyHz:frequencies[0],reason:balanced?'':'voltage'};
 }
+/* Пассивные ветви: одно и то же сопротивление используется для напряжений,
+   токов и мощности. Пониженное напряжение не разрывает резистивную цепь. */
+function resistiveLoads(){
+  const loads=[];
+  function add(d,a,b,power,available){
+    if(available)loads.push({a:{devId:d.id,key:a},b:{devId:d.id,key:b},resistance:nominalResistance(d,power)});
+  }
+  state.devices.forEach(function(d){
+    if(d.type==='lamp')add(d,'t0','b0',1,!d.burned);
+    if(d.type==='bulb')add(d,'L','N',100,!d.burned);
+    if(TYPES[d.type].kind==='appliance')add(d,'L','N',TYPES[d.type].defaultPower,d.applianceOn&&!d.applianceBurned);
+    if(d.type==='km1')add(d,'A1','A2',8,!d.coilBurned);
+    if(d.type==='timer')add(d,'A1','A2',4,!d.timerBurned);
+  });
+  return loads;
+}
+/* Идеальные провода объединяются в узлы. Неизвестные потенциалы решаются
+   по сумме токов (Va-Vb)/R = 0, отдельно для двух частей фазора.
+   Известные потенциалы источников остаются фиксированными; через нагрузки
+   они не распространяются как через перемычку и не создают ложного КЗ. */
+function solveLoadPotentials(adj,pot){
+  const loads=resistiveLoads(),groups=[],owner={},keys=new Set(Object.keys(adj));
+  loads.forEach(function(e){keys.add(nodeKey(e.a));keys.add(nodeKey(e.b));});
+  keys.forEach(function(start){
+    if(owner[start]!==undefined)return;
+    const id=groups.length,group={keys:[],fixed:null,edges:[]},queue=[start];owner[start]=id;
+    while(queue.length){
+      const key=queue.pop();group.keys.push(key);
+      if(pot[key])group.fixed=pot[key];
+      (adj[key]||[]).forEach(function(n){const k=nodeKey(n);if(owner[k]===undefined){owner[k]=id;queue.push(k);}});
+    }
+    groups.push(group);
+  });
+  loads.forEach(function(e){
+    const a=owner[nodeKey(e.a)],b=owner[nodeKey(e.b)];if(a===b)return;
+    const g=1/e.resistance;groups[a].edges.push({to:b,g:g});groups[b].edges.push({to:a,g:g});
+  });
+  const seen=new Set();
+  groups.forEach(function(group,start){
+    if(seen.has(start))return;
+    const queue=[start],component=[];seen.add(start);
+    while(queue.length){const j=queue.pop();component.push(j);groups[j].edges.forEach(function(e){if(!seen.has(e.to)){seen.add(e.to);queue.push(e.to);}});}
+    const sources=component.map(function(j){return groups[j].fixed;}).filter(Boolean);
+    if(!sources.length)return; // У полностью плавающей цепи нет опорного напряжения.
+    const meta=sources.find(function(v){return v.frequencyHz>0||v.dc;})||sources[0];
+    const free=component.filter(function(j){return !groups[j].fixed;}),position={};
+    free.forEach(function(j,k){position[j]=k;});
+    const size=free.length;
+    const matrix=free.map(function(j,k){
+      const row=new Float64Array(size+2);
+      groups[j].edges.forEach(function(e){
+        row[k]+=e.g;const p=position[e.to],fixed=groups[e.to].fixed;
+        if(p!==undefined)row[p]-=e.g;
+        else if(fixed){row[size]+=e.g*fixed.r;row[size+1]+=e.g*fixed.i;}
+      });
+      return row;
+    });
+    for(let col=0;col<size;col++){
+      let pivot=col;for(let j=col+1;j<size;j++)if(Math.abs(matrix[j][col])>Math.abs(matrix[pivot][col]))pivot=j;
+      const tmp=matrix[col];matrix[col]=matrix[pivot];matrix[pivot]=tmp;
+      if(!matrix[col][col])return;
+      for(let j=col+1;j<size;j++){
+        const ratio=matrix[j][col]/matrix[col][col];if(!ratio)continue;
+        for(let k=col;k<size+2;k++)matrix[j][k]-=ratio*matrix[col][k];
+      }
+    }
+    const values=[];
+    for(let row=size-1;row>=0;row--){
+      let r=matrix[row][size],i=matrix[row][size+1];
+      for(let k=row+1;k<size;k++){r-=matrix[row][k]*values[k].r;i-=matrix[row][k]*values[k].i;}
+      values[row]={r:r/matrix[row][row],i:i/matrix[row][row],frequencyHz:meta.frequencyHz||0,dc:!!meta.dc,source:meta.source};
+      groups[free[row]].keys.forEach(function(key){pot[key]=values[row];});
+    }
+  });
+}
 function potentialMap(){
   if(electricalReadContext&&electricalReadContext.potential)return electricalReadContext.potential;
   const adj = {}, pot = {}, conflicts = [], seenConflicts = {};
@@ -5210,6 +5284,7 @@ function potentialMap(){
     } else { src(d.id,'ya1',V_DC_ZERO);src(d.id,'ya2',V_DC_ZERO); }
     propagate();
   });
+  if(!conflict)solveLoadPotentials(adj,pot);
   const result={pot:pot,conflict:conflict,conflicts:conflicts,adj:adj,
     ac:{frequencyHz:networkFrequencyHz(),lineVoltageRms:networkLineVoltageRms(),phaseVoltageRms:networkPhaseVoltageRms(),kind:networkKind()}};
   if(electricalReadContext)electricalReadContext.potential=result;
@@ -5423,7 +5498,7 @@ function measureNow(){
       if(!isDc(va)||!isDc(vb)) note='На клеммах переменное напряжение — переключите мультиметр в режим V~.';
       else{
         const raw=va.r-vb.r;
-        u=Math.abs(raw)>50?Math.round(raw/10)*10:Math.round(raw);
+        u=Math.round(raw*10)/10;
         if(Math.abs(u)<1) note='Постоянного напряжения нет: точки соединены одним проводником либо цепь разомкнута.';
         else note='Постоянное напряжение'+(u<0?' обратной полярности (красный щуп на минусе)':'')+'.';
       }
@@ -5433,15 +5508,14 @@ function measureNow(){
     if (!va || !vb) note='Одна из клемм без потенциала — цепь разорвана или на вводе нет питания.';
     else {
       const raw=Math.hypot(va.r-vb.r,va.i-vb.i);
-      u=raw>50?Math.round(raw/10)*10:Math.round(raw);
+      u=Math.round(raw*10)/10;
       const peIn=(ta&&ta.color===WC.PE)||(tb&&tb.color===WC.PE);
       if(u<3){
         note='Напряжения нет: один и тот же проводник либо цепь разомкнута.';
         const nn=(ta&&ta.color===WC.N&&tb&&tb.color===WC.PE)||(tb&&tb.color===WC.N&&ta&&ta.color===WC.PE);
         if(nn) note='Ноль и PE соединены в одной точке — 0 В, это нормально.';
       } else if(isDc(va)&&isDc(vb)) note='Это постоянное напряжение '+u+' В — измеряйте его в режиме V⎓.';
-      else if(u<260){ note='Фазное напряжение 220 В (фаза — ноль).'; if(peIn) note+=' ⚠ На PE относительно фазы присутствует 220 В.'; }
-      else note='Линейное напряжение 380 В (между двумя фазами).';
+      else {note='Измеренное напряжение между щупами: '+u+' В.';if(peIn)note+=' Измерение относительно PE.';}
     }
     if(map.conflict) note='КЗ! Разные потенциалы соединены напрямую.';
     return {cap:'Напряжение AC',display:u===null?'— В':u+' В',note:note,ok:u!==null,danger:map.conflict};
@@ -6243,6 +6317,7 @@ function schemeSnapshot(name,id){
   syncPanelInbox();
   const wires=state.wires.map(function(w){
     const copy=JSON.parse(JSON.stringify(w));
+    copy.sectionMm2=wireSectionOf(w);
     delete copy.previewShape;
     return copy;
   });
@@ -6439,6 +6514,7 @@ function applyPreset(p){
   });
   state.wires.forEach(function(w){
     delete w.previewShape;
+    w.sectionMm2=wireSectionOf(w);
     // Старые сохранения использовали одну невидимую точку PE на чашку.
     [w.a,w.b].forEach(function(end){
       if(end.key==='s1PE')end.key='s1PEt';
@@ -6770,12 +6846,21 @@ function initLogPanel(){
 function initWireDefaults(){
   const shape=document.getElementById('wireShapeDefault');
   const color=document.getElementById('wireColorDefault');
+  const section=document.getElementById('wireSectionDefault');
+  const menus=[shape,color,section];
   try{
     const saved=JSON.parse(localStorage.getItem('ad-trainer-wire-defaults')||'{}');
     if(['smooth','straight','orthogonal','arc','s'].indexOf(saved.shape)>=0)wireDefaults.shape=saved.shape;
     if(/^#[0-9a-f]{6}$/i.test(saved.color||''))wireDefaults.color=saved.color;
+    wireDefaults.sectionMm2=normalizeWireSection(saved.sectionMm2);
   }catch(e){}
   function paint(){
+    if(section){
+      const current=section.querySelector('.wire-current-section');
+      if(current)current.textContent=wireSectionLabel(wireDefaults.sectionMm2);
+      document.getElementById('wireSectionOptions').innerHTML=wireSectionButtons('data-wire-default-section',wireDefaults.sectionMm2);
+    }
+    menus.forEach(function(menu){const trigger=menu&&menu.querySelector('.wire-default-trigger');if(trigger)trigger.setAttribute('aria-expanded',String(menu.classList.contains('open')));});
     const shapeNames={smooth:'∿',straight:'╱',orthogonal:'└',arc:'⌒',s:'𝑆'};
     const shapeIcon=shape&&shape.querySelector('.wire-current-shape');
     if(shapeIcon)shapeIcon.textContent=shapeNames[wireDefaults.shape]||'∿';
@@ -6789,7 +6874,7 @@ function initWireDefaults(){
   }
   function refresh(changeColor){
     paint();
-    if(pending){pending.shape=wireDefaults.shape;if(changeColor)pending.color=wireDefaults.color;renderWires();}
+    if(pending){pending.sectionMm2=wireDefaults.sectionMm2;pending.shape=wireDefaults.shape;if(changeColor)pending.color=wireDefaults.color;renderWires();}
     try{localStorage.setItem('ad-trainer-wire-defaults',JSON.stringify(wireDefaults));}catch(e){}
   }
   if(shape)shape.addEventListener('click',function(e){
@@ -6800,16 +6885,21 @@ function initWireDefaults(){
     const b=e.target.closest('[data-wire-default-color]'); if(!b)return;
     wireDefaults.color=b.getAttribute('data-wire-default-color')||'#1c1c1c'; color.classList.remove('open'); refresh(true);
   });
-  [shape,color].forEach(function(menu){
+  if(section)section.addEventListener('click',function(e){
+    const b=e.target.closest('[data-wire-default-section]');if(!b)return;
+    wireDefaults.sectionMm2=normalizeWireSection(b.getAttribute('data-wire-default-section'));
+    section.classList.remove('open');refresh();
+  });
+  menus.forEach(function(menu){
     if(!menu)return;
     const trigger=menu.querySelector('.wire-default-trigger');
-    if(trigger){trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(){const open=!menu.classList.contains('open');[shape,color].forEach(function(other){if(other)other.classList.remove('open');});menu.classList.toggle('open',open);trigger.setAttribute('aria-expanded',String(open));});}
+    if(trigger){trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(){const open=!menu.classList.contains('open');menus.forEach(function(other){if(other)other.classList.remove('open');});menu.classList.toggle('open',open);trigger.setAttribute('aria-expanded',String(open));});}
     menu.addEventListener('mouseenter',function(){if(!document.body.classList.contains('touch-input'))menu.classList.add('open');});
     menu.addEventListener('mouseleave',function(){if(!document.body.classList.contains('touch-input'))menu.classList.remove('open');});
   });
   const tools=document.querySelector('.wire-defaults'),toggle=document.getElementById('wireToolsToggle');
   if(toggle&&tools)toggle.addEventListener('click',function(){const open=!tools.classList.contains('expanded');tools.classList.toggle('expanded',open);toggle.setAttribute('aria-expanded',String(open));});
-  document.addEventListener('pointerdown',function(e){if(e.target.closest('.wire-defaults'))return;[shape,color].forEach(function(menu){if(menu){menu.classList.remove('open');const b=menu.querySelector('.wire-default-trigger');if(b)b.setAttribute('aria-expanded','false');}});});
+  document.addEventListener('pointerdown',function(e){if(e.target.closest('.wire-defaults'))return;menus.forEach(function(menu){if(menu){menu.classList.remove('open');const b=menu.querySelector('.wire-default-trigger');if(b)b.setAttribute('aria-expanded','false');}});});
   refresh();
 }
 function initTerminalGuides(){
@@ -6887,22 +6977,12 @@ function clampWireCurrents(){
   internalLinks().forEach(function(p){edge(p[0],p[1],1000,null);});
   state.wires.forEach(function(w){edge(w.a,w.b,100,w.id);});
   function inject(n,r,i){const j=index(n);injections[j].r+=r;injections[j].i+=i;}
-  function load(d,a,b,power,available){
-    if(!available)return;
-    const na={devId:d.id,key:a},nb={devId:d.id,key:b};
+  resistiveLoads().forEach(function(e){
+    const na=e.a,nb=e.b;
     const va=map.pot[nodeKey(na)],vb=map.pot[nodeKey(nb)];
     if(!va||!vb)return;
-    const r=va.r-vb.r,i=va.i-vb.i,u=Math.hypot(r,i);
-    if(!voltageIsOperating(u,d,220))return;
-    const resistance=Math.pow(ratedVoltageOf(d,220),2)/Math.max(.01,power);
+    const r=va.r-vb.r,i=va.i-vb.i,resistance=e.resistance;
     inject(na,r/resistance,i/resistance);inject(nb,-r/resistance,-i/resistance);
-  }
-  state.devices.forEach(function(d){
-    if(d.type==='lamp')load(d,'t0','b0',Number(d.ratedPower)||1,!d.burned);
-    if(d.type==='bulb')load(d,'L','N',Number(d.ratedPower)||100,!d.burned);
-    if(TYPES[d.type].kind==='appliance')load(d,'L','N',Number(d.ratedPower)||TYPES[d.type].defaultPower,d.applianceOn&&!d.applianceBurned);
-    if(d.type==='km1')load(d,'A1','A2',Number(d.ratedPower)||8,!d.coilBurned);
-    if(d.type==='timer')load(d,'A1','A2',Number(d.ratedPower)||4,!d.timerBurned);
   });
   state.motors.forEach(function(m){
     if(motorIsDc(m)){
@@ -6968,7 +7048,12 @@ function clampWireCurrents(){
       if(Math.abs(matrix[row][row])>1e-10){real[free[row]]=r/matrix[row][row];imag[free[row]]=i/matrix[row][row];}
     }
   });
-  edges.forEach(function(e){if(e.id!==null)result[e.id]=e.g*Math.hypot(real[e.a]-real[e.b],imag[e.a]-imag[e.b]);});
+  const phasors={};
+  edges.forEach(function(e){if(e.id!==null){
+    const r=-e.g*(real[e.a]-real[e.b]),i=-e.g*(imag[e.a]-imag[e.b]);
+    result[e.id]=Math.hypot(r,i);phasors[e.id]={r:r,i:i};
+  }});
+  Object.defineProperty(result,'phasors',{value:phasors});
   if(electricalReadContext)electricalReadContext.currents=result;
   return result;
 }
@@ -7021,7 +7106,11 @@ function updateClampDrag(){
   const body=clampLayer.querySelector('[data-clamp-id="'+clampState.id+'"]');
   if(body)body.setAttribute('transform','translate('+clampState.x+','+clampState.y+')');
   const candidate=clampNearestWire(clampState),highlight=clampLayer.querySelector('[data-clamp-highlight]');
-  if(highlight){highlight.setAttribute('d',candidate?candidate.path.getAttribute('d'):'');highlight.style.display=candidate?'':'none';}
+  if(highlight){
+    highlight.setAttribute('d',candidate?candidate.path.getAttribute('d'):'');
+    if(candidate){const wire=state.wires.find(function(w){return w.id===candidate.id;});highlight.setAttribute('stroke-width',wireVisualWidth(wire)+7);}
+    highlight.style.display=candidate?'':'none';
+  }
 }
 function clampCurrentText(current){
   const amps=Math.max(0,Number(current)||0);
@@ -7069,7 +7158,7 @@ function clampObjectSvg(clampState,currents){
     ring='<defs><clipPath id="'+clipId+'" clipPathUnits="userSpaceOnUse"><rect x="-44" y="-44" width="88" height="88" transform="rotate('+ringAngle+')"/></clipPath></defs>'
       +clampJawSvg(false,ringAngle,false)
       +'<g clip-path="url(#'+clipId+')" pointer-events="none"><g transform="translate('+(-clampState.x)+','+(-clampState.y)+')">'
-      +wireStrokeGeom(wirePath.getAttribute('d'),color,null,false)+'</g></g>'
+      +wireStrokeGeom(wirePath.getAttribute('d'),color,null,false,wireVisualWidth(wire))+'</g></g>'
       +clampJawSvg(false,ringAngle,true);
   }else{
     ring=clampJawSvg(clampState.drag,0,false);

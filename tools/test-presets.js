@@ -44,7 +44,7 @@ function memoryIndexedDB(){
   const catalog=collectPresetFiles(path.join(__dirname,'..'));
   assert(catalog.entries.length>0,'нет файлов исходного каталога');
   assert(t.folderPresets().length>0,'схемы каталога не появились при запуске');
-  assert(env.els.presetList.innerHTML.includes('Из папки presets'));
+  assert(env.els.presetList.innerHTML.includes('Готовые схемы'));
   const base=t.schemeSnapshot('База','stable-id');
   const make=(name,id)=>Object.assign({},JSON.parse(JSON.stringify(base)),{name,id});
   const files=new Map([

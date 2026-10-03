@@ -61,6 +61,10 @@
             <button type="button" data-wire-default-color="#e8d800"><i class="pe-swatch"></i>Жёлто-зелёный</button>
           </div>
         </div>
+        <div class="wire-default-sub" id="wireSectionDefault">
+        <button type="button" class="wire-default-trigger"><span class="wire-trigger-title">Сечение провода</span><span class="wire-current-section">2,5 мм²</span><span class="wire-trigger-arrow">▶</span></button>
+        <div id="wireSectionOptions" class="wire-default-flyout wire-sections" aria-label="Сечение нового медного провода"></div>
+        </div>
       </div>
       <button type="button" id="guideToggle" class="guide-toggle" aria-pressed="false"><i></i><span>Направляющие клемм</span></button>
     </div>
@@ -187,6 +191,10 @@
       <button data-wire-color="#f3f3f3" title="Белый"><i style="background:#f3f3f3"></i>Белый</button>
       <button data-wire-color="#e8d800" title="Жёлто-зелёный PE"><i class="pe-swatch"></i>Жёлто-зелёный</button>
     </div>
+  </div>
+  <div class="menu-sub">
+    <button class="submenu-trigger" title="Сечение медного провода">Сечение · <small id="wireSectionCurrent">2,5 мм²</small> <span>▶</span></button>
+    <div id="wireSectionMenu" class="wire-shapes wire-sections" aria-label="Сечение этого медного провода"></div>
   </div>
   <button data-act="remove" class="danger">Удалить провод</button>
 </div>

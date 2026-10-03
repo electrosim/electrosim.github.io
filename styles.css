@@ -51,6 +51,10 @@
   .wire-current-shape{display:inline-flex;width:25px;height:18px;align-items:center;justify-content:center;border-radius:4px;background:#15202c;color:#f2c94c;font-size:17px;font-style:normal;margin-left:auto}
   .wire-current-color{display:block;width:25px;height:8px;border:1px solid rgba(255,255,255,.38);border-radius:4px;background:#1c1c1c;margin-left:auto}
   .wire-current-color.pe{background:repeating-linear-gradient(135deg,#e8d800 0 6px,#1f9d3a 6px 12px)}
+  .wire-current-section{margin-left:auto;font-size:11px;white-space:nowrap;color:#f2c94c;font-weight:600}
+  .wire-sections{max-height:min(350px,65vh);overflow-y:auto;overscroll-behavior:contain}
+  .wire-sections button.selected{background:var(--panel-2);color:#ffd79a}
+  #wireSectionCurrent{font:inherit;color:#f2c94c}
   .wire-default-flyout{position:absolute;left:calc(100% - 2px);top:-5px;display:none;width:196px;padding:5px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 34px rgba(0,0,0,.55);z-index:20}
   .wire-default-sub.open>.wire-default-flyout{display:block}
   .wire-default-flyout button{display:flex;align-items:center;gap:9px;width:100%;padding:6px 8px;border:0;border-radius:7px;background:transparent;color:var(--text);font:11.5px "Segoe UI",Arial,sans-serif;text-align:left;cursor:pointer}
@@ -229,9 +233,9 @@
   .term{cursor:pointer;transition:fill .12s}
   .term:hover{fill:rgba(245,166,35,.35);stroke:#f5a623;stroke-width:2}
   .wireG{cursor:grab}
-  .wireG:hover .wire{stroke-width:6}
+  .wireG:hover{filter:brightness(1.15)}
   .wireG.grabbing{cursor:grabbing}
-  .wireG.grabbing .wire{stroke-width:6.5}
+  .wireG.grabbing{filter:brightness(1.15)}
   /* точка-захват видна только когда курсор на проводе или провод тянут */
   .wire-dot{opacity:0;transition:opacity .14s}
   .wireG:hover .wire-dot,.wireG.grabbing .wire-dot{opacity:.95}

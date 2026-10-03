@@ -189,7 +189,7 @@ env.store[t.PRESET_KEY] = JSON.stringify([snap]);
 env.els.presetList.value = snap.id;
 s.devices = []; s.motors = []; s.wires = [];
 let loadError = '';
-try{ t.loadSelectedPreset(); }catch(e){ loadError = String(e && e.message); }
+try{ t.loadSelectedPreset(); t.finishSchemeReplace(false); }catch(e){ loadError = String(e && e.message); }
 check('загрузка пресета без ошибок', loadError === '', loadError);
 check('преобразователь восстановлен', s.devices.length === 1 && s.devices[0].type === 'tp', s.devices.length);
 check('уставка якоря восстановлена', s.devices[0] && s.devices[0].setArmatureVoltage === 220,
