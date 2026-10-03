@@ -22,6 +22,13 @@ globalThis.__t = {
   /* электрическая модель и аппараты */
   state:state, TYPES:TYPES, STOCK:STOCK, DCM:DCM,
   MODULE:MODULE, SLOTS:SLOTS, PANEL:PANEL, mountingRails:mountingRails,
+  WC:WC, wireDefaults:wireDefaults, wireStartColor:wireStartColor, cancelWire:cancelWire, connectTerminals:connectTerminals,
+  ratedVoltageOf:ratedVoltageOf,
+  energyMeterTick:energyMeterTick,
+  panelIsFixed:panelIsFixed, startPanelDrag:startPanelDrag,
+  panelDrag:function(){return panelDrag;},
+  characteristicsFor:characteristicsFor, openProperties:openProperties, saveProperties:saveProperties,
+  startSpecialTrayDrag:startSpecialTrayDrag, finishSpecialTrayDrag:finishSpecialTrayDrag,
   /* сенсорное управление */
   touchPointers:touchPointers, nearestTouchTerminal:nearestTouchTerminal,
   touchView:function(){return view;}, touchPending:function(){return pending;},
@@ -30,12 +37,16 @@ globalThis.__t = {
   potentialMap:potentialMap, internalLinks:internalLinks, nodeKey:nodeKey,
   termDefs:termDefs, terminal:terminal, tagOf:tagOf, renderAll:renderAll,
   deviceInner:deviceInner, measureNow:measureNow,
-  coilVoltage:coilVoltage, lampsOn:lampsOn, lampVoltage:lampVoltage,
+  coilVoltage:coilVoltage, lampVoltage:lampVoltage,
+  withElectricalRead:withElectricalRead, updateRcdLeakage:updateRcdLeakage,
   acSnapshot:acSourceSnapshot, acSample:acPhasorSample, phasorDifference:phasorDifference,
   motorSupplyFrequency:motorSupplyFrequency, motorOperatingPoint:motorOperatingPoint,
   motorVisualOperating:motorVisualOperating, motorSupplyRelay:motorSupplyRelay,
   clampWireCurrents:clampWireCurrents, breakerNominalCurrent:breakerNominalCurrent,
   breakerPoleCurrents:breakerPoleCurrents, breakerProtectionStep:breakerProtectionStep,
+  THERMAL_RANGES:THERMAL_RANGES, thermalRange:thermalRange, syncThermalSettings:syncThermalSettings,
+  thermalTripSeconds:thermalTripSeconds, thermalPhaseCurrents:thermalPhaseCurrents,
+  thermalProtectionStep:thermalProtectionStep, cycleSetpoint:cycleSetpoint,
   /* преобразователь и машина постоянного тока */
   newDcMotor:newDcMotor, dcMotorData:dcMotorData, dcMotorOperatingPoint:dcMotorOperatingPoint,
   dcMotorInertiaStep:dcMotorInertiaStep, dcTerminalVoltage:dcTerminalVoltage,
@@ -46,6 +57,13 @@ globalThis.__t = {
   tpSetArmatureVoltage:tpSetArmatureVoltage, tpMaxArmatureVoltage:tpMaxArmatureVoltage,
   setTpArmatureVoltage:setTpArmatureVoltage,
   loadSelectedPreset:loadSelectedPreset, readPresets:readPresets, PRESET_KEY:PRESET_STORAGE_KEY,
+  SCHEME_DRAFT_KEY:SCHEME_DRAFT_KEY, schemeSignature:schemeSignature, schemeHasChanges:schemeHasChanges,
+  markSchemeClean:markSchemeClean, saveSchemeDraft:saveSchemeDraft,
+  saveCurrentSchemeFile:saveCurrentSchemeFile, openSchemeFile:openSchemeFile,
+  openWorkspaceScheme:openWorkspaceScheme, newWorkspaceScheme:newWorkspaceScheme,
+  finishSchemeReplace:finishSchemeReplace, closeSchemeReplace:closeSchemeReplace,
+  initSchemeWorkspace:initSchemeWorkspace, restoreWorkspaceScheme:restoreWorkspaceScheme,
+  discardWorkspaceRecovery:discardWorkspaceRecovery,
   readBrowserPresets:readBrowserPresets, saveCurrentPreset:saveCurrentPreset,
   deleteSelectedPreset:deleteSelectedPreset, importPresetFile:importPresetFile,
   scanPresetDirectory:scanPresetDirectory, refreshPresetFolder:refreshPresetFolder,
@@ -54,7 +72,16 @@ globalThis.__t = {
   setPresetFolderHandle:function(handle){presetFolderHandle=handle;},
   tpFieldVoltage:tpFieldVoltage, tpInputState:tpInputState, changeTpArmatureVoltage:changeTpArmatureVoltage,
   resistanceBetween:resistanceBetween, MOTOR_TERMS:MOTOR_TERMS, DC_MOTOR_TERMS:DC_MOTOR_TERMS,
-  dcMotorInner:dcMotorInner, motorInner:motorInner, DC_GREEN:DC_GREEN
+  dcMotorInner:dcMotorInner, motorInner:motorInner, DC_GREEN:DC_GREEN,
+  /* мультиметр */
+  METER:METER, METER_JACKS:METER_JACKS, METER_PROBE_TILT:METER_PROBE_TILT,
+  meterJack:meterJack, meterProbeFallback:meterProbeFallback, meterResetProbes:meterResetProbes,
+  meterProbeGrip:meterProbeGrip, meterProbeTilt:meterProbeTilt,
+  meterDrag:function(){return meterDrag;}, meterProbeDrag:function(){return meterProbeDrag;},
+  renderMM:renderMM, mmScreen:mmScreen,
+  measureNow:measureNow, specialTrayPreview:specialTrayPreview,
+  applyPreset:applyPreset,
+  mmLayer:function(){return mmLayer;}
 };
 `;
   if (!/\}\)\(\);\s*$/.test(src)) throw new Error('не найден хвост IIFE: ожидался "})();" в конце app.js');
@@ -98,7 +125,7 @@ globalThis.__t = {
       getScreenCTM(){ return null; }, getBoundingClientRect(){ return {left:0,top:0,width:1000,height:1000}; }
     };
     let html = '';
-    Object.defineProperty(el, 'innerHTML', { get(){ return html; }, set(v){ html = String(v); } });
+    Object.defineProperty(el, 'innerHTML', { configurable:true, get(){ return html; }, set(v){ html = String(v); } });
     return el;
   }
   function byId(id){
@@ -144,6 +171,7 @@ globalThis.__t = {
     document: Object.assign(doc,{
       getElementById: byId,
       createElement: makeEl,
+      createElementNS: function(ns,tag){ return makeEl(tag); },
       querySelector: function(){ return null; },
       querySelectorAll: function(){ return []; },
       elementFromPoint: function(){ return null; },

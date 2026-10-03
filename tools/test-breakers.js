@@ -49,6 +49,23 @@ check('длительная перегрузка 1,1 In отключает ав�
 t.toggleDevice(s.devices[0]);
 check('после взведения тепловая память сброшена',!s.devices[0].tripped&&!s.devices[0].on&&s.devices[0].breakerHeat===0);
 
+console.log('\n— номиналы задаются типом автомата —');
+for(const type of ['mcb1','mcb3']){
+  const obj={id:90,type,breakerType:'C10',ratedCurrent:999,ratedVoltage:999,x:0,y:0,on:false};
+  s.devices=[obj];s.wires=[];
+  const data=t.characteristicsFor({kind:'device',id:obj.id});
+  check(type+': тип автомата остаётся первым полем',data.fields[0].key==='breakerType');
+  check(type+': поля тока и напряжения удалены',!data.fields.some(f=>f.key==='ratedCurrent'||f.key==='ratedVoltage'));
+  check(type+': ток берётся из C10, а не старого ручного значения',t.breakerNominalCurrent(obj)===10);
+  check(type+': напряжение определяется числом полюсов',t.ratedVoltageOf(obj)===(type==='mcb3'?380:220));
+  t.openProperties({kind:'device',id:obj.id});
+  env.els.propertiesFields.querySelector=function(selector){return selector==='[data-property-key="breakerType"]'?{value:'C63'}:null;};
+  t.saveProperties();
+  check(type+': выбор C63 задаёт 63 А',obj.ratedCurrent===63&&t.breakerNominalCurrent(obj)===63);
+  check(type+': название и модель соответствуют C63',obj.customName.includes('C63')&&t.deviceInner(type,obj).includes('>C63</text>'));
+  check(type+': сохранён правильный номинал напряжения',obj.ratedVoltage===(type==='mcb3'?380:220));
+}
+
 console.log('');
 console.log(env.fails()?('ПРОВАЛЕНО проверок: '+env.fails()):'токовая защита автоматов работает; все проверки пройдены');
 process.exit(env.fails()?1:0);

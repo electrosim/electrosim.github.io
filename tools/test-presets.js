@@ -93,6 +93,7 @@ function memoryIndexedDB(){
   assert.strictEqual(t.readBrowserPresets().length,1,'импорт отдельных файлов сломан');
   assert(!t.readBrowserPresets()[0]._folderFile,'импортированная копия помечена библиотечной');
   env.els.presetList.value=t.folderPresets()[0].id;
+  t.markSchemeClean(); // В этом сценарии заменяем работу без несохранённых изменений.
   t.loadSelectedPreset();
   assert.strictEqual(env.els.presetName.value,t.folderPresets()[0].name,'схема из папки не загрузилась');
 

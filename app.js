@@ -20,9 +20,31 @@ const WC = { L1:'#8b5a2b', L2:'#1c1c1c', L3:'#8d939a', N:'#2a6fd6', PE:'#e8d800'
 /* цвета проводов ввода: фазы — красный, жёлтый, зелёный */
 const WCF = { L1:'#d32f2f', L2:'#e0b800', L3:'#1f9d3a', N:'#2a6fd6', PE:'#e8d800' };
 const wireDefaults = { shape:'smooth', color:'#1c1c1c' };
+const RCD_CURRENTS=[16,25,32,40,50,63,80,100];
+const RCD_LEAKAGE_CURRENTS=[10,30,100,300];
+function syncRcdRatings(obj){
+  const current=Number(obj.ratedCurrent),leakage=Number(obj.ratedLeakageMa);
+  obj.ratedCurrent=RCD_CURRENTS.includes(current)?current:25;
+  obj.ratedLeakageMa=RCD_LEAKAGE_CURRENTS.includes(leakage)?leakage:30;
+  obj.ratedVoltage=220;
+  obj.customName=protectiveDeviceName(obj);
+}
+function protectiveDeviceName(obj){
+  if(obj.type==='rcd')return 'УЗО 2P, '+(Number(obj.ratedCurrent)||25)+' А, '+(Number(obj.ratedLeakageMa)||30)+' мА';
+  return 'Автомат '+(obj.type==='mcb3'?'3P, ':'1P, ')+(obj.breakerType||(obj.type==='mcb3'?'C25':'C10'));
+}
+
+/* Повторные чтения в одной отрисовке используют общий расчёт. Контекст
+   сбрасывается сразу после неё: коммутация всегда видит актуальную схему. */
+let electricalReadContext=null;
+function withElectricalRead(read){
+  if(electricalReadContext)return read();
+  electricalReadContext={potential:null,currents:null};
+  try{return read();}finally{electricalReadContext=null;}
+}
 /* обозначения аппаратов на стенде */
-const TAGS = { klemma:'XN', pebus:'XPE', mcb3:'QF1', mcb1:'QF2', rcd:'QD1', meter:'PI1', sensor:'PVA1', lamp:'HL1', bulb:'EL1', outlet:'XS1', wallSwitch:'SA1', twoWaySwitch:'SA1', fridge:'E1', washer:'E1', boiler:'E1', stove:'E1', split:'E1', vfd:'UZ1', tp:'UZT1', km1:'KM1', kk1:'KK1', timer:'KT1', M1:'M1', IN:'XT1', PB:'SB1–SB3' };
-const TAG_PREFIX = { klemma:'XN', pebus:'XPE', mcb3:'QF', mcb1:'QF', rcd:'QD', meter:'PI', sensor:'PVA', lamp:'HL', bulb:'EL', outlet:'XS', wallSwitch:'SA', twoWaySwitch:'SA', fridge:'E', washer:'E', boiler:'E', stove:'E', split:'E', vfd:'UZ', tp:'UZT', km1:'KM', kk1:'KK', timer:'KT' };
+const TAGS = { klemma:'XN', pebus:'XPE', mcb3:'QF1', mcb1:'QF2', rcd:'QD1', meter:'PI1', sensor:'PVA1', lamp:'HL1', bulb:'EL1', outlet:'XS1', wallSwitch:'SA1', twoWaySwitch:'SA1', junction:'XR1', fridge:'E1', washer:'E1', boiler:'E1', stove:'E1', split:'E1', vfd:'UZ1', tp:'UZT1', km1:'KM1', kk1:'KK1', timer:'KT1', M1:'M1', IN:'XT1', PB:'SB1–SB3' };
+const TAG_PREFIX = { klemma:'XN', pebus:'XPE', mcb3:'QF', mcb1:'QF', rcd:'QD', meter:'PI', sensor:'PVA', lamp:'HL', bulb:'EL', outlet:'XS', wallSwitch:'SA', twoWaySwitch:'SA', junction:'XR', fridge:'E', washer:'E', boiler:'E', stove:'E', split:'E', vfd:'UZ', tp:'UZT', km1:'KM', kk1:'KK', timer:'KT' };
 /* клеммная коробка ввода (в исходном щите, слева сверху): болты окрашены
    в цвета подходящих проводов — L1 красный, L2 жёлтый, L3 зелёный, N синий, PE жёлто-зелёный */
 const INBOX = { x:90, y:-194, w:240, h:120 };
@@ -68,8 +90,8 @@ const TYPES = {
   km1:    { title:'Магнитный пускатель KM1', modules:3, h:82*MM, kind:'contactor', overR:PAD_W },
   kk1:    { title:'Тепловое реле KK1',    modules:3, h:74*MM, kind:'relay', over:PIN_TOP }
 };
-const STOCK = { klemma:1, pebus:1, mcb3:1, mcb1:1, rcd:1, meter:1, sensor:1, lamp:3, bulb:1, outlet:1, wallSwitch:1, twoWaySwitch:1, fridge:1, washer:1, boiler:1, stove:1, split:1, vfd:1, tp:1, timer:1, km1:2, kk1:2 };
-STOCK.junction=1;TAGS.junction='XR1';TAG_PREFIX.junction='XR';
+const STOCK = { klemma:1, pebus:1, mcb3:1, mcb1:1, rcd:1, meter:1, sensor:1, lamp:3, bulb:1, outlet:1, wallSwitch:1, twoWaySwitch:1, junction:1, fridge:1, washer:1, boiler:1, stove:1, split:1, vfd:1, tp:1, timer:1, km1:2, kk1:2 };
+
 const KIND_RU = { mcb:'автоматический выключатель', terminal:'клеммная шина: все зажимы соединены внутри',
                   junction:'открытая коробка: 4 независимые колодки по 3 клеммы',
                   rcd:'УЗО: двухполюсное отключение фазы и нуля, TEST 30 мА',
@@ -124,6 +146,8 @@ function handleY(tripped, on){
    Рабочий диапазон оставляем примерно таким же, каким раньше был диапазон
    180–260 В для аппарата на 220 В. */
 function ratedVoltageOf(obj,fallback){
+  if(obj&&TYPES[obj.type])return ['mcb3','vfd','tp'].includes(obj.type)?380:220;
+  if(obj&&(obj===MOTOR||/^M\d+$/.test(String(obj.id))))return 380;
   const value=Number(obj&&obj.ratedVoltage);
   return isFinite(value)&&value>0?value:(fallback||220);
 }
@@ -149,12 +173,51 @@ function voltageBrightness(voltage,obj,fallback){
 const state = { power:false, devices:[], relays:[], wires:[], nextId:1,
                 pb:{ up:false, stop:false, down:false },
                  motors:[], pushbuttons:[], clamps:[], panels:[], standaloneRails:false,
-                mm:{ mode:false, fn:'voltage', a:null, b:null },
+                mm:{ mode:false, power:true, fn:'voltage', a:null, b:null },
                 specialProps:{inbox:{tag:'XT1',customName:'Ввод 3×380 В',ratedVoltage:380,frequency:50},multimeter:{tag:'PV1',customName:'Цифровой мультиметр'}},
                 special:{ inbox:true, pushbutton:false, motor:false, multimeter:true } };
 let terminalGuidesEnabled = false;
-const METER = { x:875, y:1080, w:230, h:330,
-                redX:1033, redY:1022, blackX:947, blackY:1022 };
+/* Цифровой мультиметр. Габариты и разводка повторяют ZOYI ZT-X:
+   тёмный корпус с красным бампером, крупный ЖК-индикатор со шкалой,
+   круглые гнёзда для щупов в нижней части прибора. */
+const METER = { x:875, y:1080, w:236, h:396 };
+const METER_JACKS = { black:{dx:60,dy:-6}, red:{dx:176,dy:-6} };
+function meterJack(which){
+  const j=METER_JACKS[which];
+  return { x:METER.x+j.dx, y:METER.y+j.dy };
+}
+/* В гнезде сидит нижняя часть рукоятки; игла выступает над прибором. */
+function meterDockedTip(key){
+  const p=meterJack(key==='a'?'red':'black');
+  return {x:p.x,y:p.y-40};
+}
+/* Прямые щупы: игла занимает 0 … 22, рукоятка — 26 … 43 от острия. */
+const METER_PROBE_TILT = 0;
+function meterProbeTilt(key){ return (key==='a'?1:-1)*METER_PROBE_TILT; }
+/* Точка рукоятки в координатах сцены: p — остриё на гнезде. */
+function meterProbeGrip(key,p){
+  const a=meterProbeTilt(key)*Math.PI/180, s=40;
+  return { x:p.x+Math.sin(a)*s, y:p.y+Math.cos(a)*s };
+}
+/* Свободные щупы стоят рукоятками в своих гнёздах, иглами вверх. */
+function meterResetProbes(){
+  const black=meterDockedTip('b'), red=meterDockedTip('a');
+  METER.blackX=black.x; METER.blackY=black.y;
+  METER.redX=red.x;     METER.redY=red.y;
+  if(state.mm){state.mm.aDocked=true;state.mm.bDocked=true;}
+}
+function meterDockProbe(key){
+  const p=meterDockedTip(key);
+  state.mm[key]=null;
+  if(key==='a'){METER.redX=p.x;METER.redY=p.y;state.mm.aDocked=true;}
+  else{METER.blackX=p.x;METER.blackY=p.y;state.mm.bDocked=true;}
+}
+/* Щуп, вставленный в гнездо прибора, ездит вместе с корпусом. */
+function meterProbeFallback(key){
+  const docked=(key==='a')?state.mm.aDocked!==false:state.mm.bDocked!==false;
+  if(docked)return meterDockedTip(key);
+  return (key==='a')?{x:METER.redX,y:METER.redY}:{x:METER.blackX,y:METER.blackY};
+}
 
 /* Исходное состояние: монтажный щит со встроенным вводом XT1 и двумя DIN-рейками.
    Все аппараты находятся в лотке. */
@@ -192,12 +255,12 @@ function initialState(){
   state.devices = [];
   state.relays = [];
   state.wires = [];
-  state.mm = { mode:false, fn:'voltage', a:null, b:null };
+  state.mm = { mode:false, power:true, fn:'voltage', a:null, b:null, aDocked:true, bDocked:true };
   state.pb = { up:false, stop:false, down:false };
   state.motors = [];
   state.pushbuttons = [];
   state.clamps = [];
-  state.panels = [{id:'PN1',tag:'ЩР1',railCount:2,x:24,y:-176,inbox:true,inletVoltage:380}];
+  state.panels = [{id:'PN1',tag:'ЩР1',railCount:2,x:24,y:-176,inbox:true,inletVoltage:380,fixed:true}];
   state.standaloneRails = false;
   clampState=null;
   state.specialProps = {inbox:{tag:'XT1',customName:'Ввод 3×380 В',ratedVoltage:380,frequency:50},multimeter:{tag:'PV1',customName:'Цифровой мультиметр'}};
@@ -205,7 +268,7 @@ function initialState(){
   syncPanelInbox();
   state.nextId = 1;
   wireSeq = 1;
-METER.x=875;METER.y=1080;METER.redX=1033;METER.redY=1022;METER.blackX=947;METER.blackY=1022;
+METER.x=875;METER.y=1080;meterResetProbes();
 MOTOR.rpmActual=0;MOTOR.angle=0;
 }
 
@@ -321,9 +384,9 @@ function rcdInner(o){
   s += '<rect x="6" y="38" width="'+(w-12)+'" height="76" rx="3" fill="#fcfcfa" stroke="#d8dbdf"/>';
   s += '<rect x="'+(w/2-23)+'" y="61" width="46" height="9" rx="1.5" fill="#f2c218"/>';
   s += '<text x="'+(w/2)+'" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#1b3a6b" font-family="Segoe UI,Arial">'+(o.tag||'QD')+'</text>';
-  s += '<text x="'+(w/2)+'" y="87" text-anchor="middle" font-size="15" font-weight="700" fill="#c62828" font-family="Segoe UI,Arial">25 А</text>';
+  s += '<text x="'+(w/2)+'" y="87" text-anchor="middle" font-size="15" font-weight="700" fill="#c62828" font-family="Segoe UI,Arial">'+(Number(o.ratedCurrent)||25)+' А</text>';
   s += '<text x="'+(w/2)+'" y="101" text-anchor="middle" font-size="8" fill="#5b6470" font-family="Segoe UI,Arial">230 В~ · 50 Гц</text>';
-  s += '<text x="'+(w/2)+'" y="111" text-anchor="middle" font-size="8" font-weight="700" fill="#5b6470" font-family="Segoe UI,Arial">IΔn 30 мА</text>';
+  s += '<text x="'+(w/2)+'" y="111" text-anchor="middle" font-size="8" font-weight="700" fill="#5b6470" font-family="Segoe UI,Arial">IΔn '+(Number(o.ratedLeakageMa)||30)+' мА</text>';
 
   const winColor = tripped ? '#ff8a00' : (on ? '#e01b1b' : '#1e6b3a');
   s += '<rect x="14" y="119" width="28" height="12" rx="3" fill="#2b2f34" stroke="#9aa0a8"/>';
@@ -351,12 +414,14 @@ function rcdInner(o){
 
 /* Однофазный электронный счётчик. Главные цепи: 1→2 (L) и 3→4 (N).
    Дисплей показывает накопленную энергию, нижняя строка — текущую мощность. */
+function meterEnergyText(value){return Math.max(0,Number(value)||0).toFixed(6).padStart(10,'0').replace('.',',');}
+function meterPowerText(value){return Math.round(Math.max(0,Number(value)||0))+' Вт';}
 function meterInner(o){
   const w=TYPES.meter.modules*MODULE,h=TYPES.meter.h;
   const tx=[.125,.375,.625,.875].map(function(k){return w*k;});
   const energy=Math.max(0,Number(o.energyKwh)||0);
   const power=Math.max(0,Number(o.meterPowerW)||0);
-  const digits=energy.toFixed(6).padStart(10,'0');
+  const digits=meterEnergyText(energy);
   const pulse=!!o.meterPulse;
   let s='';
   s+='<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="8" fill="#f3f4f1" stroke="#9aa0a8" stroke-width="1.5"/>';
@@ -377,11 +442,11 @@ function meterInner(o){
   s+='<rect x="17" y="74" width="'+(w-34)+'" height="62" rx="4" fill="#3a3327" stroke="#25211a" stroke-width="2"/>';
   s+='<rect x="21" y="78" width="'+(w-42)+'" height="54" rx="2" fill="#d58a35" stroke="#efb15d"/>';
   s+='<text class="meter-energy" x="'+(w/2)+'" y="112" text-anchor="middle" font-size="25" font-weight="700" fill="#151515" font-family="Consolas,monospace">'+digits+'</text>';
-  s+='<text x="'+(w-25)+'" y="128" text-anchor="end" font-size="9" font-weight="800" fill="#382612" font-family="Segoe UI,Arial">kW·h</text>';
-  s+='<circle cx="31" cy="149" r="6" fill="#245d39" stroke="#384047"/><text x="42" y="152" font-size="7" fill="#4b5563" font-family="Segoe UI,Arial">POWER</text>';
-  s+='<circle class="meter-pulse" cx="88" cy="149" r="6" fill="'+(pulse?'#ff3b30':'#657079')+'" stroke="#384047"/><text x="99" y="152" font-size="7" fill="#4b5563" font-family="Segoe UI,Arial">PULSE</text>';
-  s+='<text class="meter-power" x="'+(w/2)+'" y="173" text-anchor="middle" font-size="13" font-weight="800" fill="#26333c" font-family="Segoe UI,Arial">'+Math.round(power)+' W</text>';
-  s+='<text x="'+(w/2)+'" y="184" text-anchor="middle" font-size="7.5" fill="#5b6470" font-family="Segoe UI,Arial">5(60) A · 50 Гц · 1000 imp/kWh</text>';
+  s+='<text x="'+(w-25)+'" y="128" text-anchor="end" font-size="9" font-weight="800" fill="#382612" font-family="Segoe UI,Arial">кВт·ч</text>';
+  s+='<circle cx="31" cy="149" r="6" fill="#245d39" stroke="#384047"/><text x="42" y="152" font-size="7" fill="#4b5563" font-family="Segoe UI,Arial">ПИТАНИЕ</text>';
+  s+='<circle class="meter-pulse" cx="88" cy="149" r="6" fill="'+(pulse?'#ff3b30':'#657079')+'" stroke="#384047"/><text x="99" y="152" font-size="7" fill="#4b5563" font-family="Segoe UI,Arial">ИМПУЛЬС</text>';
+  s+='<text class="meter-power" x="'+(w/2)+'" y="173" text-anchor="middle" font-size="13" font-weight="800" fill="#26333c" font-family="Segoe UI,Arial">'+meterPowerText(power)+'</text>';
+  s+='<text x="'+(w/2)+'" y="184" text-anchor="middle" font-size="7.5" fill="#5b6470" font-family="Segoe UI,Arial">5(60) А · 50 Гц · 1000 имп/кВт·ч</text>';
   return s;
 }
 
@@ -550,7 +615,7 @@ function kmInner(o){
    магнитного пускателя — своя DIN-рейка реле не нужна. Контакты: 95-96 NC, 97-98 NO. */
 function relayInner(o){
   const w = TYPES.kk1.modules*MODULE, h = TYPES.kk1.h;      // 157,5 × 174
-  const tripped = !!o.tripped, set = o.set || 25;
+  const tripped = !!o.tripped, range=thermalRange(o), set=Math.max(range.min,Math.min(range.max,Number(o.set)||25));
   /* шаг щупов — точно такой же, как шаг зажимов трёхфазного пускателя
      (ширина пускателя / 4 зажима): щупы встают строго под зажимы 2 T1 / 4 T2 / 6 T3 */
   const cell = TYPES.km1.modules*MODULE/4;
@@ -574,7 +639,7 @@ function relayInner(o){
     s += '<rect x="'+(cx-8)+'" y="4" width="16" height="15" rx="3" fill="#2b3036"/>';
   });
 
-  // лимб уставки: 17…25 А
+  // Лимб выбранного диапазона; длинные дробные подписи только на пяти отметках.
   s += '<circle cx="42" cy="62" r="31" fill="#123c66" stroke="#0d2d4d"/>';
   s += '<circle cx="42" cy="62" r="24" fill="#1b5a92" stroke="#0d2d4d"/>';
   for (let i=0;i<9;i++){
@@ -583,12 +648,12 @@ function relayInner(o){
     const t1x = 42 + Math.sin(a)*25, t1y = 62 - Math.cos(a)*25;
     const t2x = 42 + Math.sin(a)*29.5, t2y = 62 - Math.cos(a)*29.5;
     s += '<line x1="'+t1x+'" y1="'+t1y+'" x2="'+t2x+'" y2="'+t2y+'" stroke="#8fc0e6" stroke-width="1.2"/>';
-    s += '<text x="'+nx+'" y="'+(ny+2.6)+'" text-anchor="middle" font-size="6.8" fill="#cfe4f5" font-family="Segoe UI,Arial">'+(17+i)+'</text>';
+    if(i%2===0)s += '<text x="'+nx+'" y="'+(ny+2.6)+'" text-anchor="middle" font-size="5.6" fill="#cfe4f5" font-family="Segoe UI,Arial">'+thermalNumber(range.min+(range.max-range.min)*i/8)+'</text>';
   }
-  const sa = (-120 + (set-17)*30) * Math.PI/180;
+  const sa = (-120 + 240*(set-range.min)/(range.max-range.min)) * Math.PI/180;
   s += '<line x1="42" y1="62" x2="'+(42+Math.sin(sa)*21)+'" y2="'+(62-Math.cos(sa)*21)+'" stroke="#ffd230" stroke-width="2.6" stroke-linecap="round"/>';
   s += '<circle cx="42" cy="62" r="5" fill="#0d2d4d" stroke="#8fc0e6"/>';
-  s += '<text x="42" y="'+(62+45)+'" text-anchor="middle" font-size="7.5" fill="#9dc6e8" font-family="Segoe UI,Arial">уставка '+(set)+' А</text>';
+  s += '<text x="42" y="'+(62+45)+'" text-anchor="middle" font-size="7.5" fill="#9dc6e8" font-family="Segoe UI,Arial">уставка '+thermalNumber(set)+' А</text>';
 
   // индикатор срабатывания
   s += '<circle cx="146" cy="20" r="6" fill="'+(tripped ? '#ff3b30' : '#1f8f52')+'" stroke="#0d2d4d"/>';
@@ -1178,9 +1243,9 @@ function motorIsDc(motor){ return !!motor && motor.kind === 'dc'; }
    обороты, ток и момент. Никаких повреждений на этом этапе не моделируется. */
 function dcMotorData(motor){
   motor=motor||{};
-  const Ua=Math.max(1,Number(motor.ratedArmatureVoltage)||DCM.ratedArmatureVoltage);
+  const Ua=DCM.ratedArmatureVoltage;
   const Ia=Math.max(.1,Number(motor.ratedArmatureCurrent)||DCM.ratedArmatureCurrent);
-  const Uf=Math.max(1,Number(motor.ratedFieldVoltage)||DCM.ratedFieldVoltage);
+  const Uf=DCM.ratedFieldVoltage;
   const Ra=Math.max(.01,Number(motor.armatureResistance)||DCM.armatureResistance);
   const Rf=Math.max(1,Number(motor.fieldResistance)||DCM.fieldResistance);
   const nNom=Math.max(1,Number(motor.ratedSpeed)||DCM.ratedSpeed);
@@ -1377,6 +1442,7 @@ const mmLayer     = document.getElementById('mmLayer');
 // Равные отступы от верхней и нижней грани до осей крайних реек.
 const PANEL={width:SLOTS*MODULE+64,firstRail:360,pitch:400,baseHeight:720,inboxX:26,inboxY:36};
 function panelRailCount(panel){return Math.max(1,Math.min(5,Math.round(Number(panel.railCount)||2)));}
+function panelIsFixed(panel){return panel.fixed!==false;}
 function panelHeight(panel){return PANEL.baseHeight+(panelRailCount(panel)-1)*PANEL.pitch;}
 function panelById(id){return state.panels.find(function(p){return p.id===id;})||null;}
 function inboxPanel(){return state.panels.find(function(p){return p.inbox;})||null;}
@@ -1432,7 +1498,7 @@ function railPlacement(left,centerY,modules,exceptId){
   });
   if(!chosen||best>150)return null;
   const slot=Math.max(0,Math.min(chosen.slots-modules,Math.round((left-chosen.x)/MODULE)));
-  return {rail:chosen.id,slot:slot,railOk:true,ok:isFree(chosen.id,slot,modules,exceptId)};
+  return {rail:chosen.id,slot:slot,ok:isFree(chosen.id,slot,modules,exceptId)};
 }
 function panelInner(panel){
   const w=PANEL.width,h=panelHeight(panel);
@@ -1450,7 +1516,7 @@ function renderPanels(){
   if(layer)layer.innerHTML=state.panels.map(function(p){
     // Кабель проходит за корпусом щита, по центру крышки ввода.
     const cable=p.inbox&&state.special.inbox?'<g transform="translate('+PANEL.inboxX+','+PANEL.inboxY+')">'+inboxCableInner()+'</g>':'';
-    return '<g data-panel-id="'+p.id+'" transform="translate('+p.x+','+p.y+')" style="cursor:grab;touch-action:none">'+cable+panelInner(p)+'</g>';
+    return '<g data-panel-id="'+p.id+'" transform="translate('+p.x+','+p.y+')" style="cursor:'+(panelIsFixed(p)?'default':'grab')+';touch-action:none">'+cable+panelInner(p)+'</g>';
   }).join('');
 }
 function detachPanelDevices(panel,fromRow){
@@ -1495,7 +1561,7 @@ function renderDevices(){
     const x = rail.x + c.slot*MODULE, w = t.modules*MODULE;
     s += '<rect x="'+x+'" y="'+(top-6)+'" width="'+w+'" height="'+(RAIL_H+12)+'" rx="4" fill="'+col+'" stroke="'+brd+'" stroke-dasharray="6 4"/>';
     s += '<text x="'+(x+w/2)+'" y="'+(top-14)+'" text-anchor="middle" font-size="12" font-weight="700" fill="'+brd+'" font-family="Segoe UI,Arial">'
-       + (c.ok ? ('поз. '+(c.slot+1)) : (c.railOk === false ? 'только рейка '+(t.rail+1) : 'занято')) + '</text>';
+       + (c.ok ? ('поз. '+(c.slot+1)) : 'занято') + '</text>';
   }
   state.devices.forEach(function(d){
     const t = TYPES[d.type], h = t.h, w = t.modules*MODULE;
@@ -1523,7 +1589,7 @@ function renderRelays(){
     const x = ko.x;
     const y = ko.y + t.h - RELAY_DROP;
     s += '<g class="relay" data-rid="'+r.id+'" transform="translate('+x+','+y+')" style="cursor:pointer">'
-       +   relayInner({ tripped:r.tripped, set:r.set, attached:true, tag:r.tag })
+       +   relayInner(Object.assign({},r,{attached:true}))
        + '</g>';
   });
   // наведение реле на зажимы пускателя: подсветка места установки
@@ -1602,8 +1668,8 @@ function renderInbox(){
 
 /* Направление вращения определяется порядком фаз на U1, V1 и W1.
    L1-L2-L3 и циклические перестановки — прямое вращение; перестановка любых двух фаз — обратное. */
-function motorById(id){return state.motors.filter(function(m){return String(m.id)===String(id);})[0]||null;}
-function pushbuttonById(id){return state.pushbuttons.filter(function(p){return String(p.id)===String(id);})[0]||null;}
+function motorById(id){return state.motors.find(function(m){return String(m.id)===String(id);})||null;}
+function pushbuttonById(id){return state.pushbuttons.find(function(p){return String(p.id)===String(id);})||null;}
 function nextSpecialNumber(list,prefix){let max=0;list.forEach(function(o){const m=String(o.id||'').match(new RegExp('^'+prefix+'(\\d+)$'));if(m)max=Math.max(max,+m[1]);});return max+1;}
 function motorSupplyFrequency(motor,map){
   motor=motor||state.motors[0];if(!motor)return 0;
@@ -1651,55 +1717,56 @@ function motorPhaseDirection(motor){
   for (let i=0;i<3;i++) for (let j=i+1;j<3;j++) if (order[i] > order[j]) inversions++;
   return inversions % 2 ? -1 : 1;
 }
-function motorHasThreePhase(){ return state.motors.some(function(m){return motorPhaseDirection(m)!==0;}); }
 function renderMotor(){
-  if(!state.motors.length){motorLayer.innerHTML='';updateMotorSound(0);return;}
-  let s='',soundRpm=0,soundDir=0;
-  state.motors.forEach(function(motor){
-    const visualDirection = Math.abs(motor.rpmActual||0)>1 ? Math.sign(motor.rpmActual) : 0;
-    if(motorIsDc(motor)){
-      const operating=dcMotorOperatingPoint(motor);
-      const rpm=Math.round(Math.abs(motor.rpmActual||0));
-      if(rpm>soundRpm){soundRpm=rpm;soundDir=visualDirection;}
-      s += '<g class="motor-draggable" data-dev="'+motor.id+'" transform="translate('+motor.x+','+motor.y+') scale('+motor.scale+')" style="cursor:grab;touch-action:none">' + dcMotorInner(visualDirection, operating, motor) + '</g>';
-      const dpx = motor.x + 232*motor.scale + 18, dpy = motor.y + 78;
-      s += '<foreignObject x="'+dpx+'" y="'+dpy+'" width="270" height="252">'
-       + '<div xmlns="http://www.w3.org/1999/xhtml" class="motor-load-control dc-motor-control">'
+  return withElectricalRead(function(){
+    if(!state.motors.length){motorLayer.innerHTML='';updateMotorSound(0);return;}
+    let s='',soundRpm=0,soundDir=0;
+    state.motors.forEach(function(motor){
+      const visualDirection = Math.abs(motor.rpmActual||0)>1 ? Math.sign(motor.rpmActual) : 0;
+      if(motorIsDc(motor)){
+        const operating=dcMotorOperatingPoint(motor);
+        const rpm=Math.round(Math.abs(motor.rpmActual||0));
+        if(rpm>soundRpm){soundRpm=rpm;soundDir=visualDirection;}
+        s += '<g class="motor-draggable" data-dev="'+motor.id+'" transform="translate('+motor.x+','+motor.y+') scale('+motor.scale+')" style="cursor:grab;touch-action:none">' + dcMotorInner(visualDirection, operating, motor) + '</g>';
+        const dpx = motor.x + 232*motor.scale + 18, dpy = motor.y + 78;
+        s += '<foreignObject x="'+dpx+'" y="'+dpy+'" width="270" height="252">'
+         + '<div xmlns="http://www.w3.org/1999/xhtml" class="motor-load-control dc-motor-control">'
+         + '<div class="motor-tag">'+escapeHtml(motor.tag||motor.id)+'</div>'
+         + '<div class="motor-load-title">Нагрузка на валу</div>'
+         + '<input class="motor-load" data-mid="'+motor.id+'" type="range" min="0" max="100" step="1" value="'+operating.load+'" />'
+         + '<div class="motor-load-value">'+operating.load.toFixed(0)+' %</div>'
+         + '<div class="motor-readout"><span>Напряжение якоря</span><b class="motor-armature-voltage">'+(operating.armaturePresent?operating.armatureVoltage.toFixed(0):'—')+' В</b></div>'
+         + '<div class="motor-readout"><span>Ток якоря</span><b class="motor-armature-current">'+(operating.armaturePresent?operating.armatureCurrent.toFixed(1):'—')+' А</b></div>'
+         + '<div class="motor-readout"><span>ЭДС якоря</span><b class="motor-emf-value">'+(operating.armaturePresent?operating.emf.toFixed(0):'—')+' В</b></div>'
+         + '<div class="motor-readout"><span>Ток возбуждения</span><b class="motor-field-current">'+operating.fieldCurrent.toFixed(2)+' А</b></div>'
+         + '<div class="motor-readout"><span>Момент</span><b class="motor-torque-value">'+(operating.armaturePresent?operating.torque.toFixed(1):'—')+' Н·м</b></div>'
+         + '<div class="motor-readout"><span>Скорость</span><b class="motor-rpm-value">'+rpm+' об/мин</b></div>'
+         + (operating.acSupply?'<div class="motor-alert">На зажимы машины подано переменное напряжение.</div>':'')
+         + '</div></foreignObject>';
+        return;
+      }
+      const electricalDirection = motorPhaseDirection(motor);
+      const operating = motorVisualOperating(motor,electricalDirection);
+      if(operating.rpm>soundRpm){soundRpm=operating.rpm;soundDir=visualDirection;}
+      s += '<g class="motor-draggable" data-dev="'+motor.id+'" transform="translate('+motor.x+','+motor.y+') scale('+motor.scale+')" style="cursor:grab;touch-action:none">' + motorInner(visualDirection, operating, motor) + '</g>';
+      const px = motor.x + 232*motor.scale + 18, py = motor.y + 78;
+      const activeRelay = motorSupplyRelay(motor);
+      const heat = activeRelay ? Math.round((activeRelay.heat || 0)*100) : 0;
+      s += '<foreignObject x="'+px+'" y="'+py+'" width="270" height="190">'
+       + '<div xmlns="http://www.w3.org/1999/xhtml" class="motor-load-control">'
        + '<div class="motor-tag">'+escapeHtml(motor.tag||motor.id)+'</div>'
        + '<div class="motor-load-title">Нагрузка на валу</div>'
        + '<input class="motor-load" data-mid="'+motor.id+'" type="range" min="0" max="100" step="1" value="'+operating.load+'" />'
        + '<div class="motor-load-value">'+operating.load.toFixed(0)+' %</div>'
-       + '<div class="motor-readout"><span>Напряжение якоря</span><b class="motor-armature-voltage">'+(operating.armaturePresent?operating.armatureVoltage.toFixed(0):'—')+' В</b></div>'
-       + '<div class="motor-readout"><span>Ток якоря</span><b class="motor-armature-current">'+(operating.armaturePresent?operating.armatureCurrent.toFixed(1):'—')+' А</b></div>'
-       + '<div class="motor-readout"><span>ЭДС якоря</span><b class="motor-emf-value">'+(operating.armaturePresent?operating.emf.toFixed(0):'—')+' В</b></div>'
-       + '<div class="motor-readout"><span>Ток возбуждения</span><b class="motor-field-current">'+operating.fieldCurrent.toFixed(2)+' А</b></div>'
-       + '<div class="motor-readout"><span>Момент</span><b class="motor-torque-value">'+(operating.armaturePresent?operating.torque.toFixed(1):'—')+' Н·м</b></div>'
-       + '<div class="motor-readout"><span>Скорость</span><b class="motor-rpm-value">'+rpm+' об/мин</b></div>'
-       + (operating.acSupply?'<div class="motor-alert">На зажимы машины подано переменное напряжение.</div>':'')
+       + '<div class="motor-readout"><span>Частота питания</span><b class="motor-frequency-value">'+operating.frequencyHz.toFixed(1)+' Гц</b></div>'
+       + '<div class="motor-readout"><span>Скорость</span><b class="motor-rpm-value">'+operating.rpm+' об/мин</b></div>'
+       + '<div class="motor-readout"><span>Ток двигателя</span><b class="motor-current-value">'+operating.current.toFixed(1)+' А</b></div>'
+       + '<div class="motor-readout"><span>Нагрев реле</span><b class="motor-heat-value">'+heat+' %</b></div>'
        + '</div></foreignObject>';
-      return;
-    }
-    const electricalDirection = motorPhaseDirection(motor);
-    const operating = motorVisualOperating(motor,electricalDirection);
-    if(operating.rpm>soundRpm){soundRpm=operating.rpm;soundDir=visualDirection;}
-    s += '<g class="motor-draggable" data-dev="'+motor.id+'" transform="translate('+motor.x+','+motor.y+') scale('+motor.scale+')" style="cursor:grab;touch-action:none">' + motorInner(visualDirection, operating, motor) + '</g>';
-    const px = motor.x + 232*motor.scale + 18, py = motor.y + 78;
-    const activeRelay = motorSupplyRelay(motor);
-    const heat = activeRelay ? Math.round((activeRelay.heat || 0)*100) : 0;
-    s += '<foreignObject x="'+px+'" y="'+py+'" width="270" height="190">'
-     + '<div xmlns="http://www.w3.org/1999/xhtml" class="motor-load-control">'
-     + '<div class="motor-tag">'+escapeHtml(motor.tag||motor.id)+'</div>'
-     + '<div class="motor-load-title">Нагрузка на валу</div>'
-     + '<input class="motor-load" data-mid="'+motor.id+'" type="range" min="0" max="100" step="1" value="'+operating.load+'" />'
-     + '<div class="motor-load-value">'+operating.load.toFixed(0)+' %</div>'
-     + '<div class="motor-readout"><span>Частота питания</span><b class="motor-frequency-value">'+operating.frequencyHz.toFixed(1)+' Гц</b></div>'
-     + '<div class="motor-readout"><span>Скорость</span><b class="motor-rpm-value">'+operating.rpm+' об/мин</b></div>'
-     + '<div class="motor-readout"><span>Ток двигателя</span><b class="motor-current-value">'+operating.current.toFixed(1)+' А</b></div>'
-     + '<div class="motor-readout"><span>Нагрев реле</span><b class="motor-heat-value">'+heat+' %</b></div>'
-     + '</div></foreignObject>';
+    });
+    motorLayer.innerHTML = s;
+    updateMotorSound(soundDir,soundRpm);
   });
-  motorLayer.innerHTML = s;
-  updateMotorSound(soundDir,soundRpm);
 }
 
 /* ============================================================
@@ -1724,15 +1791,11 @@ function isFree(rail, slot, modules, exceptId){
   }
   return true;
 }
-function stockLeft(type){
-  return Infinity;
-}
 function nextLampIndicator(){
   const order = ['green','yellow','red'];
   const used = state.devices.filter(function(d){ return d.type === 'lamp'; }).map(function(d){ return d.indicator || 'green'; });
-  return order.filter(function(color){ return used.indexOf(color) < 0; })[0] || 'green';
+  return order.find(function(color){ return used.indexOf(color) < 0; }) || 'green';
 }
-function lampTagFor(indicator){ return indicator === 'yellow' ? 'HL2' : (indicator === 'red' ? 'HL3' : 'HL1'); }
 function usedTagNumbers(prefix){
   const nums=[];
   state.devices.forEach(function(d){const m=String(d.tag||'').match(new RegExp('^'+prefix+'(\\d+)$'));if(m)nums.push(+m[1]);});
@@ -1748,25 +1811,13 @@ function ensureInstanceTags(){
   state.relays.slice().sort(function(a,b){return a.id-b.id;}).forEach(function(r){if(!r.tag)r.tag=nextTag('KK');});
 }
 function devById(id){
-  return state.devices.filter(function(d){ return d.id === id; })[0] || null;
-}
-function findDevice(type, onlyOn){
-  const list = state.devices.filter(function(d){ return d.type === type && (!onlyOn || (d.on && !d.tripped)); });
-  return list.length ? list[0] : null;
-}
-function contactor(){
-  return state.devices.filter(function(d){ return d.type === 'km1'; })[0] || null;
+  return state.devices.find(function(d){ return d.id === id; }) || null;
 }
 function relayFor(kmId){
-  return state.relays.filter(function(r){ return r.kmId === kmId; })[0] || null;
+  return state.relays.find(function(r){ return r.kmId === kmId; }) || null;
 }
 function anyRelayById(id){
-  return state.relays.filter(function(r){ return r.id === id; })[0] || null;
-}
-function anyRelay(){ return state.relays[0] || null; }
-function relayTripped(){
-  const r = anyRelay();
-  return !!(r && r.tripped);
+  return state.relays.find(function(r){ return r.id === id; }) || null;
 }
 /* аппарат под нагрузкой: автомат включён либо катушка пускателя под напряжением */
 function isLive(dev){
@@ -2099,7 +2150,7 @@ function startDrag(evt, spec){
     offY = t.h*0.5;
   }
   drag = {
-    id: spec.id || null, relayId: spec.relayId || null, relaySet: spec.relaySet,
+    id: spec.id || null, relayId: spec.relayId || null, relaySet: spec.relaySet, relayState: spec.relayId?Object.assign({},anyRelayById(spec.relayId)):null,
     type: spec.type, offX: offX, offY: offY,
     sx: evt.clientX, sy: evt.clientY, moved:false, live:true,
     ghost: buildGhost(spec.type), candidate:null, prev: spec.prev || null, attachedRelay:null
@@ -2122,7 +2173,7 @@ function onPointerMove(evt){
         if (kind === 'contactor'){             // реле снимается вместе с пускателем
           const r = relayFor(drag.id);
           if (r){
-            drag.attachedRelay = { tripped:r.tripped, set:r.set };
+            drag.attachedRelay = Object.assign({},r);
             state.relays = state.relays.filter(function(x){ return x.id !== r.id; });
             removeWiresFor('kk'+r.id);
           }
@@ -2161,6 +2212,8 @@ function onPointerUp(evt){
     if (cand.relay){
       const r = { id: d.relayId || state.nextId++, kmId: cand.kmId, tripped:false, set:(d.relaySet || 25), tested:false,
                   tag:d.tag || nextTag('KK') };
+      if(d.relayState)Object.assign(r,d.relayState,{kmId:cand.kmId});
+      syncThermalSettings(r);
       state.relays.push(r);
       log('Тепловое реле '+tagOf('kk'+r.id)+' посажено щупами на зажимы 2 T1 / 4 T2 / 6 T3 пускателя '+tagOf(cand.kmId)+'. Своя DIN-рейка не нужна.', 'ok');
     } else {
@@ -2189,8 +2242,11 @@ function onPointerUp(evt){
       }
       if (d.type === 'mcb1'||d.type === 'mcb3'){
         dev.breakerType=d.type==='mcb3'?'C25':'C10';
+        dev.ratedCurrent=breakerNominalCurrent(dev);dev.ratedVoltage=ratedVoltageOf(dev);
+        dev.customName=protectiveDeviceName(dev);
         dev.breakerHeat=0;dev.breakerCurrentA=0;dev.breakerPhaseCurrents=[];
       }
+      if(d.type==='rcd')syncRcdRatings(dev);
       if (TYPES[d.type].kind === 'appliance'){
         dev.applianceOn=false;dev.applianceBurned=false;
         dev.ratedVoltage=220;dev.ratedPower=TYPES[d.type].defaultPower;
@@ -2208,8 +2264,7 @@ function onPointerUp(evt){
       if (d.id) trace('Аппарат перемещён: ' + placement);   // перенос по полю — рутина
       else log('Установлен: ' + placement, 'ok');
       if (d.attachedRelay){                    // реле едет вместе с пускателем
-        state.relays.push({ id: state.nextId++, kmId: dev.id, tripped:d.attachedRelay.tripped,
-                            set:d.attachedRelay.set, tested:true, tag:d.attachedRelay.tag || nextTag('KK') });
+        state.relays.push(Object.assign({},d.attachedRelay,{kmId:dev.id}));
       }
     }
     if (underLoad) warn('Аппарат снят с рейки под нагрузкой. В реальности это недопустимо: сначала отключите его.');
@@ -2270,7 +2325,7 @@ function finishSpecialTrayDrag(evt){
     const p=d.moved?svgPoint(evt):svgPoint({clientX:rect.left+rect.width*.5,clientY:rect.top+rect.height*.5});
     const n=nextSpecialNumber(state.panels,'PN');
     const withInbox=!state.special.inbox;
-    state.panels.push({id:'PN'+n,tag:'ЩР'+n,railCount:2,x:p.x-PANEL.width/2,y:p.y-panelHeight({railCount:2})/2,inbox:withInbox,inletVoltage:380});
+    state.panels.push({id:'PN'+n,tag:'ЩР'+n,railCount:2,x:p.x-PANEL.width/2,y:p.y-panelHeight({railCount:2})/2,inbox:withInbox,inletVoltage:380,fixed:true});
     if(withInbox)state.special.inbox=true;
     renderAll();return;
   }
@@ -2299,9 +2354,8 @@ function finishSpecialTrayDrag(evt){
     }
     else if(d.key==='inbox'){INBOX.x=p.x-inboxWidth()/2;INBOX.y=p.y-INBOX.h/2;}
     else if(d.key==='multimeter'){
-      METER.x=p.x-METER.w/2;METER.y=p.y-(METER.h-28)/2;
-      METER.redX=METER.x+158;METER.redY=METER.y-58;
-      METER.blackX=METER.x+72;METER.blackY=METER.y-58;
+      METER.x=p.x-METER.w/2;METER.y=p.y-METER.h/2;
+      meterResetProbes();
     }
   }
   if(d.key!=='motor'&&d.key!=='dcmotor'&&d.key!=='pushbutton')state.special[d.key]=true;
@@ -2445,7 +2499,7 @@ deviceLayer.addEventListener('pointerdown', function(evt){
   if (evt.button !== 0) return;                 // средняя кнопка — панорамирование, ПКМ — снятие
   if(evt.target.closest('[data-zone="manual-contactor"]'))return;
   const id = +g.dataset.id;
-  const dev = state.devices.filter(function(d){ return d.id === id; })[0];
+  const dev = state.devices.find(function(d){ return d.id === id; });
   if (!dev) return;
   const applianceToggle=evt.target.closest('[data-appliance-toggle]');
   if(TYPES[dev.type].kind==='appliance'&&applianceToggle){
@@ -2637,34 +2691,36 @@ document.addEventListener('pointerup', finishMotorDrag);
 document.addEventListener('pointercancel', finishMotorDrag);
 
 function updateMotorReadout(){
-  if(!state.motors.length){updateMotorSound(0);return;}
-  let soundRpm=0,soundDir=0;
-  state.motors.forEach(function(motor){
-    const input=motorLayer.querySelector('.motor-load[data-mid="'+motor.id+'"]');
-    const box=input&&input.closest('.motor-load-control');
-    const visualDir=Math.abs(motor.rpmActual||0)>1?Math.sign(motor.rpmActual):0;
-    if(motorIsDc(motor)){
-      const operating=dcMotorOperatingPoint(motor);
-      const rpm=Math.round(Math.abs(motor.rpmActual||0));
-      if(box){
-        const set=function(sel,text){const el=box.querySelector(sel);if(el)el.textContent=text;};
-        set('.motor-load-value',operating.load.toFixed(0)+' %');
-        set('.motor-rpm-value',rpm+' об/мин');
-        set('.motor-armature-voltage',(operating.armaturePresent?operating.armatureVoltage.toFixed(0):'—')+' В');
-        set('.motor-armature-current',(operating.armaturePresent?operating.armatureCurrent.toFixed(1):'—')+' А');
-        set('.motor-emf-value',(operating.armaturePresent?operating.emf.toFixed(0):'—')+' В');
-        set('.motor-field-current',operating.fieldCurrent.toFixed(2)+' А');
-        set('.motor-torque-value',(operating.armaturePresent?operating.torque.toFixed(1):'—')+' Н·м');
+  return withElectricalRead(function(){
+    if(!state.motors.length){updateMotorSound(0);return;}
+    let soundRpm=0,soundDir=0;
+    state.motors.forEach(function(motor){
+      const input=motorLayer.querySelector('.motor-load[data-mid="'+motor.id+'"]');
+      const box=input&&input.closest('.motor-load-control');
+      const visualDir=Math.abs(motor.rpmActual||0)>1?Math.sign(motor.rpmActual):0;
+      if(motorIsDc(motor)){
+        const operating=dcMotorOperatingPoint(motor);
+        const rpm=Math.round(Math.abs(motor.rpmActual||0));
+        if(box){
+          const set=function(sel,text){const el=box.querySelector(sel);if(el)el.textContent=text;};
+          set('.motor-load-value',operating.load.toFixed(0)+' %');
+          set('.motor-rpm-value',rpm+' об/мин');
+          set('.motor-armature-voltage',(operating.armaturePresent?operating.armatureVoltage.toFixed(0):'—')+' В');
+          set('.motor-armature-current',(operating.armaturePresent?operating.armatureCurrent.toFixed(1):'—')+' А');
+          set('.motor-emf-value',(operating.armaturePresent?operating.emf.toFixed(0):'—')+' В');
+          set('.motor-field-current',operating.fieldCurrent.toFixed(2)+' А');
+          set('.motor-torque-value',(operating.armaturePresent?operating.torque.toFixed(1):'—')+' Н·м');
+        }
+        if(rpm>soundRpm){soundRpm=rpm;soundDir=visualDir;}
+        return;
       }
-      if(rpm>soundRpm){soundRpm=rpm;soundDir=visualDir;}
-      return;
-    }
-    const direction=motorPhaseDirection(motor),operating=motorVisualOperating(motor,direction);
-    const relay=motorSupplyRelay(motor),heat=relay?Math.round((relay.heat||0)*100):0;
-    if(box){const a=box.querySelector('.motor-load-value'),b=box.querySelector('.motor-rpm-value'),c=box.querySelector('.motor-current-value'),d=box.querySelector('.motor-heat-value'),e=box.querySelector('.motor-frequency-value');if(a)a.textContent=operating.load.toFixed(0)+' %';if(b)b.textContent=operating.rpm+' об/мин';if(c)c.textContent=operating.current.toFixed(1)+' А';if(d)d.textContent=heat+' %';if(e)e.textContent=operating.frequencyHz.toFixed(1)+' Гц';}
-    if(operating.rpm>soundRpm){soundRpm=operating.rpm;soundDir=visualDir;}
+      const direction=motorPhaseDirection(motor),operating=motorVisualOperating(motor,direction);
+      const relay=motorSupplyRelay(motor),heat=relay?Math.round((relay.heat||0)*100):0;
+      if(box){const a=box.querySelector('.motor-load-value'),b=box.querySelector('.motor-rpm-value'),c=box.querySelector('.motor-current-value'),d=box.querySelector('.motor-heat-value'),e=box.querySelector('.motor-frequency-value');if(a)a.textContent=operating.load.toFixed(0)+' %';if(b)b.textContent=operating.rpm+' об/мин';if(c)c.textContent=operating.current.toFixed(1)+' А';if(d)d.textContent=heat+' %';if(e)e.textContent=operating.frequencyHz.toFixed(1)+' Гц';}
+      if(operating.rpm>soundRpm){soundRpm=operating.rpm;soundDir=visualDir;}
+    });
+    updateMotorSound(soundDir,soundRpm);
   });
-  updateMotorSound(soundDir,soundRpm);
 }
 motorLayer.addEventListener('pointerdown', function(evt){
   if (evt.target && evt.target.closest && evt.target.closest('.motor-load-control')) evt.stopPropagation();
@@ -2679,22 +2735,24 @@ motorLayer.addEventListener('input', function(evt){
 /* Инерция ротора: разгон примерно 2,7 с, свободный выбег около 3,2 с. */
 let motorInertiaLast=performance.now();
 function motorInertiaTick(){
-  const now=performance.now(),dt=Math.min(.15,Math.max(0,(now-motorInertiaLast)/1000));
-  motorInertiaLast=now;
-  if(!state.motors.length){updateMotorSound(0);return;}
-  let rerender=false;
-  state.motors.forEach(function(motor){
-    if(motorIsDc(motor)){ dcMotorInertiaStep(motor,dt); return; }
-    const electricalDirection=motorPhaseDirection(motor),targetPoint=motorOperatingPoint(motor,electricalDirection);
-    let target=electricalDirection*targetPoint.rpm;
-    const before=motor.rpmActual||0,oldSign=Math.abs(before)>1?Math.sign(before):0;
-    if(before&&target&&Math.sign(before)!==Math.sign(target))target=0;
-    const rate=Math.abs(target)>Math.abs(before)?500:420,step=rate*dt;
-    let next=before;if(Math.abs(target-before)<=step)next=target;else next+=Math.sign(target-before)*step;
-    if(Math.abs(next)<1&&target===0)next=0;motor.rpmActual=next;
-    if(oldSign!==(Math.abs(next)>1?Math.sign(next):0))rerender=true;
+  return withElectricalRead(function(){
+    const now=performance.now(),dt=Math.min(.15,Math.max(0,(now-motorInertiaLast)/1000));
+    motorInertiaLast=now;
+    if(!state.motors.length){updateMotorSound(0);return;}
+    let rerender=false;
+    state.motors.forEach(function(motor){
+      if(motorIsDc(motor)){ dcMotorInertiaStep(motor,dt); return; }
+      const electricalDirection=motorPhaseDirection(motor),targetPoint=motorOperatingPoint(motor,electricalDirection);
+      let target=electricalDirection*targetPoint.rpm;
+      const before=motor.rpmActual||0,oldSign=Math.abs(before)>1?Math.sign(before):0;
+      if(before&&target&&Math.sign(before)!==Math.sign(target))target=0;
+      const rate=Math.abs(target)>Math.abs(before)?500:420,step=rate*dt;
+      let next=before;if(Math.abs(target-before)<=step)next=target;else next+=Math.sign(target-before)*step;
+      if(Math.abs(next)<1&&target===0)next=0;motor.rpmActual=next;
+      if(oldSign!==(Math.abs(next)>1?Math.sign(next):0))rerender=true;
+    });
+    if(rerender)renderMotor();else updateMotorReadout();
   });
-  if(rerender)renderMotor();else updateMotorReadout();
 }
 setInterval(motorInertiaTick,50);
 
@@ -2871,6 +2929,8 @@ function characteristicsFor(target){
   if(target.kind==='device'){
     obj=devById(target.id);if(!obj)return null;
     if(TYPES[obj.type].kind==='appliance')syncApplianceRatings(obj);
+    if(obj.type==='rcd')syncRcdRatings(obj);
+    if(obj.type==='mcb1'||obj.type==='mcb3')obj.customName=protectiveDeviceName(obj);
     title=tagOf(obj.id);
     if(obj.type==='mcb1'||obj.type==='mcb3'){
       const fallback=obj.type==='mcb3'?'C25':'C10';
@@ -2878,7 +2938,8 @@ function characteristicsFor(target){
     }else type=obj.customName||TYPES[obj.type].title;
   }else if(target.kind==='relay'){
     obj=anyRelayById(target.id);if(!obj)return null;
-    title=tagOf('kk'+obj.id);type='Тепловое реле';
+    syncThermalSettings(obj);
+    title=tagOf('kk'+obj.id);type='Тепловое реле · класс 10A';
   }else if(target.kind==='special'&&target.key==='motor'){
     obj=motorById(target.id);if(!obj)return null;
     title=obj.tag||obj.id;type='Трёхфазный асинхронный двигатель';
@@ -2901,6 +2962,12 @@ function characteristicsFor(target){
   }
   if(!obj)return null;
   let fields=[];
+  if(target.kind==='device'&&obj.type==='rcd'){
+    fields.push(propertyField('ratedCurrent','Номинальный ток','select',25,'А',undefined,undefined,undefined,false,
+      RCD_CURRENTS.map(function(value){return {value:String(value),label:value+' А'};})));
+    fields.push(propertyField('ratedLeakageMa','Дифференциальный ток','select',30,'мА',undefined,undefined,undefined,false,
+      RCD_LEAKAGE_CURRENTS.map(function(value){return {value:String(value),label:value+' мА'};})));
+  }
   if(target.kind==='device'&&(obj.type==='mcb1'||obj.type==='mcb3')){
     const defaultBreakerType=obj.type==='mcb3'?'C25':'C10';
     fields.push(propertyField('breakerType','Тип автомата','select',obj.breakerType||defaultBreakerType,'',undefined,undefined,undefined,false,[
@@ -2925,55 +2992,38 @@ function characteristicsFor(target){
       {value:'220',label:'220 В — однофазный'}
     ]));
   }
-  fields.push(propertyField('customName','Наименование','text',type,'',undefined,undefined,undefined,true));
+  const nameField=propertyField('customName','Наименование','text',type,'',undefined,undefined,undefined,true);
+  nameField.readOnly=target.kind==='device'&&['mcb1','mcb3','rcd'].includes(obj.type);
+  fields.push(nameField);
   if(target.kind==='relay'){
-    fields.push(propertyField('set','Уставка тока','number',25,'А',1,100,1));
+    const range=thermalRange(obj);
+    fields.push(propertyField('settingRange','Диапазон уставки','select',range.id,'',undefined,undefined,undefined,false,
+      THERMAL_RANGES.map(function(r){return {value:r.id,label:thermalNumber(r.min)+'–'+thermalNumber(r.max)+' А'};})));
+    fields.push(propertyField('set','Уставка тока','number',obj.set,'А',range.min,range.max,0.001));
   }else if(target.kind==='special'&&target.key==='motor'){
-    fields.push(propertyField('ratedVoltage','Номинальное напряжение','number',380,'В',1,1000,1));
     fields.push(propertyField('ratedCurrent','Номинальный ток','number',9,'А',0.1,1000,0.1));
     fields.push(propertyField('ratedPower','Номинальная мощность','number',4,'кВт',0.1,1000,0.1));
     fields.push(propertyField('ratedFrequency','Номинальная частота','number',50,'Гц',1,400,1));
     fields.push(propertyField('polePairs','Количество пар полюсов','number',2,'',1,20,1));
     fields.push(propertyField('ratedSlipPercent','Номинальное скольжение','number',10,'%',0,95,0.1));
   }else if(target.kind==='special'&&target.key==='dcmotor'){
-    fields.push(propertyField('ratedArmatureVoltage','Номинальное напряжение якоря','number',DCM.ratedArmatureVoltage,'В',1,1000,1));
     fields.push(propertyField('ratedArmatureCurrent','Номинальный ток якоря','number',DCM.ratedArmatureCurrent,'А',0.1,1000,0.1));
-    fields.push(propertyField('ratedFieldVoltage','Номинальное напряжение возбуждения','number',DCM.ratedFieldVoltage,'В',1,1000,1));
     fields.push(propertyField('ratedSpeed','Номинальная частота вращения','number',DCM.ratedSpeed,'об/мин',1,6000,10));
     fields.push(propertyField('armatureResistance','Сопротивление якоря','number',DCM.armatureResistance,'Ом',0.01,200,0.01));
     fields.push(propertyField('fieldResistance','Сопротивление обмотки возбуждения','number',DCM.fieldResistance,'Ом',1,5000,1));
     fields.push(propertyField('ratedPower','Номинальная мощность','number',DCM.ratedPower,'кВт',0.1,1000,0.1));
     fields.push(propertyField('inertiaFactor','Время разгона до номинала','number',DCM.inertiaFactor,'с',0.05,20,0.05));
-  }else if(target.kind==='special'&&target.key==='pushbutton'){
-    fields.push(propertyField('ratedVoltage','Номинальное напряжение','number',220,'В',1,1000,1));
-    fields.push(propertyField('ratedCurrent','Номинальный ток контактов','number',10,'А',0.1,100,0.1));
   }else if(target.kind==='special'&&target.key==='inbox'){
-    fields.push(propertyField('ratedVoltage','Линейное напряжение','number',380,'В',1,1000,1));
     fields.push(propertyField('frequency','Частота сети','number',50,'Гц',1,400,1));
   }else if(target.kind==='special'&&target.key==='multimeter'){
     fields.push(propertyField('measurementCategory','Категория измерений','text','CAT III 600 V','',undefined,undefined,undefined,true));
   }else if(target.kind==='special'&&target.key==='panel'){
+    fields.push(propertyField('fixed','Закрепить','checkbox',true));
     fields.push(propertyField('railCount','Количество DIN-реек','select',String(panelRailCount(obj)),'',undefined,undefined,undefined,false,[
       {value:'1',label:'1 рейка'},{value:'2',label:'2 рейки'},{value:'3',label:'3 рейки'},
       {value:'4',label:'4 рейки'},{value:'5',label:'5 реек'}
     ]));
   }else if(target.kind==='device'){
-    const defaults={
-      mcb3:[380,25],mcb1:[220,10],rcd:[220,25],meter:[220,60],sensor:[220,80],
-      lamp:[220,1],bulb:[220,0.45],outlet:[220,16],wallSwitch:[220,10],twoWaySwitch:[220,10],
-      fridge:[220,1.4],washer:[220,10],boiler:[220,9.1],stove:[220,31.8],split:[220,1500/220],
-      vfd:[380,10],tp:[380,40],km1:[220,25],timer:[220,5]
-    }[obj.type];
-    if(defaults){
-      fields.push(propertyField('ratedVoltage','Номинальное напряжение','number',defaults[0],'В',1,1000,1));
-      const appliance=TYPES[obj.type].kind==='appliance';
-      const currentDefault=appliance?applianceRatings(obj).ratedCurrent:(obj.type==='mcb1'||obj.type==='mcb3')
-        ? Math.max(2,Number(String(obj.breakerType||(obj.type==='mcb3'?'C25':'C10')).replace(/^C/,''))||10)
-        : defaults[1];
-      const nominalVoltage=ratedVoltageOf(obj,defaults[0]);
-      fields.push(propertyField('ratedCurrent','Номинальный ток','number',currentDefault,'А',appliance?1/nominalVoltage:0.01,appliance?30000/nominalVoltage:1000,appliance?'any':0.01));
-    }
-    if(obj.type==='rcd')fields.push(propertyField('ratedLeakageMa','Дифференциальный ток','number',30,'мА',1,1000,1));
     if(obj.type==='lamp')fields.push(propertyField('indicator','Цвет индикатора','select',obj.indicator||'green','',undefined,undefined,undefined,false,[
       {value:'green',label:'Зелёный'},
       {value:'red',label:'Красный'},
@@ -3018,37 +3068,36 @@ function openProperties(target){
       ?'<textarea data-property-key="'+f.key+'">'+escapeHtml(raw)+'</textarea>'
       :f.type==='select'
         ?'<select data-property-key="'+f.key+'">'+f.options.map(function(option){return '<option value="'+escapeHtml(option.value)+'"'+(String(option.value)===String(raw)?' selected':'')+'>'+escapeHtml(option.label)+'</option>';}).join('')+'</select>'
-        :'<input data-property-key="'+f.key+'"'+attrs+' value="'+escapeHtml(raw)+'">';
-    return '<label class="property-field'+(f.wide?' wide':'')+'">'+label+control+'</label>';
+        :f.type==='checkbox'
+          ?'<input data-property-key="'+f.key+'" type="checkbox"'+(raw!==false?' checked':'')+'>'
+          :'<input data-property-key="'+f.key+'"'+attrs+(f.readOnly?' readonly':'')+' value="'+escapeHtml(raw)+'">';
+    return '<label class="property-field'+(f.wide?' wide':'')+(f.type==='checkbox'?' property-toggle':'')+'">'+label+control+'</label>';
   }).join('');
   propertiesModal.classList.add('open');propertiesModal.setAttribute('aria-hidden','false');
   const first=propertiesFields.querySelector('input,select,textarea');if(first)first.focus();
 }
 propertiesFields.addEventListener('change',function(evt){
-  if(!propertiesTarget||!(propertiesTarget.object.type==='mcb1'||propertiesTarget.object.type==='mcb3')||evt.target.getAttribute('data-property-key')!=='breakerType')return;
-  const selected=evt.target.value||'C10';
-  const amperage=Math.max(2,Number(String(selected).replace(/^C/,''))||10);
-  const nameInput=propertiesFields.querySelector('[data-property-key="customName"]');
-  const currentInput=propertiesFields.querySelector('[data-property-key="ratedCurrent"]');
-  if(nameInput)nameInput.value=(propertiesTarget.object.type==='mcb3'?'Автомат 3P, ':'Автомат 1P, ')+selected;
-  if(currentInput)currentInput.value=String(amperage);
+  if(propertiesTarget&&propertiesTarget.target.kind==='relay'){
+    if(evt.target.getAttribute('data-property-key')!=='settingRange')return;
+    const range=thermalRange({settingRange:evt.target.value});
+    const field=propertiesTarget.fields.find(function(f){return f.key==='set';});
+    field.min=range.min;field.max=range.max;
+    const input=propertiesFields.querySelector('[data-property-key="set"]');
+    if(input){input.min=range.min;input.max=range.max;input.value=Math.max(range.min,Math.min(range.max,Number(input.value)||range.max));}
+    return;
+  }
+  if(!propertiesTarget||!['mcb1','mcb3','rcd'].includes(propertiesTarget.object.type))return;
+  const changed=evt.target.getAttribute('data-property-key');
+  if(!['breakerType','ratedCurrent','ratedLeakageMa'].includes(changed))return;
+  const draft=Object.assign({},propertiesTarget.object);
+  ['breakerType','ratedCurrent','ratedLeakageMa'].forEach(function(key){
+    const input=propertiesFields.querySelector('[data-property-key="'+key+'"]');
+    if(input)draft[key]=input.value;
+  });
+  const name=propertiesFields.querySelector('[data-property-key="customName"]');
+  if(name)name.value=protectiveDeviceName(draft);
+  propertiesSubtitle.textContent=protectiveDeviceName(draft);
 });
-function syncAppliancePropertyInputs(changedKey){
-  if(!propertiesTarget||!TYPES[propertiesTarget.object.type]||TYPES[propertiesTarget.object.type].kind!=='appliance')return;
-  if(!['ratedPower','ratedCurrent','ratedVoltage'].includes(changedKey))return;
-  const controls={};
-  ['ratedVoltage','ratedPower','ratedCurrent'].forEach(function(key){controls[key]=propertiesFields.querySelector('[data-property-key="'+key+'"]');});
-  if(Object.values(controls).some(function(input){return !input||!isFinite(Number(input.value))||Number(input.value)<=0;}))return;
-  const ratings=applianceRatings({type:propertiesTarget.object.type,ratedVoltage:controls.ratedVoltage.value,ratedPower:controls.ratedPower.value,ratedCurrent:controls.ratedCurrent.value},changedKey);
-  // Изменённое поле оставляем под курсором; обновляем зависимое значение.
-  if(changedKey==='ratedCurrent')controls.ratedPower.value=String(ratings.ratedPower);
-  else controls.ratedCurrent.value=String(ratings.ratedCurrent);
-  controls.ratedCurrent.min=String(1/ratings.ratedVoltage);
-  controls.ratedCurrent.max=String(30000/ratings.ratedVoltage);
-}
-function handleAppliancePropertyInput(evt){syncAppliancePropertyInputs(evt.target.getAttribute('data-property-key'));}
-propertiesFields.addEventListener('input',handleAppliancePropertyInput);
-propertiesFields.addEventListener('change',handleAppliancePropertyInput);
 function saveProperties(){
   if(!propertiesTarget)return;
   const obj=propertiesTarget.object;
@@ -3057,23 +3106,27 @@ function saveProperties(){
   propertiesTarget.fields.forEach(function(f){
     const input=propertiesFields.querySelector('[data-property-key="'+f.key+'"]');if(!input)return;
     let value=input.value;
-    if(f.type==='number'){
+    if(f.type==='checkbox')value=input.checked;
+    else if(f.type==='number'){
       value=Number(value);if(!isFinite(value))value=Number(f.def)||0;
-      const applianceCurrent=f.key==='ratedCurrent'&&TYPES[obj.type]&&TYPES[obj.type].kind==='appliance';
-      const min=applianceCurrent?1/ratedVoltageOf(obj,220):f.min,max=applianceCurrent?30000/ratedVoltageOf(obj,220):f.max;
+      const min=f.min,max=f.max;
       if(min!==undefined)value=Math.max(min,value);if(max!==undefined)value=Math.min(max,value);
     }else value=String(value).trim();
     if(f.key==='tag'&&!value)value=String(f.def||'');
     if(f.key==='inletVoltage'){setPanelInlet(obj,value);return;}
     obj[f.key]=value;
   });
+  if(propertiesTarget.target.kind==='relay')syncThermalSettings(obj);
+  if(TYPES[obj.type])obj.ratedVoltage=ratedVoltageOf(obj);
   if(TYPES[obj.type]&&TYPES[obj.type].kind==='appliance')syncApplianceRatings(obj);
+  if(obj.type==='rcd')syncRcdRatings(obj);
   if(obj.type==='mcb1'||obj.type==='mcb3'){
     const allowed=['C2','C4','C6','C10','C13','C16','C20','C25','C32','C40','C50','C63'];
     if(allowed.indexOf(obj.breakerType)<0)obj.breakerType=obj.type==='mcb3'?'C25':'C10';
     const selectedCurrent=Math.max(2,Number(String(obj.breakerType).replace(/^C/,''))||10);
     obj.ratedCurrent=selectedCurrent;
-    obj.customName=(obj.type==='mcb3'?'Автомат 3P, ':'Автомат 1P, ')+obj.breakerType;
+    obj.ratedVoltage=ratedVoltageOf(obj);
+    obj.customName=protectiveDeviceName(obj);
     obj.breakerHeat=0;obj.breakerCurrentA=0;obj.breakerPhaseCurrents=[];
   }
   if(propertiesTarget.target.kind==='special'&&propertiesTarget.target.key==='panel'){
@@ -3093,15 +3146,16 @@ function saveProperties(){
     setTpArmatureVoltage(obj, Number(obj.setArmatureVoltage)||0);
   }
   if(propertiesTarget.target.kind==='special'&&propertiesTarget.target.key==='motor'){
+    obj.ratedVoltage=380;
     obj.polePairs=Math.max(1,Math.round(Number(obj.polePairs)||2));
     const slip=Number(obj.ratedSlipPercent);
     obj.ratedSlipPercent=Math.max(0,Math.min(95,isFinite(slip)?slip:10));
   }
   if(propertiesTarget.target.kind==='special'&&propertiesTarget.target.key==='dcmotor'){
     obj.kind='dc';
-    obj.ratedArmatureVoltage=Math.max(1,Number(obj.ratedArmatureVoltage)||DCM.ratedArmatureVoltage);
+    obj.ratedArmatureVoltage=DCM.ratedArmatureVoltage;
     obj.ratedArmatureCurrent=Math.max(.1,Number(obj.ratedArmatureCurrent)||DCM.ratedArmatureCurrent);
-    obj.ratedFieldVoltage=Math.max(1,Number(obj.ratedFieldVoltage)||DCM.ratedFieldVoltage);
+    obj.ratedFieldVoltage=DCM.ratedFieldVoltage;
     obj.ratedSpeed=Math.max(1,Number(obj.ratedSpeed)||DCM.ratedSpeed);
     obj.armatureResistance=Math.max(.01,Number(obj.armatureResistance)||DCM.armatureResistance);
     obj.fieldResistance=Math.max(1,Number(obj.fieldResistance)||DCM.fieldResistance);
@@ -3131,8 +3185,10 @@ function detachMeterFromObject(devId){
     const sel=state.mm[key];
     if(!sel||String(sel.devId)!==String(devId))return;
     const p=terminal(sel.devId,sel.key);
-    if(p){if(key==='a'){METER.redX=p.x;METER.redY=p.y;}else{METER.blackX=p.x;METER.blackY=p.y;}}
+    // Снятый щуп возвращается в своё гнездо и дальше едет вместе с прибором.
     state.mm[key]=null;
+    if(key==='a'){if(p){METER.redX=p.x;METER.redY=p.y;}state.mm.aDocked=true;}
+    else{if(p){METER.blackX=p.x;METER.blackY=p.y;}state.mm.bDocked=true;}
   });
 }
 function removeObjectFromScene(target){
@@ -3178,7 +3234,7 @@ function removeObjectFromScene(target){
     else if(key==='motor'||key==='dcmotor'){
       const motor=motorById(target.id);if(motor){detachMeterFromObject(motor.id);removeWiresFor(motor.id);state.motors=state.motors.filter(function(x){return x.id!==motor.id;});updateMotorSound(0);}
     }
-    else if(key==='multimeter'){state.mm.a=null;state.mm.b=null;meterProbeHover=null;}
+    else if(key==='multimeter'){state.mm.a=null;state.mm.b=null;state.mm.aDocked=true;state.mm.bDocked=true;meterProbeHover=null;meterResetProbes();}
     if(key!=='motor'&&key!=='dcmotor'&&key!=='pushbutton')state.special[key]=false;
     log('Объект удалён с рабочего поля и возвращён в лоток.','info');
   }
@@ -3320,31 +3376,14 @@ function toggleDevice(dev){
   renderAll();
 }
 
-function inputBreaker(){
-  return state.devices.filter(function(d){ return d.type === 'mcb3'; })[0] || null;
-}
 /* напряжение управления: питание стенда + включённый вводной автомат */
-function controlReady(){
-  const q = inputBreaker();
-  return !!(state.power && q && q.on && !q.tripped);
-}
 
 /* ---------- катушка пускателя: A1 и A2 — концы катушки, она питается 220 В ----------
    Катушка — это нагрузка, а не провод: в potentialMap она не замыкает A1 с A2.
    Как только между A1 и A2 появляется напряжение сети (≈220 В), якорь втягивается
    и замыкаются силовые контакты 1-2, 3-4, 5-6 (это уже учтено в internalLinks). */
-function coilVoltage(km){
-  const map = potentialMap();
-  const va = map.pot[nodeKey({ devId:km.id, key:'A1' })];
-  const vb = map.pot[nodeKey({ devId:km.id, key:'A2' })];
-  if (!va || !vb) return 0;
-  return Math.hypot(va.r - vb.r, va.i - vb.i);
-}
-function timerVoltage(d){
-  const map=potentialMap();
-  const a=map.pot[nodeKey({devId:d.id,key:'A1'})],b=map.pot[nodeKey({devId:d.id,key:'A2'})];
-  return a&&b ? Math.hypot(a.r-b.r,a.i-b.i) : 0;
-}
+function coilVoltage(obj){return voltageBetweenTerminals(obj,'A1','A2',true);}
+function timerVoltage(obj){return voltageBetweenTerminals(obj,'A1','A2',true);}
 function updateTimeRelays(now){
   const timers=state.devices.filter(function(d){return d.type==='timer';});
   if(!timers.length)return false;
@@ -3400,48 +3439,20 @@ function timeRelayTick(){
   });
 }
 setInterval(timeRelayTick,50);
-function lampVoltage(lamp){
-  if (!lamp || lamp.id === undefined) return 0;
-  const map = potentialMap();
-  if (map.conflict) return 0;
-  const va = map.pot[nodeKey({ devId:lamp.id, key:'t0' })];
-  const vb = map.pot[nodeKey({ devId:lamp.id, key:'b0' })];
-  if (!va || !vb) return 0;
-  return Math.hypot(va.r-vb.r, va.i-vb.i);
-}
-function bulbVoltage(bulb){
-  if(!bulb||bulb.id===undefined)return 0;
+/* Напряжение между двумя клеммами аппарата. */
+function voltageBetweenTerminals(obj,aKey,bKey,allowConflict){
+  if(!obj||obj.id===undefined)return 0;
   const map=potentialMap();
-  if(map.conflict)return 0;
-  const a=map.pot[nodeKey({devId:bulb.id,key:'L'})];
-  const b=map.pot[nodeKey({devId:bulb.id,key:'N'})];
+  if(map.conflict&&!allowConflict)return 0;
+  const a=map.pot[nodeKey({devId:obj.id,key:aKey})];
+  const b=map.pot[nodeKey({devId:obj.id,key:bKey})];
   return a&&b?Math.hypot(a.r-b.r,a.i-b.i):0;
 }
-function outletVoltage(outlet){
-  if(!outlet||outlet.id===undefined)return 0;
-  const map=potentialMap();
-  if(map.conflict)return 0;
-  const a=map.pot[nodeKey({devId:outlet.id,key:'L'})];
-  const b=map.pot[nodeKey({devId:outlet.id,key:'N'})];
-  return a&&b?Math.hypot(a.r-b.r,a.i-b.i):0;
-}
-function applianceVoltage(appliance){
-  if(!appliance||appliance.id===undefined)return 0;
-  const map=potentialMap();
-  if(map.conflict)return 0;
-  const a=map.pot[nodeKey({devId:appliance.id,key:'L'})];
-  const b=map.pot[nodeKey({devId:appliance.id,key:'N'})];
-  return a&&b?Math.hypot(a.r-b.r,a.i-b.i):0;
-}
-
-function meterVoltage(meter){
-  if(!meter||meter.id===undefined)return 0;
-  const map=potentialMap();
-  if(map.conflict)return 0;
-  const a=map.pot[nodeKey({devId:meter.id,key:'L_in'})];
-  const b=map.pot[nodeKey({devId:meter.id,key:'N_in'})];
-  return a&&b?Math.hypot(a.r-b.r,a.i-b.i):0;
-}
+function lampVoltage(lamp){return voltageBetweenTerminals(lamp,'t0','b0');}
+function bulbVoltage(bulb){return voltageBetweenTerminals(bulb,'L','N');}
+function outletVoltage(outlet){return voltageBetweenTerminals(outlet,'L','N');}
+function applianceVoltage(appliance){return voltageBetweenTerminals(appliance,'L','N');}
+function meterVoltage(meter){return voltageBetweenTerminals(meter,'L_in','N_in');}
 
 /* Определяем нагрузки именно после выбранного счётчика. Собственные перемычки
    1–2 и 3–4 временно исключаются, чтобы входная сеть не попала в защищённую зону. */
@@ -3495,33 +3506,35 @@ function meterPowerW(meter){
 
 let energyMeterLast=performance.now();
 function energyMeterTick(){
-  const now=performance.now(),dt=Math.min(2,Math.max(0,(now-energyMeterLast)/1000));
-  energyMeterLast=now;
-  state.devices.filter(function(d){return d.type==='meter';}).forEach(function(d){
-    const power=meterPowerW(d);
-    d.meterPowerW=power;
-    d.energyKwh=Math.max(0,Number(d.energyKwh)||0)+power*dt/3600000;
-    // Импульс ускорен визуально, само накопление энергии идёт в реальном времени.
-    d.meterPulse=power>0&&Math.floor(now/350)%2===0;
-    const g=deviceLayer.querySelector('.dev[data-id="'+d.id+'"]');
-    if(!g)return;
-    const energyEl=g.querySelector('.meter-energy');
-    const powerEl=g.querySelector('.meter-power');
-    const pulseEl=g.querySelector('.meter-pulse');
-    if(energyEl)energyEl.textContent=d.energyKwh.toFixed(6).padStart(10,'0');
-    if(powerEl)powerEl.textContent=Math.round(power)+' W';
-    if(pulseEl)pulseEl.setAttribute('fill',d.meterPulse?'#ff3b30':'#657079');
-  });
-  state.devices.filter(function(d){return d.type==='sensor';}).forEach(function(d){
-    const voltage=meterVoltage(d),power=meterPowerW(d);
-    const current=voltageIsOperating(voltage,d,220)&&voltage>0?power/voltage:0;
-    d.sensorVoltage=voltage;
-    d.sensorCurrentA=current;
-    const g=deviceLayer.querySelector('.dev[data-id="'+d.id+'"]');
-    if(!g)return;
-    const voltageEl=g.querySelector('.sensor-v'),currentEl=g.querySelector('.sensor-a');
-    if(voltageEl)voltageEl.textContent=Math.round(voltage);
-    if(currentEl)currentEl.textContent=current.toFixed(1);
+  return withElectricalRead(function(){
+    const now=performance.now(),dt=Math.min(2,Math.max(0,(now-energyMeterLast)/1000));
+    energyMeterLast=now;
+    state.devices.filter(function(d){return d.type==='meter';}).forEach(function(d){
+      const power=meterPowerW(d);
+      d.meterPowerW=power;
+      d.energyKwh=Math.max(0,Number(d.energyKwh)||0)+power*dt/3600000;
+      // Импульс ускорен визуально, само накопление энергии идёт в реальном времени.
+      d.meterPulse=power>0&&Math.floor(now/350)%2===0;
+      const g=deviceLayer.querySelector('.dev[data-id="'+d.id+'"]');
+      if(!g)return;
+      const energyEl=g.querySelector('.meter-energy');
+      const powerEl=g.querySelector('.meter-power');
+      const pulseEl=g.querySelector('.meter-pulse');
+      if(energyEl)energyEl.textContent=meterEnergyText(d.energyKwh);
+      if(powerEl)powerEl.textContent=meterPowerText(power);
+      if(pulseEl)pulseEl.setAttribute('fill',d.meterPulse?'#ff3b30':'#657079');
+    });
+    state.devices.filter(function(d){return d.type==='sensor';}).forEach(function(d){
+      const voltage=meterVoltage(d),power=meterPowerW(d);
+      const current=voltageIsOperating(voltage,d,220)&&voltage>0?power/voltage:0;
+      d.sensorVoltage=voltage;
+      d.sensorCurrentA=current;
+      const g=deviceLayer.querySelector('.dev[data-id="'+d.id+'"]');
+      if(!g)return;
+      const voltageEl=g.querySelector('.sensor-v'),currentEl=g.querySelector('.sensor-a');
+      if(voltageEl)voltageEl.textContent=Math.round(voltage);
+      if(currentEl)currentEl.textContent=current.toFixed(1);
+    });
   });
 }
 setInterval(energyMeterTick,250);
@@ -3853,7 +3866,8 @@ function updateRcdLeakage(){
       !seen[nodeKey({devId:rcd.id,key:'bN'})];
     const leakageMa=(leaksToPe||bypassesNeutral)?230:0;
     rcd.rcdLeakageMa=leakageMa;
-    if(leakageMa<30)return;
+    const threshold=Math.max(1,Number(rcd.ratedLeakageMa)||30);
+    if(leakageMa<threshold)return;
 
     rcd.tripped=true;
     rcd.on=false;
@@ -3939,15 +3953,76 @@ function electricalShortFault(map){
   return true;
 }
 
-function tripFault(){
-  const q = inputBreaker();
-  if (!q || !q.on) return;
-  q.tripped = true; q.on = false;
-  playBreakerSound(false, true);             // отключение вводного автомата
-  log('КЗ в цепи: вводной автомат сработал (рукоятка в среднем положении). Устраните причину и взведите автомат.', 'err');
-  warn('Сработала защита! Автомат в положении «отключено» — сначала взведите его в «0», затем включите.');
-  applyDeviceVisual(q);
-  renderSide();
+
+// Диапазоны регулировки РТИ; учебная тепловая характеристика класса 10A.
+const THERMAL_RANGES=[
+  [0.1,0.16],[0.16,0.25],[0.25,0.4],[0.4,0.63],[0.63,1],[1,1.6],
+  [1.6,2.5],[2.5,4],[4,6],[5.5,8],[7,10],[9,13],[12,18],[17,25],
+  [23,32],[28,36],[30,40],[37,50],[48,65],[55,70],[63,80],[80,93],
+  [55,80],[63,90],[90,120],[120,150],[150,180],[125,200]
+].map(function(pair){return {id:pair.join('-'),min:pair[0],max:pair[1]};});
+const THERMAL_TAU=6/Math.log(Math.pow(7.2/1.1,2)/(Math.pow(7.2/1.1,2)-1));
+const THERMAL_COOL_TAU=180;
+function thermalNumber(value){return String(Number(Number(value).toFixed(2))).replace('.',',');}
+function thermalRange(rel){
+  const selected=THERMAL_RANGES.find(function(r){return r.id===rel.settingRange;});
+  if(selected)return selected;
+  const set=Number(rel.set)||25;
+  return THERMAL_RANGES.find(function(r){return set>=r.min&&set<=r.max;})||THERMAL_RANGES[13];
+}
+function syncThermalSettings(rel){
+  const range=thermalRange(rel);
+  rel.settingRange=range.id;
+  rel.set=Math.max(range.min,Math.min(range.max,Number(rel.set)||range.max));
+  rel.tripClass='10A';
+}
+function thermalTripSeconds(ratio,heat){
+  const q=Math.pow(Math.max(0,Number(ratio)||0)/1.1,2);
+  heat=Math.max(0,Number(heat)||0);
+  if(heat>=1)return 0;
+  return q>1?THERMAL_TAU*Math.log((q-heat)/(q-1)):Infinity;
+}
+function thermalPhaseCurrents(rel,wireCurrents){
+  const id='kk'+rel.id,result=[0,0,0];
+  state.wires.forEach(function(w){
+    const current=Math.max(0,Number(wireCurrents[w.id])||0);
+    ['a','b'].forEach(function(end){
+      if(String(w[end].devId)!==id)return;
+      const pole=['p0','p1','p2'].indexOf(w[end].key);
+      if(pole>=0)result[pole]+=current;
+    });
+  });
+  return result;
+}
+function thermalProtectionStep(dt,wireCurrents){
+  dt=Math.max(0,Number(dt)||0);
+  const currents=wireCurrents||(state.relays.length?clampWireCurrents():{});
+  let changed=false;
+  const trips=[];
+  state.relays.forEach(function(rel){
+    syncThermalSettings(rel);
+    const before=Number(rel.heat)||0,phases=thermalPhaseCurrents(rel,currents);
+    const old=Array.isArray(rel.phaseHeat)&&rel.phaseHeat.length===3?rel.phaseHeat:[before,before,before];
+    const next=phases.map(function(current,i){
+      const heat=Math.max(0,Number(old[i])||0),q=Math.pow(current/(1.1*rel.set),2);
+      const tau=q<heat?THERMAL_COOL_TAU:THERMAL_TAU;
+      return Math.max(0,heat+(q-heat)*(-Math.expm1(-dt/tau)));
+    });
+    if(!rel.tripped&&next.some(function(h){return h>=1;})){
+      rel.tripped=true;rel.tested=false;
+      rel.tripCurrentA=Math.max.apply(null,phases);
+      rel.tripRatio=rel.tripCurrentA/rel.set;
+      trips.push({rel:rel,current:rel.tripCurrentA,ratio:rel.tripRatio});
+      // После перехода контактов нагрев не перескакивает за порог на длинном шаге.
+      next.forEach(function(h,i){next[i]=Math.min(1,h);});
+    }
+    rel.phaseHeat=next;
+    rel.heat=Math.max.apply(null,next);
+    rel.phaseCurrents=phases;
+    rel.currentA=Math.max.apply(null,phases);
+    if(Math.abs(rel.heat-before)>0.0001)changed=true;
+  });
+  return {changed:changed,trips:trips,currents:currents};
 }
 
 /* ---------- независимые тепловые реле KK1 / KK2 ---------- */
@@ -3956,7 +4031,9 @@ function relayLive(rel){
   return !!(km && km.coil);
 }
 function cycleSetpoint(rel){
-  rel.set = (rel.set >= 25) ? 17 : rel.set + 1;
+  syncThermalSettings(rel);
+  const range=thermalRange(rel),step=(range.max-range.min)/8;
+  rel.set=rel.set>=range.max-0.00001?range.min:Math.min(range.max,Number((rel.set+step).toFixed(3)));
   log(tagOf('kk'+rel.id)+': уставка теплового реле — ' + rel.set + ' А (по номинальному току двигателя).', 'info');
   renderAll();
 }
@@ -3968,18 +4045,10 @@ function testRelay(rel){
   warn('Тепловое реле '+tagOf('kk'+rel.id)+' сработало: 95-96 открыт, 97-98 закрыт. Для возврата нажмите RESET.');
   renderAll();
 }
-function stopRelay(rel){
-  if (rel.tripped){ log(tagOf('kk'+rel.id)+': реле уже сработало — для возврата нажмите RESET.', 'info'); renderAll(); return; }
-  rel.tripped = true;
-  playRelaySound();                        // ручное размыкание контакта 95-96
-  log(tagOf('kk'+rel.id)+': нажата красная кнопка STOP — контакт 95-96 разомкнут вручную.', 'warn');
-  renderAll();
-}
 function resetRelay(rel){
   if (!rel.tripped){ log(tagOf('kk'+rel.id)+': реле не срабатывало, возврат не требуется.', 'info'); renderAll(); return; }
   rel.tripped = false;
   rel.tested = false;
-  rel.heat = 0;
   playRelaySound();                        // возврат механизма кнопкой RESET
   log(tagOf('kk'+rel.id)+': возврат кнопкой RESET — нормально закрытый контакт 95-96 замкнут, нормально открытый контакт 97-98 разомкнут.', 'ok');
   renderAll();
@@ -4145,21 +4214,21 @@ function originOf(dev){
 function terminal(devId, key){
   if (String(devId).indexOf('PB') === 0){
     const pb=pushbuttonById(devId);if(!pb)return null;
-    const m = PB_TERMS.filter(function(t){ return t.key === key; })[0];
+    const m = PB_TERMS.find(function(t){ return t.key === key; });
     if (!m) return null;
     return { devId:pb.id, key:key, label:m.label, color:m.color, x:pb.x+m.dx, y:pb.y+m.dy };
   }
   if (String(devId).match(/^(M|MD)\d+$/)){                // зажимы двигателя или машины постоянного тока
     const motor=motorById(devId);if(!motor)return null;
     const terms=motorIsDc(motor)?DC_MOTOR_TERMS:MOTOR_TERMS;
-    const m = terms.filter(function(t){ return t.key === key; })[0];
+    const m = terms.find(function(t){ return t.key === key; });
     if (!m) return null;
     return { devId:motor.id, key:key, label:m.label, color:m.color,
              x:motor.x + m.dx*motor.scale, y:motor.y + m.dy*motor.scale };
   }
   if (String(devId) === 'IN'){                     // зажимы клеммной коробки ввода
     syncPanelInbox();
-    const m = inboxTerms().filter(function(t){ return t.key === key; })[0];
+    const m = inboxTerms().find(function(t){ return t.key === key; });
     if (!m) return null;
     return { devId:'IN', key:key, label:m.label, color:m.color, x:INBOX.x + m.dx, y:INBOX.y + m.dy };
   }
@@ -4174,7 +4243,7 @@ function terminal(devId, key){
   }
   if (!dev) return null;
   const o = originOf(dev); if (!o) return null;
-  const d = termDefs(dev.type,dev).filter(function(t){ return t.key === key; })[0];
+  const d = termDefs(dev.type,dev).find(function(t){ return t.key === key; });
   if (!d) return null;
   return { devId: dev.id, key: key, label: d.label, color: d.color, x: o.x + d.dx, y: o.y + d.dy };
 }
@@ -4527,6 +4596,18 @@ function connectTerminals(devId, key){
   pending = null;
   renderAll();
 }
+/* Цвет нового провода определяется назначением начальной клеммы.
+   Цвета и подписи самих клемм при этом не меняются. */
+function wireStartColor(t){
+  if(t.color===WC.PE)return WC.PE;
+  if(t.color===WC.N)return WC.N;
+  if(String(t.devId)==='IN'&&/^L[123]?$/.test(t.key))return WC.L1;
+  const dev=devById(+t.devId),motor=motorById(t.devId);
+  // Выводы постоянного тока не считаются фазными.
+  if(motor&&motorIsDc(motor)||dev&&dev.type==='tp'&&!['R','S','T'].includes(t.key))return wireDefaults.color;
+  if([WC.L1,WC.L2,WC.L3].includes(t.color))return WC.L1;
+  return wireDefaults.color;
+}
 
 termLayer.addEventListener('pointerdown', function(evt){
   const hit = evt.target.closest('.term');
@@ -4538,14 +4619,14 @@ termLayer.addEventListener('pointerdown', function(evt){
   if (pending){ connectTerminals(id, key); return; }
   const t = terminal(id, key);
   if (!t) return;
-  pending = { from:{ devId:id, key:key }, pt:{ x:t.x, y:t.y }, pts:[], color:wireDefaults.color, shape:wireDefaults.shape, guideX:null, guideY:null };
+  pending = { from:{ devId:id, key:key }, pt:{ x:t.x, y:t.y }, pts:[], color:wireStartColor(t), shape:wireDefaults.shape, guideX:null, guideY:null };
   log('Провод: начало на зажиме ' + tagOf(id)+' : '+t.label + ' — ЛКМ на поле добавляет точку маршрута; клик по второй клемме завершает провод.', 'info');
   renderTerminalGuides();
   renderWires();
 });
 document.addEventListener('pointermove', function(evt){
   if (wireGrab){                                   // тянем точку изгиба — форма меняется
-    const wr = state.wires.filter(function(x){ return x.id === wireGrab.id; })[0];
+    const wr = state.wires.find(function(x){ return x.id === wireGrab.id; });
     if (wr){
       const p = svgPoint(evt);
       if (isFinite(p.x) && isFinite(p.y)){
@@ -4565,7 +4646,7 @@ document.addEventListener('pointermove', function(evt){
 });
 document.addEventListener('pointerup', function(evt){
   if (wireGrab){
-    const wr = state.wires.filter(function(x){ return x.id === wireGrab.id; })[0];
+    const wr = state.wires.find(function(x){ return x.id === wireGrab.id; });
     if (wr) trace('Форма провода изменена перетаскиванием (контакты на клеммах не тронуты).');
     wireGrab = null;
     renderAll();
@@ -4610,7 +4691,7 @@ wireLayer.addEventListener('pointerdown', function(evt){
   cancelWire();
   hideWireMenu();
   const id = +g.dataset.wid;
-  const wr = state.wires.filter(function(x){ return x.id === id; })[0];
+  const wr = state.wires.find(function(x){ return x.id === id; });
   if (!wr) return;
   const a = terminal(wr.a.devId, wr.a.key), b = terminal(wr.b.devId, wr.b.key);
   if (!a || !b) return;
@@ -4648,13 +4729,13 @@ function hideWireMenu(){
   wireMenu = { wid:null, x:0, y:0 };
 }
 function currentMenuWire(){
-  return state.wires.filter(function(x){ return x.id === wireMenu.wid; })[0] || null;
+  return state.wires.find(function(x){ return x.id === wireMenu.wid; }) || null;
 }
 function previewWireShape(shape){
   const wr = currentMenuWire();
   if (!wr) return;
   if (wireShapePreviewId !== null && wireShapePreviewId !== wr.id){
-    const old = state.wires.filter(function(x){ return x.id === wireShapePreviewId; })[0];
+    const old = state.wires.find(function(x){ return x.id === wireShapePreviewId; });
     if (old) delete old.previewShape;
   }
   wr.previewShape = shape;
@@ -4663,7 +4744,7 @@ function previewWireShape(shape){
 }
 function clearWireShapePreview(){
   if (wireShapePreviewId === null) return;
-  const wr = state.wires.filter(function(x){ return x.id === wireShapePreviewId; })[0];
+  const wr = state.wires.find(function(x){ return x.id === wireShapePreviewId; });
   if (wr) delete wr.previewShape;
   wireShapePreviewId = null;
   renderWires();
@@ -5051,6 +5132,7 @@ function tpInputState(d,pot){
   return {ready:balanced,lineVoltageRms:average,frequencyHz:frequencies[0],reason:balanced?'':'voltage'};
 }
 function potentialMap(){
+  if(electricalReadContext&&electricalReadContext.potential)return electricalReadContext.potential;
   const adj = {}, pot = {}, conflicts = [], seenConflicts = {};
   function add(a,b){
     const ka = nodeKey(a), kb = nodeKey(b);
@@ -5061,7 +5143,7 @@ function potentialMap(){
   state.wires.forEach(function(w){ add(w.a, w.b); });
 
   const queue = [];
-  let conflict = false;
+  let queueHead=0,conflict = false;
   function recordConflict(k,a,b){
     const voltage=Math.hypot(a.r-b.r,a.i-b.i);
     const fa=Number(a.frequencyHz)||0,fb=Number(b.frequencyHz)||0;
@@ -5081,8 +5163,8 @@ function potentialMap(){
     queue.push({ devId:devId, key:key, v:v });
   }
   function propagate(){
-    while(queue.length){
-      const cur=queue.shift();
+    while(queueHead<queue.length){
+      const cur=queue[queueHead++];
       const list=adj[nodeKey(cur)]||[];
       for(let i=0;i<list.length;i++){
         const n=list[i],k=nodeKey(n);
@@ -5128,8 +5210,10 @@ function potentialMap(){
     } else { src(d.id,'ya1',V_DC_ZERO);src(d.id,'ya2',V_DC_ZERO); }
     propagate();
   });
-  return {pot:pot,conflict:conflict,conflicts:conflicts,adj:adj,
+  const result={pot:pot,conflict:conflict,conflicts:conflicts,adj:adj,
     ac:{frequencyHz:networkFrequencyHz(),lineVoltageRms:networkLineVoltageRms(),phaseVoltageRms:networkPhaseVoltageRms(),kind:networkKind()}};
+  if(electricalReadContext)electricalReadContext.potential=result;
+  return result;
 }
 
 /* Находим тепловое реле, через силовой тракт которого фактически запитан М1. */
@@ -5168,7 +5252,7 @@ function motorSupplyRelay(motor){
    накопление тепла выше In и быстрое электромагнитное отключение от 5·In. */
 function breakerNominalCurrent(dev){
   const fromType=Number(String(dev&&dev.breakerType||'').replace(/^[A-ZА-Я]+/i,''));
-  return Math.max(.1,Number(dev&&dev.ratedCurrent)||(isFinite(fromType)&&fromType>0?fromType:(dev&&dev.type==='mcb3'?25:10)));
+  return isFinite(fromType)&&fromType>0?fromType:(dev&&dev.type==='mcb3'?25:10);
 }
 function breakerPoleCurrents(dev,wireCurrents){
   const count=dev&&dev.type==='mcb3'?3:1,result=[];
@@ -5232,7 +5316,7 @@ function breakerProtectionStep(dt,wireCurrents){
 
 let thermalLastTick = Date.now();
 function thermalTick(){
-  const now = Date.now(), dt = Math.min(0.5, Math.max(0, (now-thermalLastTick)/1000));
+  const now = Date.now(), dt = Math.max(0, (now-thermalLastTick)/1000);
   thermalLastTick = now;
   const breakerResult=breakerProtectionStep(dt);
   if(breakerResult.tripped){
@@ -5244,32 +5328,18 @@ function thermalTick(){
     renderAll();
     return;
   }
-  const activeLoads={};
-  state.motors.forEach(function(motor){
-    const direction=motorPhaseDirection(motor);
-    if(!direction)return;
-    const rel=motorSupplyRelay(motor);
-    if(rel)activeLoads[rel.id]={motor:motor,operating:motorOperatingPoint(motor,direction)};
+  // Один расчёт токов на оба вида защиты. Без автоматов реле также работает.
+  const currents=state.devices.some(function(d){return ['mcb1','mcb3'].includes(d.type)&&d.on&&!d.tripped;})
+    ?breakerResult.currents:(state.relays.length?clampWireCurrents():{});
+  const result=thermalProtectionStep(dt,currents);
+  result.trips.forEach(function(trip){
+    playRelaySound();
+    log(tagOf('kk'+trip.rel.id)+': тепловая перегрузка — '+trip.current.toFixed(2)+' А / '+thermalNumber(trip.rel.set)+' А = '+trip.ratio.toFixed(2)+' уставки. Контакт 95-96 разомкнут.','err');
   });
-  let changed = false, tripped = null, trippedLoad=null;
-  state.relays.forEach(function(rel){
-    const before = rel.heat || 0;
-    const load=activeLoads[rel.id];
-    if (load && !rel.tripped){
-      const ratio = load.operating.current/Math.max(1, rel.set || 25);
-      if (ratio > 1) rel.heat = Math.min(1, before + dt*(ratio*ratio-1)/18);
-      else rel.heat = Math.max(0, before-dt/18);
-      if (rel.heat >= 1){ rel.heat = 1; rel.tripped = true; rel.tested = false; tripped = rel; trippedLoad=load; playRelaySound(); }
-    } else if (!rel.tripped){
-      rel.heat = Math.max(0, before-dt/14);
-    }
-    if (Math.abs((rel.heat || 0)-before) > 0.0001) changed = true;
-  });
-  if (tripped){
-    log(tagOf('kk'+tripped.id)+': тепловая перегрузка '+trippedLoad.motor.id+' — ток двигателя '+trippedLoad.operating.current.toFixed(1)+' А превысил уставку '+tripped.set+' А. Контакт 95-96 разомкнут.', 'err');
-    warn('Сработало тепловое реле '+tagOf('kk'+tripped.id)+': перегрузка двигателя, 95-96 разомкнут.');
+  if(result.trips.length){
+    warn('Сработало тепловое реле '+result.trips.map(function(t){return tagOf('kk'+t.rel.id);}).join(', ')+': контакт 95-96 разомкнут.');
     renderAll();
-  } else if (changed) updateMotorReadout();
+  }else if(result.changed)updateMotorReadout();
 }
 setInterval(thermalTick, 250);
 
@@ -5338,37 +5408,6 @@ function resistanceBetween(a, b){
   }
   return finish in dist ? dist[finish] : Infinity;
 }
-function contactCheck(a,b){
-  const ka=nodeKey(a), kb=nodeKey(b);
-  const directClosed=internalLinks().some(function(p){
-    const p0=nodeKey(p[0]), p1=nodeKey(p[1]);
-    return (p0===ka&&p1===kb)||(p0===kb&&p1===ka);
-  });
-  if (String(a.devId)!==String(b.devId)) return directClosed ? {name:'Силовой проход',closed:true} : null;
-  const pair=[a.key,b.key].sort().join('|');
-  let type=null, dev=null;
-  if (typeof a.devId==='string' && a.devId.indexOf('kk')===0) type='kk1';
-  else { dev=devById(+a.devId); type=dev&&dev.type; }
-  const names={
-    timer:{'15|16':'15–16 · НЗ','15|18':'15–18 · НО'},
-    km1:{'b3|t3':'13–14 · НО','a53|a54':'53–54 · НО','a61|a62':'61–62 · НЗ',
-         'b0|t0':'1L1–2T1 · силовой НО','b1|t1':'3L2–4T2 · силовой НО','b2|t2':'5L3–6T3 · силовой НО'},
-    kk1:{'r0|r1':'98–97 · НО','r2|r3':'96–95 · НЗ'},
-    mcb1:{'b0|t0':'Контакт автомата'},
-    mcb3:{'b0|t0':'Полюс 1–2','b1|t1':'Полюс 3–4','b2|t2':'Полюс 5–6'},
-    rcd:{'bL|tL':'Полюс 1–2','bN|tN':'Полюс N–N'},
-    meter:{'L_in|L_out':'Фазная цепь 1–2','N_in|N_out':'Нейтральная цепь 3–4'},
-    sensor:{'L_in|L_out':'Проход фазы','N_in|N_out':'Проход нейтрали'},
-    wallSwitch:{'L|O1':'Клавиша 1','L|O2':'Клавиша 2'},
-    twoWaySwitch:{'L|O1':'Перекидной контакт L–1','L|O2':'Перекидной контакт L–2'}
-  };
-  if (type && names[type] && names[type][pair]) return {name:names[type][pair],closed:directClosed};
-  if (String(a.devId).indexOf('PB')===0){
-    const pbNames={'upL|upR':'ВПЕРЁД · НО','stopL|stopR':'СТОП · НЗ','downL|downR':'НАЗАД · НО'};
-    if (pbNames[pair]) return {name:pbNames[pair],closed:directClosed};
-  }
-  return null;
-}
 function measureNow(){
   const a=state.mm.a, b=state.mm.b, fn=state.mm.fn||'voltage';
   if (!a || !b) return null;
@@ -5427,49 +5466,131 @@ function measureNow(){
     note:isFinite(r)?(r<=0.5?'Цепь замкнута: сопротивление провода или закрытого контакта.':'Расчётное сопротивление выбранного участка.'):'Цепь разомкнута: сопротивление больше 1 МОм.',
     ok:isFinite(r)};
 }
-function renderMM(){
-  if(!mmLayer)return;
-  if(!state.special.multimeter){mmLayer.innerHTML='';return;}
-  // В старых сохранениях могли остаться отдельные режимы катушки и контактов.
-  if(state.mm.fn==='coil'||state.mm.fn==='contacts')state.mm.fn='resistance';
-  function probePoint(sel,x,y){
-    if(sel){const t=terminal(sel.devId,sel.key);if(t)return {x:t.x,y:t.y};}
-    return {x:x,y:y};
+/* ============================================================
+   8a. КНОПОЧНЫЙ ЦИФРОВОЙ МУЛЬТИМЕТР
+   Показания выводятся «семисегментными» знаками, как на настоящем ЖК.
+   ============================================================ */
+const MM_FN_LABEL={voltage:'AC',dcvoltage:'DC',resistance:'Ω',continuity:'ПРОЗВОНКА'};
+
+/* Показания обычным шрифтом; размер уменьшается для длинных значений. */
+function mmReading(text,color,maxSize){
+  const size=Math.min(maxSize||48,160/Math.max(1,String(text).length)/.65);
+  return '<text class="mm-reading" x="118" y="128" text-anchor="middle" font-size="'+size.toFixed(1)+'" font-weight="700" fill="'+color+'" font-family="Segoe UI,Arial">'+escapeHtml(text)+'</text>';
+}
+function mmScreen(powered,res,fn){
+  fn=fn||state.mm.fn||'voltage';
+  const sx=22,sy=42,sw=192,sh=124;
+  let s='<rect x="'+sx+'" y="'+sy+'" width="'+sw+'" height="'+sh+'" rx="7" fill="#26343c" stroke="#7f8b92" stroke-width="1.5"/>';
+  s+='<rect x="26" y="46" width="184" height="116" rx="4" fill="'+(powered?(res&&res.danger?'#f4ddd0':'#c3cfb2'):'#b8c3b7')+'"/>';
+  if(powered){
+    s+='<text x="34" y="63" font-size="8.5" font-weight="700" fill="#344234" font-family="Segoe UI,Arial">'+escapeHtml(MM_FN_LABEL[fn]||'')+'</text>';
+    if(res&&res.danger)s+='<text x="202" y="63" text-anchor="end" font-size="8.5" font-weight="700" fill="#9c352a" font-family="Segoe UI,Arial">ВНИМАНИЕ</text>';
+    const src=res?String(res.display):'—';
+    const numeric=src.match(/^([+-]?[0-9]+(?:[.,][0-9]+)?)\s*(.*)$/);
+    if(numeric){
+      s+=mmReading(numeric[1].replace('+',''),'#1b2026');
+      s+='<text x="202" y="155" text-anchor="end" font-size="12" font-weight="700" fill="#293b30" font-family="Segoe UI,Arial">'+escapeHtml(numeric[2])+'</text>';
+    }else if(src==='—'){
+      s+=mmReading('—','#1b2026');
+    }else{
+      s+=mmReading(src,'#293b30',22);
+    }
+  }else{
+    s+=mmReading('0.000','#8f9c92');
   }
-  const red=probePoint(state.mm.a,METER.redX,METER.redY);
-  const black=probePoint(state.mm.b,METER.blackX,METER.blackY);
-  // Разъёмы проводов находятся сверху корпуса; свободные щупы стоят над ними иглами вверх.
-  const redJack={x:METER.x+158,y:METER.y-3},blackJack={x:METER.x+72,y:METER.y-3};
-  const res=measureNow(),display=res?res.display:'—',cap=res?res.cap:'Щупы не подключены';
-  const note=res?res.note:'Перетащите красный и чёрный щупы к двум клеммам.';
-  const modes=[['voltage','V~'],['dcvoltage','V⎓'],['resistance','Ω'],['continuity','ПРОЗВОНКА']];
-  function cable(a,b,color){
-    // Кабель выходит из корпуса вверх и подходит к нижней части рукоятки плавно,
-    // с вертикальной касательной на обоих концах — без прямых углов.
-    const bend=Math.max(42,Math.min(105,Math.abs(a.y-b.y)*0.34+38));
-    const d='M '+a.x+','+a.y+' C '+a.x+','+(a.y-bend)+' '+b.x+','+(b.y+bend)+' '+b.x+','+b.y;
-    return '<path d="'+d+'" fill="none" stroke="#20252a" stroke-width="8" stroke-linecap="round"/><path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="5" stroke-linecap="round"/>';
-  }
-  function probe(p,color,key,label){return '<g class="mm-probe" data-probe="'+key+'" transform="translate('+p.x+','+p.y+')" style="touch-action:none"><line x1="0" y1="0" x2="0" y2="16" stroke="#c3c8cc" stroke-width="3" pointer-events="none"/><path d="M 0,0 L -2,8 L 2,8 Z" fill="#e4e7e9" pointer-events="none"/><rect x="-8" y="14" width="16" height="35" rx="7" fill="'+color+'" stroke="#20252a" stroke-width="2" pointer-events="none"/><rect x="-4" y="19" width="8" height="17" rx="3" fill="#fff" opacity=".2" pointer-events="none"/><rect class="mm-probe-grip" x="-16" y="10" width="32" height="44" rx="12" fill="transparent" pointer-events="all" style="cursor:grab"><title>'+label+' щуп — возьмите за рукоятку и поднесите остриё к клемме</title></rect></g>';}
-  let s='';
-  s+='<g class="multimeter-body" transform="translate('+METER.x+','+METER.y+')" style="cursor:grab;touch-action:none">';
-  s+='<rect x="0" y="0" width="230" height="330" rx="24" fill="#e8b817" stroke="#6f5a0c" stroke-width="4"/><rect x="8" y="8" width="214" height="314" rx="18" fill="#f2ca2e" stroke="#ffe77d"/>';
-  s+='<rect x="63" y="-7" width="18" height="18" rx="5" fill="#17191c" stroke="#6d5b12" stroke-width="2"/><rect x="149" y="-7" width="18" height="18" rx="5" fill="#d62f35" stroke="#6d5b12" stroke-width="2"/>';
-  s+='<text x="72" y="27" text-anchor="middle" font-size="9" font-weight="800" fill="#4b3f0b">COM</text><text x="158" y="27" text-anchor="middle" font-size="9" font-weight="800" fill="#4b3f0b">V Ω</text>';
-  s+='<text x="115" y="42" text-anchor="middle" font-size="10" font-weight="800" fill="#51440d" font-family="Segoe UI,Arial">ЦИФРОВОЙ МУЛЬТИМЕТР</text>';
-  s+='<rect x="20" y="48" width="190" height="61" rx="7" fill="#26322e" stroke="#111a17" stroke-width="3"/><rect x="27" y="55" width="176" height="47" rx="4" fill="'+(res&&res.danger?'#d8a27b':'#a8c5ad')+'"/>';
-  s+='<text x="115" y="70" text-anchor="middle" font-size="9" font-weight="700" fill="#33463b" font-family="Segoe UI,Arial">'+escapeHtml(cap)+'</text>';
-  s+='<text x="115" y="96" text-anchor="middle" font-size="'+(display.length>10?'18':'25')+'" font-weight="800" fill="#17241d" font-family="Consolas,monospace">'+escapeHtml(display)+'</text>';
-  modes.forEach(function(m,i){
-    const col=i%2,row=Math.floor(i/2),x=20+col*97,y=150+row*44,w=93,selected=m[0]===state.mm.fn;
-    s+='<g class="mm-mode" data-mm-fn="'+m[0]+'" style="cursor:pointer"><rect x="'+x+'" y="'+(y-21)+'" width="'+w+'" height="30" rx="8" fill="'+(selected?'#26333c':'rgba(255,255,255,.32)')+'" stroke="'+(selected?'#10171c':'rgba(100,75,0,.30)')+'"/><text x="'+(x+w/2)+'" y="'+y+'" text-anchor="middle" font-size="'+(m[1].length>7?8.5:11)+'" font-weight="800" fill="'+(selected?'#ffe47a':'#54470e')+'" font-family="Segoe UI,Arial">'+m[1]+'</text></g>';
+  return s;
+}
+/* Два действующих гнезда соответствуют координатам подключения кабелей. */
+function mmJack(x,y,color){
+  return '<circle cx="'+x+'" cy="'+y+'" r="14.5" fill="'+color+'" stroke="#7f8b92" stroke-width="1.5"/>'
+       + '<circle cx="'+x+'" cy="'+y+'" r="10" fill="#343b41" stroke="#c6cdd2" stroke-width="1.5"/>'
+       + '<circle cx="'+x+'" cy="'+y+'" r="6" fill="#14181c"/>';
+}
+/* Общая лицевая панель для рабочего прибора и миниатюры в лотке. */
+function mmBodyInner(powered,res,fn,tag){
+  const W=METER.w,H=METER.h;
+  fn=fn||'voltage';
+  let s='<rect x="1" y="1" width="'+(W-2)+'" height="'+(H-2)+'" rx="30" fill="#41484f" stroke="#252c32" stroke-width="2.5"/>';
+  s+='<rect x="8" y="7" width="'+(W-16)+'" height="'+(H-14)+'" rx="24" fill="#f5ce34" stroke="#b48e1a" stroke-width="1.5"/>';
+  s+='<rect x="12" y="11" width="'+(W-24)+'" height="'+(H-22)+'" rx="20" fill="none" stroke="#fff0a5" opacity=".65"/>';
+  s+='<text x="18" y="32" font-size="10" font-weight="700" fill="#4b4632" font-family="Segoe UI,Arial">'+escapeHtml(tag||'PV1')+'</text>';
+  s+='<text x="'+(W-18)+'" y="32" text-anchor="end" font-size="11" font-weight="700" fill="#4b4632" font-family="Segoe UI,Arial">МУЛЬТИМЕТР</text>';
+  s+=mmScreen(powered,res,fn);
+  [['voltage','V~','НАПРЯЖЕНИЕ AC'],['dcvoltage','V⎓','НАПРЯЖЕНИЕ DC'],['resistance','Ω','СОПРОТИВЛЕНИЕ'],['continuity','','ПРОЗВОНКА']].forEach(function(mode,i){
+    const x=18+(i%2)*106,y=192+Math.floor(i/2)*54,w=94,h=48,on=fn===mode[0];
+    s+='<g class="mm-mode" data-mm-fn="'+mode[0]+'" style="cursor:pointer">';
+    s+='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="8" fill="'+(on?'#f0a623':'#41484f')+'" stroke="#343b41" stroke-width="1.4"/>';
+    s+='<rect x="'+(x+3)+'" y="'+(y+3)+'" width="'+(w-6)+'" height="'+(h-6)+'" rx="6" fill="none" stroke="'+(on?'#ffe0a1':'#687079')+'" stroke-width=".8"/>';
+    if(mode[0]==='continuity'){
+      s+='<g class="mm-sound-icon" transform="translate('+(x+w/2)+','+(y+17)+')" fill="none" stroke="'+(on?'#343b41':'#f2f4f5')+'" stroke-width="1.8" stroke-linecap="round"><path d="M -9,-3 L -6,-3 L -2,-7 L -2,7 L -6,3 L -9,3 Z" fill="'+(on?'#343b41':'#f2f4f5')+'"/><path d="M 2,-4 Q 6,0 2,4 M 6,-7 Q 13,0 6,7"/></g>';
+    }else{
+      s+='<text x="'+(x+w/2)+'" y="'+(y+23)+'" text-anchor="middle" font-size="16" font-weight="700" fill="'+(on?'#343b41':'#f2f4f5')+'" font-family="Segoe UI,Arial">'+mode[1]+'</text>';
+    }
+    s+='<text x="'+(x+w/2)+'" y="'+(y+39)+'" text-anchor="middle" font-size="'+(mode[0]==='continuity'?8:6.5)+'" fill="'+(on?'#51432b':'#c3cbd1')+'" font-family="Segoe UI,Arial">'+mode[2]+'</text>';
+    s+='<title>Режим измерения: '+mode[2].toLowerCase()+'</title></g>';
   });
-  s+='<foreignObject x="16" y="270" width="198" height="45"><div xmlns="http://www.w3.org/1999/xhtml" class="mm-object-note '+(res&&res.danger?'danger':'')+'">'+escapeHtml(note)+'</div></foreignObject>';
-  s+='</g>';
-  // Провода рисуются поверх корпуса: видно, что они выходят именно из верхних вводов.
-  s+=cable(blackJack,{x:black.x,y:black.y+49},'#17191c')+cable(redJack,{x:red.x,y:red.y+49},'#d62f35');
-  s+=probe(black,'#17191c','b','Чёрный')+probe(red,'#d62f35','a','Красный');
-  mmLayer.innerHTML=s;
+  [METER_JACKS.black,METER_JACKS.red].forEach(function(j){s+='<rect x="'+(j.dx-10)+'" y="'+j.dy+'" width="20" height="'+(-j.dy+3)+'" rx="5" fill="#51585f" stroke="#252c32" stroke-width="1.2"/>';});
+  s+='<text x="'+METER_JACKS.black.dx+'" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#4b4632" font-family="Segoe UI,Arial">COM</text>';
+  s+='<text x="'+METER_JACKS.red.dx+'" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#4b4632" font-family="Segoe UI,Arial">VΩ</text>';
+  s+=mmJack(METER_JACKS.black.dx,METER_JACKS.black.dy,'#626971');
+  s+=mmJack(METER_JACKS.red.dx,METER_JACKS.red.dy,'#d64545');
+  return s;
+}
+function renderMM(){
+  return withElectricalRead(function(){
+    if(!mmLayer)return;
+    if(!state.special.multimeter){mmLayer.innerHTML='';return;}
+    // В старых сохранениях могли остаться отдельные режимы катушки и контактов.
+    if(state.mm.fn==='coil'||state.mm.fn==='contacts')state.mm.fn='resistance';
+    state.mm.power=true;
+    const powered=true;
+    ['a','b'].forEach(function(key){
+      const sel=state.mm[key];
+      if((!meterProbeDrag||meterProbeDrag.key!==key)&&(!sel||!terminal(sel.devId,sel.key)))meterDockProbe(key);
+    });
+    // Координаты острия: на клемме — по клемме, иначе по гнезду или свободному месту.
+    function probeTip(key){
+      const sel=state.mm[key];
+      if(sel){const t=terminal(sel.devId,sel.key);if(t)return {x:t.x,y:t.y};}
+      return meterProbeFallback(key);
+    }
+    const red=probeTip('a'), black=probeTip('b');
+    // Кабели выходят из двух верхних гнёзд прибора.
+    const redJack=meterJack('red'),blackJack=meterJack('black');
+    let res=measureNow();
+    if(powered&&res&&/^—\s/.test(String(res.display))){
+      // Вместо прочерка индикатор показывает нуль, как настоящий прибор в этом режиме.
+      res=Object.assign({},res,{display:String(res.display).replace('—','0,0')});
+    }
+    function cable(a,b,color){
+      // Кабель выходит из гнезда и подходит к рукоятке щупа с вертикальной касательной
+      // на обоих концах — без прямых углов.
+      const bend=Math.max(14,Math.min(90,Math.abs(a.y-b.y)*0.34+22));
+      const d='M '+a.x+','+a.y+' C '+a.x+','+(a.y-bend)+' '+b.x+','+(b.y+bend)+' '+b.x+','+b.y;
+      return '<path d="'+d+'" fill="none" stroke="#12161a" stroke-width="8.4" stroke-linecap="round"/>'
+           + '<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="5" stroke-linecap="round"/>';
+    }
+    function probe(p,color,key,label){
+      // Остриё в точке p; рукоятка прямая, игла направлена вверх.
+      const tilt=meterProbeTilt(key);
+      return '<g class="mm-probe" data-probe="'+key+'" transform="translate('+p.x+','+p.y+') rotate('+tilt+')" style="touch-action:none">'
+           + '<path class="mm-probe-needle" d="M 0,0 L -2.6,7 L -2.6,22 L 2.6,22 L 2.6,7 Z" fill="#dce3e8" stroke="#46515c" stroke-width="1.2" stroke-linejoin="round" pointer-events="none"/>'
+           + '<line x1="-.8" y1="7" x2="-.8" y2="21" stroke="#ffffff" stroke-width="1.1" pointer-events="none"/>'
+           + '<rect x="-6" y="20" width="12" height="7" rx="3" fill="#33393f" stroke="#12161a" stroke-width="1.5" pointer-events="none"/>'
+           + '<rect x="-7" y="26" width="14" height="17" rx="7" fill="'+color+'" stroke="#12161a" stroke-width="1.7" pointer-events="none"/>'
+           + '<rect x="-3.6" y="29" width="7.2" height="8" rx="3.6" fill="#fff" opacity=".18" pointer-events="none"/>'
+           + '<rect x="-4.6" y="37" width="9.2" height="6" rx="2.4" fill="#12161a" opacity=".65" pointer-events="none"/>'
+           + '<rect class="mm-probe-grip" x="-15" y="20" width="30" height="24" rx="9" fill="transparent" pointer-events="all" style="cursor:grab">'
+           + '<title>'+label+' щуп — возьмите за рукоятку и поднесите остриё к клемме</title></rect></g>';
+    }
+    let s='<g class="multimeter-body" transform="translate('+METER.x+','+METER.y+')" style="cursor:grab;touch-action:none">';
+    s+=mmBodyInner(powered,res,state.mm.fn,state.specialProps.multimeter.tag);
+    s+='</g>';
+    // Кабели выходят из гнёзд и подходят к рукояткам: видно, что щупы вставлены.
+    s+=cable(blackJack,meterProbeGrip('b',black),'#17191c')+cable(redJack,meterProbeGrip('a',red),'#d62f35');
+    s+=probe(black,'#17191c','b','Чёрный')+probe(red,'#d62f35','a','Красный');
+    mmLayer.innerHTML=s;
+  });
 }
 function mmPick(devId, key){
   if (!state.mm.a || state.mm.b){ state.mm.a = { devId:devId, key:key }; state.mm.b = null; }
@@ -5488,7 +5609,7 @@ let meterDrag = null, meterProbeDrag = null, meterProbeHover = null;
 function meterProbePoint(key){
   const sel=state.mm[key];
   if(sel){const t=terminal(sel.devId,sel.key);if(t)return {x:t.x,y:t.y};}
-  return key==='a'?{x:METER.redX,y:METER.redY}:{x:METER.blackX,y:METER.blackY};
+  return meterProbeFallback(key);
 }
 function nearestTerminalForProbe(p){
   let best=null,dist=Infinity;
@@ -5514,7 +5635,9 @@ mmLayer.addEventListener('pointerdown',function(evt){
     evt.preventDefault();evt.stopPropagation();cancelWire();
     const key=probe.getAttribute('data-probe'),p=meterProbePoint(key),cursor=svgPoint(evt);
     state.mm[key]=null;
-    if(key==='a'){METER.redX=p.x;METER.redY=p.y;}else{METER.blackX=p.x;METER.blackY=p.y;}
+    // Щуп снят с клеммы и вынут из гнезда — дальше он двигается свободно.
+    if(key==='a'){METER.redX=p.x;METER.redY=p.y;state.mm.aDocked=false;}
+    else{METER.blackX=p.x;METER.blackY=p.y;state.mm.bDocked=false;}
     meterProbeHover=null;
     meterProbeDrag={pointerId:evt.pointerId,key:key,offX:p.x-cursor.x,offY:p.y-cursor.y};
     renderTerminals();renderMM();return;
@@ -5530,9 +5653,15 @@ document.addEventListener('pointermove',function(evt){
   if(meterDrag&&evt.pointerId===meterDrag.pointerId){
     const p=svgPoint(evt),nx=p.x-meterDrag.offX,ny=p.y-meterDrag.offY;
     const dx=nx-METER.x,dy=ny-METER.y;
-    // Щуп, который ещё не установлен на клемму, переносится вместе с прибором.
-    if(!state.mm.a){METER.redX+=dx;METER.redY+=dy;}
-    if(!state.mm.b){METER.blackX+=dx;METER.blackY+=dy;}
+    // Свободный щуп перемещается вместе с прибором; вставленный в гнездо едет за ним сам.
+    if(!state.mm.a){
+      if(state.mm.aDocked!==false){const f=meterProbeFallback('a');METER.redX=f.x;METER.redY=f.y;state.mm.aDocked=true;}
+      else{METER.redX+=dx;METER.redY+=dy;}
+    }
+    if(!state.mm.b){
+      if(state.mm.bDocked!==false){const f=meterProbeFallback('b');METER.blackX=f.x;METER.blackY=f.y;state.mm.bDocked=true;}
+      else{METER.blackX+=dx;METER.blackY+=dy;}
+    }
     METER.x=nx;METER.y=ny;renderMM();
   }
   if(meterProbeDrag&&evt.pointerId===meterProbeDrag.pointerId){
@@ -5552,8 +5681,9 @@ function finishMeterPointer(evt){
   meterProbeHover=null;
   if(hit){
     state.mm[key]={devId:hit.devId,key:hit.key};
-    if(key==='a'){METER.redX=hit.x;METER.redY=hit.y;}else{METER.blackX=hit.x;METER.blackY=hit.y;}
-  }
+    if(key==='a'){METER.redX=hit.x;METER.redY=hit.y;state.mm.aDocked=false;}
+    else{METER.blackX=hit.x;METER.blackY=hit.y;state.mm.bDocked=false;}
+  }else meterDockProbe(key);
   renderTerminals();renderMM();
   const res=measureNow();
   if(res)log('Мультиметр ['+res.cap+']: '+termName(state.mm.a)+' — '+termName(state.mm.b)+' = '+res.display+'. '+res.note,res.danger?'err':'info');
@@ -5674,49 +5804,118 @@ function specialTrayPreview(key){
       +inboxInner()+'</svg>';
   }
   if(key==='multimeter'){
-    return '<svg class="mini" viewBox="0 -28 230 358" preserveAspectRatio="xMidYMid meet">'
-      +'<rect x="0" y="0" width="230" height="330" rx="24" fill="#e8b817" stroke="#6f5a0c" stroke-width="5"/>'
-      +'<rect x="9" y="9" width="212" height="312" rx="17" fill="#f2ca2e" stroke="#ffe77d" stroke-width="2"/>'
-      +'<rect x="63" y="-7" width="18" height="18" rx="5" fill="#17191c"/><rect x="149" y="-7" width="18" height="18" rx="5" fill="#d62f35"/>'
-      +'<rect x="20" y="48" width="190" height="61" rx="7" fill="#26322e"/><rect x="27" y="55" width="176" height="47" rx="4" fill="#a8c5ad"/>'
-      +'<text x="115" y="87" text-anchor="middle" font-size="25" font-weight="800" fill="#17241d" font-family="Consolas,monospace">—</text>'
-      +'<rect x="20" y="129" width="93" height="30" rx="8" fill="#26333c"/><rect x="117" y="129" width="93" height="30" rx="8" fill="rgba(255,255,255,.32)"/>'
-      +'<rect x="20" y="171" width="93" height="30" rx="8" fill="rgba(255,255,255,.32)"/><rect x="117" y="171" width="93" height="30" rx="8" fill="rgba(255,255,255,.32)"/>'
-      +'<text x="66" y="150" text-anchor="middle" font-size="11" font-weight="800" fill="#ffe47a">V~</text><text x="163" y="150" text-anchor="middle" font-size="11" font-weight="800" fill="#54470e">V⎓</text>'
-      +'<text x="66" y="192" text-anchor="middle" font-size="11" font-weight="800" fill="#54470e">Ω</text><text x="163" y="192" text-anchor="middle" font-size="8.5" font-weight="800" fill="#54470e">ПРОЗВОНКА</text>'
-      +'<g transform="translate(72,-28)"><line y2="16" stroke="#c3c8cc" stroke-width="4"/><rect x="-9" y="14" width="18" height="36" rx="7" fill="#17191c"/></g>'
-      +'<g transform="translate(158,-28)"><line y2="16" stroke="#c3c8cc" stroke-width="4"/><rect x="-9" y="14" width="18" height="36" rx="7" fill="#d62f35"/></g></svg>';
+    const W=METER.w,H=METER.h;
+    function miniProbe(j,color,key){
+      return '<g transform="translate('+j.dx+','+(j.dy-40)+') rotate('+meterProbeTilt(key)+')">'
+        +'<path d="M 0,0 L -2.6,7 L -2.6,22 L 2.6,22 L 2.6,7 Z" fill="#dce3e8" stroke="#46515c" stroke-width="1.2"/>'
+        +'<rect x="-7" y="26" width="14" height="17" rx="7" fill="'+color+'" stroke="#12161a" stroke-width="1.6"/></g>';
+    }
+    return '<svg class="mini" viewBox="-18 -60 '+(W+36)+' '+(H+68)+'" preserveAspectRatio="xMidYMid meet">'
+      +mmBodyInner(true,{display:'0.0 В'},'voltage','PV')
+      +miniProbe(METER_JACKS.black,'#17191c','b')+miniProbe(METER_JACKS.red,'#d62f35','a')+'</svg>';
   }
   return '';
 }
+const TRAY_CATEGORIES=[
+  {id:'mounting',title:'Монтаж и соединения',icon:'▦',types:['klemma','pebus','junction'],specials:['panel','inbox']},
+  {id:'protection',title:'Защита',icon:'◇',types:['mcb1','mcb3','rcd','kk1'],specials:[]},
+  {id:'control',title:'Управление',icon:'⌘',types:['km1','timer','wallSwitch','twoWaySwitch'],specials:['pushbutton']},
+  {id:'drive',title:'Привод',icon:'⚙',types:['vfd','tp'],specials:['motor','dcmotor']},
+  {id:'lighting',title:'Освещение и розетки',icon:'☀',types:['bulb','lamp','outlet'],specials:[]},
+  {id:'appliances',title:'Бытовые приборы',icon:'⌂',types:['fridge','washer','boiler','stove','split'],specials:[]},
+  {id:'measurement',title:'Измерения',icon:'◴',types:['meter','sensor'],specials:['multimeter','clamp']}
+];
+const TRAY_CATEGORY_KEY='electrosim-tray-categories-v1';
+let trayExpanded={mounting:true},traySearchOpen={},trayQuery='',trayRenderKey=null;
+try{
+  const saved=JSON.parse(localStorage.getItem(TRAY_CATEGORY_KEY)||'null');
+  if(saved&&typeof saved==='object'&&!Array.isArray(saved)){
+    TRAY_CATEGORIES.forEach(function(c){if(typeof saved[c.id]==='boolean')trayExpanded[c.id]=saved[c.id];});
+  }
+}catch(e){/* Недоступное хранилище не мешает пользоваться категориями. */}
+function trayCategoryFor(type,special){
+  return TRAY_CATEGORIES.find(function(c){return special?c.specials.includes(special):c.types.includes(type);})||TRAY_CATEGORIES[0];
+}
+function traySearchText(text){
+  return String(text||'').toLocaleLowerCase('ru-RU').replace(/ё/g,'е').trim();
+}
+function trayMatches(text,query){
+  const normalized=traySearchText(text);
+  return traySearchText(query).split(/\s+/).filter(Boolean).every(function(word){return normalized.includes(word);});
+}
+function trayCacheKey(){
+  return JSON.stringify([state.standaloneRails,state.special,inboxSinglePhase(),state.specialProps.inbox,trayQuery,trayExpanded,traySearchOpen]);
+}
+function saveTrayCategories(){
+  try{localStorage.setItem(TRAY_CATEGORY_KEY,JSON.stringify(trayExpanded));}catch(e){}
+}
+function setAllTrayCategories(open){
+  TRAY_CATEGORIES.forEach(function(c){if(trayQuery)traySearchOpen[c.id]=open;else trayExpanded[c.id]=open;});
+  if(!trayQuery)saveTrayCategories();
+  renderTray();
+}
 function renderTray(){
-  const box = document.getElementById('tray');
-  let html = '';
+  const key=trayCacheKey();
+  if(key===trayRenderKey)return;
+  const box=document.getElementById('tray'),groups={};
+  TRAY_CATEGORIES.forEach(function(c){groups[c.id]=[];});
+  function add(type,special,title,description,card){
+    const category=trayCategoryFor(type,special);
+    if(trayQuery&&!trayMatches(title+' '+description+' '+category.title+' '+(type||special),trayQuery))return;
+    groups[category.id].push(card);
+  }
   Object.keys(STOCK).forEach(function(type){
-    const t = TYPES[type], w = t.modules*MODULE, h = t.h, over = t.over || 0, overR = t.overR || 0;
-    html += '<div class="tray-item" data-type="'+type+'">'
-          +   '<svg class="mini" viewBox="0 '+(-over)+' '+(w+overR)+' '+(h+over)+'" preserveAspectRatio="xMidYMid meet">'+deviceInner(type,{})+'</svg>'
-          +   '<div class="tray-meta"><b>'+t.title+'</b>'
-          +     '<span>'+(t.freeOnly?'свободное размещение':t.modules+' мод. · '+(t.modules*17.5).toFixed(1)+' мм')+' · '+(KIND_RU[t.kind]||'')+'</span></div>'
-          +   '<span class="stock" title="Количество не ограничено">∞</span><button type="button" class="tray-add" aria-label="Разместить: '+escapeHtml(t.title)+'">+</button>'
-          + '</div>';
+    const t=TYPES[type],w=t.modules*MODULE,h=t.h,over=t.over||0,overR=t.overR||0;
+    const description=(t.freeOnly?'свободное размещение':t.modules+' мод. · '+(t.modules*17.5).toFixed(1)+' мм')+' · '+(KIND_RU[t.kind]||'');
+    add(type,null,t.title,description,
+      '<div class="tray-item" data-type="'+type+'">'
+      +'<svg class="mini" viewBox="0 '+(-over)+' '+(w+overR)+' '+(h+over)+'" preserveAspectRatio="xMidYMid meet">'+deviceInner(type,{})+'</svg>'
+      +'<div class="tray-meta"><b>'+escapeHtml(t.title)+'</b><span>'+escapeHtml(description)+'</span></div>'
+      +'<span class="stock" title="Количество не ограничено">∞</span><button type="button" class="tray-add" aria-label="Разместить: '+escapeHtml(t.title)+'">+</button></div>');
   });
   const specialTitles={inbox:'Клеммная коробка XT1',pushbutton:'Кнопочный пост',motor:'Асинхронный двигатель',dcmotor:'Двигатель постоянного тока',multimeter:'Цифровой мультиметр',clamp:'Токовые клещи',panel:'Монтажный щит'};
   const unlimitedSpecials={motor:true,dcmotor:true,pushbutton:true,clamp:true,panel:true};
-  Object.keys(specialTitles).forEach(function(key){
-    if(key==='inbox'&&state.standaloneRails===false)return;
-    if(!unlimitedSpecials[key]&&state.special[key])return;
-    html+='<div class="tray-item tray-special" data-special="'+key+'">'
-        +specialTrayPreview(key)+'<div class="tray-meta"><b>'+specialTitles[key]+'</b>'
-        +'<span>Перетащите на рабочее поле</span></div><span class="stock">'+(unlimitedSpecials[key]?'∞':'×1')+'</span><button type="button" class="tray-add" aria-label="Разместить: '+specialTitles[key]+'">+</button></div>';
+  Object.keys(specialTitles).forEach(function(special){
+    if(special==='inbox'&&state.standaloneRails===false)return;
+    if(!unlimitedSpecials[special]&&state.special[special])return;
+    add(null,special,specialTitles[special],'Перетащите на рабочее поле',
+      '<div class="tray-item tray-special" data-special="'+special+'">'
+      +specialTrayPreview(special)+'<div class="tray-meta"><b>'+specialTitles[special]+'</b>'
+      +'<span>Перетащите на рабочее поле</span></div><span class="stock">'+(unlimitedSpecials[special]?'∞':'×1')+'</span>'
+      +'<button type="button" class="tray-add" aria-label="Разместить: '+specialTitles[special]+'">+</button></div>');
   });
-  box.innerHTML = html || '<div class="empty-tray">Все аппараты установлены на рейке</div>';
+  let visible=0;
+  box.innerHTML=TRAY_CATEGORIES.map(function(c){
+    const cards=groups[c.id];if(!cards.length)return '';
+    visible+=cards.length;
+    const open=trayQuery?traySearchOpen[c.id]!==false:trayExpanded[c.id]===true;
+    return '<details class="tray-category" data-tray-category="'+c.id+'"'+(open?' open':'')+'>'
+      +'<summary><span class="tray-category-icon" aria-hidden="true">'+c.icon+'</span><span>'+c.title+'</span>'
+      +'<span class="tray-category-count">'+cards.length+'</span></summary>'
+      +'<div class="tray-category-items">'+cards.join('')+'</div></details>';
+  }).join('');
+  if(!visible)box.innerHTML='<div class="tray-empty" role="status">Детали не найдены. Попробуйте другое название.</div>';
+  trayRenderKey=key;
+}
+function initTrayCategories(){
+  const box=document.getElementById('tray');
+  box.addEventListener('toggle',function(evt){
+    const category=evt.target;
+    if(!category.classList||!category.classList.contains('tray-category')||!box.contains(category))return;
+    const id=category.dataset.trayCategory;
+    if(!TRAY_CATEGORIES.some(function(c){return c.id===id;}))return;
+    if(trayQuery)traySearchOpen[id]=category.open;
+    else{trayExpanded[id]=category.open;saveTrayCategories();}
+    trayRenderKey=trayCacheKey();
+  },true);
+  document.getElementById('traySearch').addEventListener('input',function(evt){
+    trayQuery=traySearchText(evt.target.value);traySearchOpen={};renderTray();
+  });
+  document.getElementById('trayCollapseAll').addEventListener('click',function(){setAllTrayCategories(false);});
+  document.getElementById('trayExpandAll').addEventListener('click',function(){setAllTrayCategories(true);});
 }
 
-function lampsOn(){
-  const q = inputBreaker(), km = contactor();
-  return !!(state.power && q && q.on && !q.tripped && km && km.coil);
-}
+
 
 /* ============================================================
    ПРОТОКОЛ ИСПЫТАНИЙ
@@ -5857,23 +6056,26 @@ function showPhaseFault(msg){
 }
 
 function renderSide(){
-  renderMotor();
-  renderTray();
-  renderMM();
+  return withElectricalRead(function(){
+    renderMotor();
+    renderTray();
+    renderMM();
+  });
 }
 function renderAll(){
   syncPanelInbox();
   updateCoils();                 // сначала считаем, что замкнуто в цепи (катушка A1–A2)
-  renderPanels();renderRail();
-  renderInbox();
-  renderDevices();
-  renderRelays();
-  renderTerminalGuides();
-  renderWires();
-  renderTerminals();
-  renderMM();
-  renderSide();
-  renderClamp();
+  return withElectricalRead(function(){
+    renderPanels();renderRail();
+    renderInbox();
+    renderDevices();
+    renderRelays();
+    renderTerminalGuides();
+    renderWires();
+    renderTerminals();
+    renderSide();
+    renderClamp();
+  });
 }
 
 /* ============================================================
@@ -5906,6 +6108,7 @@ function presetsFromData(data){
   else if(data&&data.format==='ad-trainer-scheme'&&data.preset)incoming=[data.preset];
   else if(data&&data.state)incoming=[data];
   return incoming.filter(function(p){return p&&p.state&&Array.isArray(p.state.devices)&&Array.isArray(p.state.wires)
+    &&['relays','motors','pushbuttons','panels','clamps'].every(function(key){return p.state[key]===undefined||(Array.isArray(p.state[key])&&p.state[key].every(function(o){return o&&typeof o==='object'&&!Array.isArray(o);}));})
     &&p.state.devices.every(function(d){return d&&typeof d.type==='string'&&Object.prototype.hasOwnProperty.call(TYPES,d.type);})
     &&p.state.wires.every(function(w){return w&&w.a&&w.b&&w.a.devId!==undefined&&w.b.devId!==undefined&&typeof w.a.key==='string'&&typeof w.b.key==='string';});});
 }
@@ -6071,7 +6274,8 @@ function schemeSnapshot(name,id){
     positions:{inbox:{x:INBOX.x,y:INBOX.y},pushbutton:{x:PB.x,y:PB.y},
       motor:{x:MOTOR.x,y:MOTOR.y,load:MOTOR.load},
       multimeter:{x:METER.x,y:METER.y,redX:METER.redX,redY:METER.redY,
-        blackX:METER.blackX,blackY:METER.blackY,fn:state.mm.fn,
+        blackX:METER.blackX,blackY:METER.blackY,fn:state.mm.fn,power:state.mm.power!==false,
+        aDocked:state.mm.aDocked!==false,bDocked:state.mm.bDocked!==false,
         a:state.mm.a?JSON.parse(JSON.stringify(state.mm.a)):null,
         b:state.mm.b?JSON.parse(JSON.stringify(state.mm.b)):null}},
     // Протокол испытаний переносится вместе со схемой: его можно приложить к отчёту.
@@ -6085,32 +6289,33 @@ function renderPresetList(selectedId){
   const keepSelected=selectedId||box.value;
   const local=readBrowserPresets().sort(function(a,b){return (b.updated||0)-(a.updated||0);});
   const library=folderPresets.slice().sort(function(a,b){return a.name.localeCompare(b.name,'ru');});
-  const list=library.concat(local);
-  if(!list.length){ box.innerHTML='<option disabled>Нет сохранённых схем</option>';box.value='';updatePresetDeleteButton();return; }
+  const list=library.concat(local,openedFilePresets);
+  if(!list.length){ box.innerHTML='<option disabled>Готовых схем пока нет</option>';box.value='';updatePresetDeleteButton();return; }
   function option(p){
     const dt=p.updated?new Date(p.updated).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     return '<option value="'+escapeHtml(p.id)+'"'+(p._folderFile?' title="'+escapeHtml(p._folderFile)+'"':'')+'>'+escapeHtml(p.name)+(dt?' · '+dt:'')+'</option>';
   }
-  box.innerHTML=(library.length?'<optgroup label="Из папки presets">'+library.map(option).join('')+'</optgroup>':'')
-    +(local.length?'<optgroup label="Сохранены в браузере">'+local.map(option).join('')+'</optgroup>':'');
+  box.innerHTML=(library.length?'<optgroup label="Готовые схемы">'+library.map(option).join('')+'</optgroup>':'')
+    +(local.length?'<optgroup label="Ранее сохранены в браузере">'+local.map(option).join('')+'</optgroup>':'')
+    +(openedFilePresets.length?'<optgroup label="Из открытого файла">'+openedFilePresets.map(option).join('')+'</optgroup>':'');
   box.value=list.some(function(p){return p.id===keepSelected;})?keepSelected:list[0].id;
   updatePresetDeleteButton();
 }
 function updatePresetDeleteButton(){
-  const button=document.getElementById('presetDelete'),selected=selectedPreset();
-  if(button){button.disabled=!!(selected&&selected._folderFile);button.title=selected&&selected._folderFile?'Для удаления этой схемы удалите её файл из папки presets.':'';}
+  const button=document.getElementById('presetLoad');
+  if(button)button.disabled=!selectedPreset();
 }
 function selectedPreset(){
   const box=document.getElementById('presetList');
   if(!box||!box.value) return null;
-  return readPresets().filter(function(p){return p.id===box.value;})[0]||null;
+  return readPresets().concat(openedFilePresets).find(function(p){return p.id===box.value;})||null;
 }
 function saveCurrentPreset(){
   const input=document.getElementById('presetName');
   let name=(input&&input.value?input.value:'').trim();
   const list=readBrowserPresets();
   if(!name) name='Схема '+(list.length+1);
-  const old=list.filter(function(p){return String(p.name).toLowerCase()===name.toLowerCase();})[0]||null;
+  const old=list.find(function(p){return String(p.name).toLowerCase()===name.toLowerCase();})||null;
   const snap=schemeSnapshot(name,old&&old.id);
   const next=old?list.map(function(p){return p.id===old.id?snap:p;}):list.concat([snap]);
   if(!writePresets(next)) return;
@@ -6122,6 +6327,12 @@ function saveCurrentPreset(){
 function loadSelectedPreset(){
   const p=selectedPreset();
   if(!p||!p.state){presetStatus('Выберите сохранённую схему.',true);return;}
+  openWorkspaceScheme(p);
+}
+/* Загрузка сохранённой схемы. Вынесена отдельно, чтобы тот же путь можно было
+   проверить в тестах без обращения к хранилищу браузера. */
+function applyPreset(p){
+  if(!p||!p.state)return false;
   cancelWire(); hideWireMenu();
   state.power=p.state.power!==false;
   state.devices=JSON.parse(JSON.stringify(p.state.devices||[]));
@@ -6149,9 +6360,11 @@ function loadSelectedPreset(){
       const allowed=['C2','C4','C6','C10','C13','C16','C20','C25','C32','C40','C50','C63'];
       if(allowed.indexOf(d.breakerType)<0)d.breakerType=d.type==='mcb3'?'C25':'C10';
       d.ratedCurrent=Math.max(2,Number(String(d.breakerType).replace(/^C/,''))||10);
-      d.customName=(d.type==='mcb3'?'Автомат 3P, ':'Автомат 1P, ')+d.breakerType;
+      d.ratedVoltage=ratedVoltageOf(d);
+      d.customName=protectiveDeviceName(d);
       d.breakerHeat=0;d.breakerCurrentA=0;d.breakerPhaseCurrents=[];
     }
+    if(d.type==='rcd')syncRcdRatings(d);
     if(TYPES[d.type]&&TYPES[d.type].kind==='appliance'){
       d.applianceOn=!!d.applianceOn;d.applianceBurned=!!d.applianceBurned;
       d.ratedVoltage=Math.max(1,Number(d.ratedVoltage)||220);
@@ -6166,6 +6379,8 @@ function loadSelectedPreset(){
     }
   });
   state.relays=JSON.parse(JSON.stringify(p.state.relays||[]));
+  state.relays.forEach(syncThermalSettings);
+  thermalLastTick=Date.now();
   ensureInstanceTags();
   state.wires=JSON.parse(JSON.stringify(p.state.wires||[]));
   state.motors=JSON.parse(JSON.stringify(p.state.motors||[]));
@@ -6173,7 +6388,7 @@ function loadSelectedPreset(){
   state.panels=JSON.parse(JSON.stringify(Array.isArray(p.state.panels)?p.state.panels:[]));
   // В старых сохранениях две отдельные рейки были частью рабочего поля.
   state.standaloneRails=p.state.standaloneRails!==false;
-  state.panels.forEach(function(panel){panel.railCount=panelRailCount(panel);panel.inletVoltage=panelInletVoltage(panel);panel.x=Number(panel.x)||0;panel.y=Number(panel.y)||0;});
+  state.panels.forEach(function(panel){panel.fixed=panelIsFixed(panel);panel.railCount=panelRailCount(panel);panel.inletVoltage=panelInletVoltage(panel);panel.x=Number(panel.x)||0;panel.y=Number(panel.y)||0;});
   state.clamps=JSON.parse(JSON.stringify(Array.isArray(p.state.clamps)?p.state.clamps:[]));
   state.clamps.forEach(function(c,i){
     c.id='CL'+(i+1);c.tag=c.tag||'PA'+(i+1);
@@ -6237,12 +6452,17 @@ function loadSelectedPreset(){
   const pm=pos.multimeter;
   if(pm){
     METER.x=isFinite(pm.x)?pm.x:875;METER.y=isFinite(pm.y)?pm.y:1080;
-    METER.redX=isFinite(pm.redX)?pm.redX:1033;METER.redY=isFinite(pm.redY)?pm.redY:1022;
-    METER.blackX=isFinite(pm.blackX)?pm.blackX:947;METER.blackY=isFinite(pm.blackY)?pm.blackY:1022;
-    state.mm={mode:false,fn:pm.fn||'voltage',a:pm.a||null,b:pm.b||null};
+    // В старых сохранениях щупы стояли над верхними вводами: там, где координат нет,
+    // берём положение по гнёздам новой разводки.
+    METER.redX=isFinite(pm.redX)?pm.redX:METER.x+METER_JACKS.red.dx;
+    METER.redY=isFinite(pm.redY)?pm.redY:METER.y+METER_JACKS.red.dy;
+    METER.blackX=isFinite(pm.blackX)?pm.blackX:METER.x+METER_JACKS.black.dx;
+    METER.blackY=isFinite(pm.blackY)?pm.blackY:METER.y+METER_JACKS.black.dy;
+    state.mm={mode:false,power:pm.power!==false,fn:pm.fn||'voltage',a:pm.a||null,b:pm.b||null,
+      aDocked:pm.a?false:pm.aDocked!==false,bDocked:pm.b?false:pm.bDocked!==false};
   }else{
-METER.x=875;METER.y=1080;METER.redX=1033;METER.redY=1022;METER.blackX=947;METER.blackY=1022;
-    state.mm={mode:false,fn:'voltage',a:null,b:null};
+    METER.x=875;METER.y=1080;meterResetProbes();
+    state.mm={mode:false,power:true,fn:'voltage',a:null,b:null,aDocked:true,bDocked:true};
   }
   if(inboxSinglePhase())pruneInboxConnections();
   if(p.view&&isFinite(p.view.x)&&isFinite(p.view.y)&&isFinite(p.view.w)){
@@ -6253,6 +6473,7 @@ METER.x=875;METER.y=1080;METER.redX=1033;METER.redY=1022;METER.blackX=947;METER.
   presetStatus('Загружена схема «'+p.name+'».');
   restoreLog(p.journal);
   trace('Загружен локальный пресет: '+p.name+'.');
+  return true;
 }
 function deleteSelectedPreset(){
   const p=selectedPreset();
@@ -6327,6 +6548,175 @@ function importPresetFile(file){
 /* ============================================================
    9. ОРГАНЫ УПРАВЛЕНИЯ
    ============================================================ */
+/* Схемы: файл пользователя, библиотека сайта и восстановление работы. */
+const SCHEME_DRAFT_KEY='electrosim-last-work-v1';
+let schemeCleanSignature=null,schemeDraft=null,schemeReplaceAction=null,schemeReturnFocus=null;
+let schemeLastDraftPayload='',openedFilePresets=[];
+function currentSchemeName(){
+  return (document.getElementById('presetName').value||'').trim()||'Моя схема';
+}
+function schemeSignature(snapshot){
+  // Пассивный нагрев, индикация, журнал и масштаб не означают редактирование схемы.
+  const transient=/^(coil|manualPressed|heat|phaseHeat|phaseCurrents|currentA|tripCurrentA|tripRatio|energyKwh|rpmActual|angle|timerActive|timerSupply|timerSince|timerLastSignal|vfdPressed|vfdPressToken|vfdInputReady|vfdInputVoltage|vfdInputFrequency|vfdOutputActive|tpPressed|tpPressToken|tpInputReady|tpInputVoltage|tpInputFrequency|breakerHeat|breakerCurrentA|breakerPhaseCurrents|meterPowerW|meterPulse|sensorVoltage|sensorCurrentA)$/;
+  return JSON.stringify({name:snapshot.name,state:snapshot.state,positions:snapshot.positions},function(key,value){
+    return transient.test(key)?undefined:value;
+  });
+}
+function schemeHasChanges(){
+  return schemeCleanSignature!==null&&schemeSignature(schemeSnapshot(currentSchemeName()))!==schemeCleanSignature;
+}
+function markSchemeClean(){
+  schemeCleanSignature=schemeSignature(schemeSnapshot(currentSchemeName()));
+}
+function updateSchemeRecovery(){
+  const box=document.getElementById('schemeRecovery');
+  if(!box)return;
+  box.hidden=!schemeDraft;
+  if(schemeDraft)document.getElementById('schemeRecoveryText').textContent=
+    'Последняя работа: «'+schemeDraft.preset.name+'». Восстановить её?';
+}
+function clearSchemeRecovery(){
+  schemeDraft=null;updateSchemeRecovery();
+}
+function saveSchemeDraft(){
+  if(schemeCleanSignature===null||drag||panelDrag||meterDrag||meterProbeDrag||pending||touchPlacement)return;
+  try{
+    if(schemeDraft){
+      if(!schemeHasChanges())return;
+      // Начали новую работу без восстановления: прежнюю копию сохраняем в списке.
+      const archived=JSON.parse(JSON.stringify(schemeDraft.preset)),list=readBrowserPresets();
+      archived.id='recovery:'+String(archived.updated||archived.id);
+      archived.name=archived.name+' (автокопия)';
+      if(!list.some(function(p){return p.id===archived.id;})){
+        if(!writePresets(list.concat([archived])))throw new Error('storage');
+      }
+      clearSchemeRecovery();renderPresetList();
+    }
+    const snapshot=schemeSnapshot(currentSchemeName());
+    const payload=JSON.stringify({format:'electrosim-work',preset:snapshot,cleanSignature:schemeCleanSignature});
+    // updated меняется при каждом снимке; сравниваем само содержимое.
+    const comparable=JSON.stringify({state:snapshot.state,positions:snapshot.positions,journal:snapshot.journal,view:snapshot.view,name:snapshot.name,cleanSignature:schemeCleanSignature});
+    if(comparable===schemeLastDraftPayload)return;
+    localStorage.setItem(SCHEME_DRAFT_KEY,payload);schemeLastDraftPayload=comparable;
+    const el=document.getElementById('schemeAutosaveStatus');
+    if(el)el.textContent='Автосохранено в этом браузере · '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){
+    const el=document.getElementById('schemeAutosaveStatus');
+    if(el)el.textContent='Автосохранение недоступно. Сохраните работу в файл.';
+  }
+}
+function saveCurrentSchemeFile(){
+  const name=currentSchemeName(),snapshot=schemeSnapshot(name);
+  const data={format:'ad-trainer-scheme',version:1,exported:new Date().toISOString(),preset:snapshot};
+  if(!downloadPresetJson(data,safePresetFilename(name)+'.ad-scheme.json'))return false;
+  document.getElementById('presetName').value=name;
+  markSchemeClean();saveSchemeDraft();
+  presetStatus('Файл «'+name+'.ad-scheme.json» подготовлен. Найдите его в загрузках браузера.');
+  return true;
+}
+function closeSchemeReplace(){
+  const modal=document.getElementById('schemeReplaceModal');
+  if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');}
+  schemeReplaceAction=null;
+  if(schemeReturnFocus&&schemeReturnFocus.focus)schemeReturnFocus.focus();
+}
+function requestSchemeReplace(action){
+  if(!schemeHasChanges()){action();return;}
+  if(schemeReplaceAction)return;
+  schemeReplaceAction=action;schemeReturnFocus=document.activeElement;
+  const modal=document.getElementById('schemeReplaceModal');
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  document.getElementById('schemeReplaceSave').focus();
+}
+function finishSchemeReplace(save){
+  if(!schemeReplaceAction)return;
+  if(save&&!saveCurrentSchemeFile())return;
+  const action=schemeReplaceAction;closeSchemeReplace();action();
+}
+function openWorkspaceScheme(p){
+  if(!p||!p.state)return;
+  requestSchemeReplace(function(){
+    applyPreset(p);clearSchemeRecovery();markSchemeClean();schemeLastDraftPayload='';saveSchemeDraft();
+  });
+}
+function newWorkspaceScheme(){
+  requestSchemeReplace(function(){
+    cancelWire();hideWireMenu();hideObjectMenu();touchPlacement=null;initialState();resetView();clearLog();renderAll();
+    document.getElementById('presetName').value='';
+    clearSchemeRecovery();markSchemeClean();schemeLastDraftPayload='';saveSchemeDraft();
+    presetStatus('Новая схема: монтажный щит с двумя DIN-рейками.');
+  });
+}
+function restoreWorkspaceScheme(){
+  if(!schemeDraft)return;
+  const draft=schemeDraft;
+  requestSchemeReplace(function(){
+    applyPreset(draft.preset);clearSchemeRecovery();
+    schemeCleanSignature=draft.cleanSignature||'';
+    schemeLastDraftPayload='';saveSchemeDraft();presetStatus('Последняя работа восстановлена. Для переноса сохраните её в файл.');
+  });
+}
+function discardWorkspaceRecovery(){
+  clearSchemeRecovery();schemeLastDraftPayload='';saveSchemeDraft();
+}
+function openSchemeFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(){
+    let incoming;
+    try{incoming=presetsFromData(JSON.parse(String(reader.result||'').replace(/^\uFEFF/,'')));}
+    catch(e){presetStatus('Не удалось открыть файл. Выберите файл схемы этого тренажёра.',true);return;}
+    if(!incoming.length){presetStatus('В файле нет схем этого тренажёра.',true);return;}
+    if(incoming.length===1){openWorkspaceScheme(incoming[0]);return;}
+    openedFilePresets=incoming.map(function(p,i){
+      const copy=JSON.parse(JSON.stringify(p));copy.id='opened-file:'+Date.now()+':'+i;return copy;
+    });
+    renderPresetList(openedFilePresets[0].id);
+    presetStatus('В файле '+incoming.length+' схем. Выберите нужную в списке и нажмите «Открыть выбранную схему».');
+  };
+  reader.onerror=function(){presetStatus('Не удалось прочитать файл схемы.',true);};
+  reader.readAsText(file,'utf-8');
+}
+function initSchemeWorkspace(){
+  markSchemeClean();
+  try{
+    const raw=JSON.parse(localStorage.getItem(SCHEME_DRAFT_KEY)||'null');
+    if(raw&&raw.preset&&presetsFromData(raw.preset).length)schemeDraft=raw;
+  }catch(e){/* Повреждённый черновик не препятствует запуску тренажёра. */}
+  updateSchemeRecovery();
+  function click(id,fn){const el=document.getElementById(id);if(el)el.addEventListener('click',fn);}
+  click('schemeNew',newWorkspaceScheme);click('schemeRestore',restoreWorkspaceScheme);
+  click('schemeDiscard',discardWorkspaceRecovery);
+  click('schemeReplaceSave',function(){finishSchemeReplace(true);});
+  click('schemeReplaceContinue',function(){finishSchemeReplace(false);});
+  click('schemeReplaceCancel',closeSchemeReplace);
+  const modal=document.getElementById('schemeReplaceModal');
+  if(modal)modal.addEventListener('pointerdown',function(e){if(e.target===modal)closeSchemeReplace();});
+  document.addEventListener('keydown',function(e){
+    if(!schemeReplaceAction)return;
+    if(e.key==='Escape'){e.preventDefault();closeSchemeReplace();return;}
+    if(e.key==='Tab'){
+      const ids=['schemeReplaceSave','schemeReplaceContinue','schemeReplaceCancel'];
+      const index=ids.findIndex(function(id){return document.activeElement===document.getElementById(id);});
+      e.preventDefault();document.getElementById(ids[(index+(e.shiftKey?2:1)+3)%3]).focus();
+    }
+  });
+  const fileLabel=document.querySelector('label[for="presetImportFile"]');
+  if(fileLabel)fileLabel.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();document.getElementById('presetImportFile').click();}
+  });
+  if(typeof window.addEventListener==='function'){
+    window.addEventListener('beforeunload',function(e){
+      saveSchemeDraft();
+      if(schemeHasChanges()){e.preventDefault();e.returnValue='';}
+    });
+    window.addEventListener('pagehide',saveSchemeDraft);
+  }
+  document.addEventListener('visibilitychange',function(){if(document.hidden)saveSchemeDraft();});
+  setInterval(saveSchemeDraft,2000);
+}
+
+
 const sideMenuItems=Array.prototype.slice.call(document.querySelectorAll('.side-menu-item'));
 sideMenuItems.forEach(function(item){
   item.addEventListener('toggle',function(){
@@ -6341,9 +6731,8 @@ document.addEventListener('pointerdown',function(evt){
 document.addEventListener('keydown',function(evt){
   if(evt.key==='Escape')sideMenuItems.forEach(function(item){item.open=false;});
 });
-document.getElementById('presetSave').addEventListener('click',saveCurrentPreset);
+document.getElementById('presetSave').addEventListener('click',saveCurrentSchemeFile);
 document.getElementById('presetLoad').addEventListener('click',loadSelectedPreset);
-document.getElementById('presetDelete').addEventListener('click',deleteSelectedPreset);
 document.getElementById('presetList').addEventListener('dblclick',loadSelectedPreset);
 document.getElementById('presetList').addEventListener('change',updatePresetDeleteButton);
 document.getElementById('presetFolderConnect').addEventListener('click',connectPresetFolder);
@@ -6352,11 +6741,9 @@ if(presetDetails)presetDetails.addEventListener('toggle',function(){if(presetDet
 if(typeof window.addEventListener==='function')window.addEventListener('focus',refreshPresetFolder);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)refreshPresetFolder();});
 setInterval(function(){if(!document.hidden&&presetFolderHandle)refreshPresetFolder();},15000);
-document.getElementById('presetExport').addEventListener('click',exportSelectedPreset);
-document.getElementById('presetExportAll').addEventListener('click',exportAllPresets);
 document.getElementById('presetImportFile').addEventListener('change',function(e){
   const file=e.target.files&&e.target.files[0];
-  importPresetFile(file);
+  openSchemeFile(file);
   e.target.value='';
 });
 
@@ -6400,9 +6787,9 @@ function initWireDefaults(){
       const sw=b.querySelector('i:not(.pe-swatch)'); if(sw)sw.style.setProperty('--wire-color',c);
     });
   }
-  function refresh(){
+  function refresh(changeColor){
     paint();
-    if(pending){pending.shape=wireDefaults.shape;pending.color=wireDefaults.color;renderWires();}
+    if(pending){pending.shape=wireDefaults.shape;if(changeColor)pending.color=wireDefaults.color;renderWires();}
     try{localStorage.setItem('ad-trainer-wire-defaults',JSON.stringify(wireDefaults));}catch(e){}
   }
   if(shape)shape.addEventListener('click',function(e){
@@ -6411,7 +6798,7 @@ function initWireDefaults(){
   });
   if(color)color.addEventListener('click',function(e){
     const b=e.target.closest('[data-wire-default-color]'); if(!b)return;
-    wireDefaults.color=b.getAttribute('data-wire-default-color')||'#1c1c1c'; color.classList.remove('open'); refresh();
+    wireDefaults.color=b.getAttribute('data-wire-default-color')||'#1c1c1c'; color.classList.remove('open'); refresh(true);
   });
   [shape,color].forEach(function(menu){
     if(!menu)return;
@@ -6448,13 +6835,15 @@ let panelDrag=null,panelDragFrame=0,panelDragPointer=null;
 const panelLayer=document.getElementById('panelLayer');
 function updatePanelDrag(){
   if(!panelDrag||!panelDragPointer)return;
-  const panel=panelById(panelDrag.id);if(!panel)return;
+  const panel=panelById(panelDrag.id);if(!panel||panelIsFixed(panel))return;
   const p=svgPoint(panelDragPointer);panelDragPointer=null;
   panel.x=p.x-panelDrag.offX;panel.y=p.y-panelDrag.offY;
   renderPanels();renderRail();renderInbox();renderDevices();renderRelays();renderTerminalGuides();renderWires();renderTerminals();renderClamp();
 }
 function startPanelDrag(evt,panel){
-  evt.preventDefault();evt.stopPropagation();cancelWire();
+  evt.preventDefault();evt.stopPropagation();
+  if(panelIsFixed(panel))return;
+  cancelWire();
   const p=svgPoint(evt);panelDrag={id:panel.id,offX:p.x-panel.x,offY:p.y-panel.y,pointerId:evt.pointerId};
 }
 panelLayer.addEventListener('pointerdown',function(evt){
@@ -6489,6 +6878,7 @@ function createClamp(x,y){
   state.clamps.push(c);return c;
 }
 function clampWireCurrents(){
+  if(electricalReadContext&&electricalReadContext.currents)return electricalReadContext.currents;
   const map=potentialMap(),result={};
   if(map.conflict)return result;
   const nodes=[],indices={},edges=[],injections=[];
@@ -6530,44 +6920,56 @@ function clampWireCurrents(){
   });
   const count=nodes.length,adj=Array.from({length:count},function(){return [];});
   edges.forEach(function(e){adj[e.a].push(e.b);adj[e.b].push(e.a);});
-  const pinned={},seen={};
+  const pinned={},seen={},components=[],componentIndex=new Int32Array(count);
   nodes.forEach(function(n,j){
     if(String(n.devId)==='IN')pinned[j]=true;
     const d=devById(n.devId);
     if(d&&d.type==='vfd'&&d.vfdOutputActive&&['U','V','W'].includes(n.key))pinned[j]=true;
     if(d&&d.type==='tp'&&d.tpOn&&d.tpInputReady&&['ya1','ya2','sh1','sh2'].includes(n.key))pinned[j]=true;
   });
-  // Каждому изолированному компоненту нужна одна опорная точка.
+  // Независимые проводящие компоненты решаются отдельными матрицами.
+  // Это те же узловые уравнения Кирхгофа без огромных блоков из нулей.
   for(let start=0;start<count;start++){
     if(seen[start])continue;
     const queue=[start],component=[];seen[start]=true;
-    while(queue.length){const j=queue.pop();component.push(j);adj[j].forEach(function(k){if(!seen[k]){seen[k]=true;queue.push(k);}});}
-    if(!component.some(function(j){return pinned[j];}))pinned[start]=true;
-  }
-  const free=[],position={};nodes.forEach(function(n,j){if(!pinned[j]){position[j]=free.length;free.push(j);}});
-  const size=free.length;
-  const matrix=Array.from({length:size},function(_,j){const row=new Float64Array(size+2);row[size]=injections[free[j]].r;row[size+1]=injections[free[j]].i;return row;});
-  edges.forEach(function(e){
-    const a=position[e.a],b=position[e.b];
-    if(a!==undefined){matrix[a][a]+=e.g;if(b!==undefined)matrix[a][b]-=e.g;}
-    if(b!==undefined){matrix[b][b]+=e.g;if(a!==undefined)matrix[b][a]-=e.g;}
-  });
-  for(let col=0;col<size;col++){
-    let pivot=col;for(let j=col+1;j<size;j++)if(Math.abs(matrix[j][col])>Math.abs(matrix[pivot][col]))pivot=j;
-    if(Math.abs(matrix[pivot][col])<1e-10)continue;
-    const temp=matrix[col];matrix[col]=matrix[pivot];matrix[pivot]=temp;
-    for(let j=col+1;j<size;j++){
-      const ratio=matrix[j][col]/matrix[col][col];if(!ratio)continue;
-      for(let k=col;k<size+2;k++)matrix[j][k]-=ratio*matrix[col][k];
+    while(queue.length){
+      const j=queue.pop();component.push(j);componentIndex[j]=components.length;
+      adj[j].forEach(function(k){if(!seen[k]){seen[k]=true;queue.push(k);}});
     }
+    if(!component.some(function(j){return pinned[j];}))pinned[start]=true;
+    components.push({nodes:component,edges:[]});
   }
+  edges.forEach(function(e){components[componentIndex[e.a]].edges.push(e);});
   const real=new Float64Array(count),imag=new Float64Array(count);
-  for(let row=size-1;row>=0;row--){
-    let r=matrix[row][size],i=matrix[row][size+1];
-    for(let k=row+1;k<size;k++){r-=matrix[row][k]*real[free[k]];i-=matrix[row][k]*imag[free[k]];}
-    if(Math.abs(matrix[row][row])>1e-10){real[free[row]]=r/matrix[row][row];imag[free[row]]=i/matrix[row][row];}
-  }
+  components.forEach(function(component){
+    const free=component.nodes.filter(function(j){return !pinned[j];}),position={};
+    // Без нагрузки все поправки потенциалов равны нулю.
+    if(!free.some(function(j){return injections[j].r!==0||injections[j].i!==0;}))return;
+    free.forEach(function(j,k){position[j]=k;});
+    const size=free.length;
+    const matrix=free.map(function(j){const row=new Float64Array(size+2);row[size]=injections[j].r;row[size+1]=injections[j].i;return row;});
+    component.edges.forEach(function(e){
+      const a=position[e.a],b=position[e.b];
+      if(a!==undefined){matrix[a][a]+=e.g;if(b!==undefined)matrix[a][b]-=e.g;}
+      if(b!==undefined){matrix[b][b]+=e.g;if(a!==undefined)matrix[b][a]-=e.g;}
+    });
+    for(let col=0;col<size;col++){
+      let pivot=col;for(let j=col+1;j<size;j++)if(Math.abs(matrix[j][col])>Math.abs(matrix[pivot][col]))pivot=j;
+      if(Math.abs(matrix[pivot][col])<1e-10)continue;
+      const temp=matrix[col];matrix[col]=matrix[pivot];matrix[pivot]=temp;
+      for(let j=col+1;j<size;j++){
+        const ratio=matrix[j][col]/matrix[col][col];if(!ratio)continue;
+        for(let k=col;k<size+2;k++)matrix[j][k]-=ratio*matrix[col][k];
+      }
+    }
+    for(let row=size-1;row>=0;row--){
+      let r=matrix[row][size],i=matrix[row][size+1];
+      for(let k=row+1;k<size;k++){r-=matrix[row][k]*real[free[k]];i-=matrix[row][k]*imag[free[k]];}
+      if(Math.abs(matrix[row][row])>1e-10){real[free[row]]=r/matrix[row][row];imag[free[row]]=i/matrix[row][row];}
+    }
+  });
   edges.forEach(function(e){if(e.id!==null)result[e.id]=e.g*Math.hypot(real[e.a]-real[e.b],imag[e.a]-imag[e.b]);});
+  if(electricalReadContext)electricalReadContext.currents=result;
   return result;
 }
 const clampPathCache=new WeakMap();
@@ -6727,13 +7129,14 @@ document.addEventListener('pointercancel',function(){
 setInterval(function(){if(state.clamps.length&&(!clampState||!clampState.drag))renderClamp();},500);
 initWireDefaults();
 initTerminalGuides();
-renderRail();
 initialState();
 resetView();
 renderAll();
 renderPresetList();
 initPresetFolder();
 initLogPanel();
+initTrayCategories();
 log('Тренажёр запущен: на сцене монтажный щит с двумя DIN-рейками и встроенным вводом XT1 — 3×380 В, N и PE.', 'info');
+initSchemeWorkspace();
 
 })();

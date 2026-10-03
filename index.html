@@ -92,6 +92,12 @@
       <div class="side-flyout">
         <div class="card">
           <h2>Лоток деталей</h2>
+          <label class="tray-search-label" for="traySearch">Найти деталь</label>
+          <input id="traySearch" class="tray-search" type="search" placeholder="Название или обозначение" autocomplete="off">
+          <div class="tray-category-actions">
+            <button id="trayCollapseAll" type="button">Свернуть всё</button>
+            <button id="trayExpandAll" type="button">Развернуть всё</button>
+          </div>
           <div id="tray"></div>
         </div>
       </div>
@@ -101,23 +107,27 @@
       <summary><span class="menu-icon">▤</span><span>Схемы</span></summary>
       <div class="side-flyout">
         <div class="card preset-card">
-          <h2>Сохранённые схемы</h2>
-          <input id="presetName" class="preset-name" type="text" maxlength="60" placeholder="Название схемы">
-          <button id="presetSave" class="preset-primary">Сохранить текущую схему</button>
-          <select id="presetList" class="preset-list" size="5" aria-label="Сохранённые схемы"></select>
-          <button id="presetFolderConnect" class="preset-import" type="button">Подключить папку presets</button>
-          <div id="presetFolderStatus" class="preset-status">Схемы из папки presets подключаются автоматически.</div>
-          <div class="preset-actions">
-            <button id="presetLoad">Загрузить</button>
-            <button id="presetDelete" class="preset-danger">Удалить</button>
+          <h2>Схемы</h2>
+          <div id="schemeRecovery" class="scheme-recovery" hidden>
+            <span id="schemeRecoveryText">Есть автоматически сохранённая работа.</span>
+            <div class="preset-actions"><button id="schemeRestore">Восстановить</button><button id="schemeDiscard">Не восстанавливать</button></div>
           </div>
-          <div class="preset-actions">
-            <button id="presetExport">Экспорт выбранной</button>
-            <button id="presetExportAll">Экспорт всех</button>
-          </div>
-          <label class="preset-import" for="presetImportFile">Импортировать из файла</label>
+          <label class="scheme-label" for="presetName">Название вашей схемы</label>
+          <input id="presetName" class="preset-name" type="text" maxlength="60" placeholder="Например: Освещение квартиры">
+          <button id="presetSave" class="preset-primary">Сохранить схему в файл</button>
+          <label class="preset-import" for="presetImportFile" tabindex="0" role="button">Открыть схему из файла</label>
           <input id="presetImportFile" type="file" accept=".json,.ad-scheme.json,application/json" hidden>
-          <div id="presetStatus" class="preset-status">Схемы хранятся локально в этом браузере.</div>
+          <button id="schemeNew">Новая схема</button>
+          <div class="scheme-label scheme-divider">Готовые схемы</div>
+          <select id="presetList" class="preset-list" size="5" aria-label="Готовые схемы и ранее сохранённые работы"></select>
+          <button id="presetLoad">Открыть выбранную схему</button>
+          <details id="presetLocalTools" class="scheme-local-tools">
+            <summary>Папка схем на этом компьютере</summary>
+            <button id="presetFolderConnect" class="preset-import" type="button">Подключить папку presets</button>
+            <div id="presetFolderStatus" class="preset-status">Для сайта готовые схемы подключаются автоматически.</div>
+          </details>
+          <div id="schemeAutosaveStatus" class="preset-status">Последняя работа автоматически сохраняется в этом браузере.</div>
+          <div id="presetStatus" class="preset-status" role="status" aria-live="polite">Для переноса работы на другое устройство сохраните её в файл.</div>
         </div>
       </div>
     </details>
@@ -141,7 +151,7 @@
             <button id="logExport">Выгрузить в файл</button>
             <button id="logClear" class="danger">Очистить</button>
           </div>
-          <div class="log-hint">Протокол сохраняется вместе со схемой в разделе «Схемы» и переносится вместе с экспортом.</div>
+          <div class="log-hint">Протокол сохраняется вместе со схемой в файл.</div>
         </div>
       </div>
     </details>
@@ -202,6 +212,18 @@
         <button class="primary" type="submit">Сохранить</button>
       </div>
     </form>
+  </div>
+</div>
+
+<div id="schemeReplaceModal" class="properties-modal" aria-hidden="true">
+  <div class="properties-dialog scheme-replace-dialog" role="dialog" aria-modal="true" aria-labelledby="schemeReplaceTitle" aria-describedby="schemeReplaceText">
+    <h2 id="schemeReplaceTitle">Сохранить текущую работу?</h2>
+    <p id="schemeReplaceText">В схеме есть изменения. Сохраните их в файл перед открытием другой схемы.</p>
+    <div class="scheme-replace-actions">
+      <button id="schemeReplaceSave" class="primary" type="button">Сохранить в файл и продолжить</button>
+      <button id="schemeReplaceContinue" type="button">Продолжить без сохранения</button>
+      <button id="schemeReplaceCancel" type="button">Отмена</button>
+    </div>
   </div>
 </div>
 
