@@ -1883,6 +1883,41 @@ function touchUI(){
   root.classList.add('touch-ui');
   document.body.classList.add('touch-input');
 }
+
+/* Лупа только для точного сенсорного подключения. SVG use показывает живую
+   сцену без копирования её объектов и повторных электрических расчётов. */
+function hideTouchLoupe(){
+  const el=document.getElementById('touchLoupe');if(el)el.hidden=true;
+}
+function updateTouchLoupe(session,point){
+  if(!session||touchGesture||touchPointers.size!==1||session.tray||touchPlacement){
+    hideTouchLoupe();return;
+  }
+  const probe=session.target.closest('.mm-probe');
+  if(!probe&&!pending){hideTouchLoupe();return;}
+  const el=document.getElementById('touchLoupe'),svg=document.getElementById('touchLoupeScene');
+  if(!el||!svg)return;
+  const key=probe&&probe.getAttribute('data-probe');
+  const p=key?meterProbePoint(key):(session.mode==='waiting'?svgPoint(point):(pending.pt||svgPoint(point)));
+  const wm=ctmNode().getScreenCTM(),sm=scene.getScreenCTM();
+  if(!p||!wm||!sm||!sm.a){hideTouchLoupe();return;}
+  const screen=new DOMPoint(p.x,p.y).matrixTransform(wm);
+  const center=new DOMPoint(screen.x,screen.y).matrixTransform(sm.inverse());
+  const size=132,span=(size-6)/(Math.abs(sm.a)*2.5);
+  if(!isFinite(center.x)||!isFinite(center.y)||!isFinite(span)){hideTouchLoupe();return;}
+  svg.setAttribute('viewBox',(center.x-span/2)+' '+(center.y-span/2)+' '+span+' '+span);
+  const width=window.innerWidth,height=window.innerHeight;
+  let left=point.clientX-size/2,top=point.clientY-size-66;
+  if(top<8)top=point.clientY+54;
+  left=Math.max(8,Math.min(width-size-8,left));
+  top=Math.max(8,Math.min(height-size-40,top));
+  el.style.left=left+'px';el.style.top=top+'px';
+  const hit=key?meterProbeHover:null;
+  const label=document.getElementById('touchLoupeLabel');
+  if(label)label.textContent=hit?tagOf(hit.devId)+' · '+hit.key:(key?'Остриё щупа':'Конец провода');
+  el.hidden=false;
+}
+
 function touchStatus(text){
   const status=document.getElementById('touchStatus');
   if(status)status.textContent=text||'';
@@ -1948,13 +1983,15 @@ function startTouchAction(session,point){
   session.mode='action';
   replayTouch('pointerdown',session,{clientX:session.sx,clientY:session.sy},session.target);
   if(session.tray)sideMenuItems.forEach(function(item){item.open=false;});
+  updateTouchLoupe(session,point);
 }
 function flushTouchMove(){
   if(touchMoveFrame){cancelAnimationFrame(touchMoveFrame);touchMoveFrame=0;}
   const move=touchMoveEvent;touchMoveEvent=null;
-  if(move)replayTouch('pointermove',move.session,move.point);
+  if(move){replayTouch('pointermove',move.session,move.point);updateTouchLoupe(move.session,move.point);}
 }
 function cancelTouchAction(session){
+  hideTouchLoupe();
   clearTimeout(session.timer);
   if(touchMoveFrame){cancelAnimationFrame(touchMoveFrame);touchMoveFrame=0;}touchMoveEvent=null;
   if(session.mode!=='action')return;
@@ -2001,6 +2038,7 @@ function queueTouchView(){
   if(!touchViewFrame)touchViewFrame=requestAnimationFrame(function(){touchViewFrame=0;moveTouchView();});
 }
 function startTouchView(pinch,session,continuing){
+  hideTouchLoupe();
   flushTouchView();
   const pair=pinch?touchPair():{x:continuing?session.clientX:session.sx,y:continuing?session.clientY:session.sy};
   touchGesture={pinch:pinch,width:view.w,distance:pair.distance,anchor:screenToScene(pair.x,pair.y)};
@@ -2033,12 +2071,13 @@ function onTouchStart(evt){
   if(!tray&&!pending&&!s.target.closest('.term')&&(touchObjectTarget(s.target)||s.target.closest('[data-wid]'))){
     s.timer=setTimeout(function(){
       if(s.mode!=='waiting'||touchPointers.size!==1)return;
-      s.mode='menu';
+      s.mode='menu';hideTouchLoupe();
       const wire=s.target.closest('[data-wid]');
       if(wire){hideObjectMenu();showWireMenu(+wire.dataset.wid,s.clientX,s.clientY,svgPoint(s));}
       else showObjectMenu({clientX:s.clientX,clientY:s.clientY,preventDefault:function(){},stopPropagation:function(){}},touchObjectTarget(s.target));
     },600);
   }
+  if(pending||s.target.closest('.mm-probe'))updateTouchLoupe(s,evt);
 }
 function onTouchMove(evt){
   if(evt.pointerType!=='touch'||evt.touchReplay)return;
@@ -2084,6 +2123,7 @@ function onTouchEnd(evt){
       replayTouch('pointerup',s,s);
     }
   }
+  hideTouchLoupe();
   touchPointers.delete(s.id);
   if(typeof scene.releasePointerCapture==='function')try{scene.releasePointerCapture(s.id);}catch(e){}
   // Перебазируем якорь при изменении числа пальцев: без скачка масштаба
@@ -2112,6 +2152,7 @@ function initTouchControls(){
   if(cancel)cancel.addEventListener('click',function(){touchPlacement=null;cancelWire();hideWireMenu();hideObjectMenu();touchStatus('');});
   document.getElementById('tray').addEventListener('click',function(e){const button=e.target.closest('.tray-add');if(button)chooseTouchPlacement(button.closest('.tray-item'));});
   if(typeof window.addEventListener==='function')window.addEventListener('blur',function(){
+    hideTouchLoupe();
     if(touchViewFrame)cancelAnimationFrame(touchViewFrame);touchViewFrame=0;
     touchPointers.forEach(cancelTouchAction);touchPointers.clear();touchGesture=null;
   });
@@ -4579,6 +4620,7 @@ function removeWiresFor(devId){
   return before - state.wires.length;
 }
 function cancelWire(){
+  hideTouchLoupe();
   if (!pending) return;
   pending = null;
   renderTerminalGuides();
