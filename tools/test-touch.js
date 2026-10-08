@@ -14,7 +14,7 @@ check('исходный масштаб 100%',pc.api.touchView().w===1240&&pc.api
 const out=wheel(pc,120);
 check('колесо отдаляет и отменяет прокрутку страницы',out.defaultPrevented&&pc.api.touchView().w>1240);
 for(let i=0;i<40;i++)wheel(pc,120);
-check('максимальное отдаление достижимо',pc.api.touchView().w===1736);
+check('максимальное отдаление достижимо',pc.api.touchView().w===3472);
 for(let i=0;i<80;i++)wheel(pc,-120);
 check('максимальное приближение достижимо',pc.api.touchView().w===155);
 
@@ -102,9 +102,22 @@ limit.pointer(limit.els.scene,'pointerdown',{pointerId:2,clientX:220,clientY:400
 limit.pointer(limit.els.scene,'pointermove',{pointerId:2,clientX:10000,clientY:400});limit.runFrames();
 check('pinch соблюдает максимальное приближение',limit.api.touchView().w===155);
 limit.pointer(limit.els.scene,'pointermove',{pointerId:2,clientX:210.01,clientY:400});limit.runFrames();
-check('pinch соблюдает максимальное отдаление',limit.api.touchView().w===1736);
+check('pinch соблюдает максимальное отдаление',limit.api.touchView().w===3472);
 limit.pointer(limit.els.scene,'pointerup',{pointerId:2,clientX:210.01,clientY:400});
 limit.pointer(limit.els.scene,'pointerup',{pointerId:1,clientX:210,clientY:400});
 
+
+console.log('\nРасширенное рабочее поле');
+const largePc=load({interactive:true});
+largePc.els.scene.getScreenCTM=()=>({a:1,b:0,c:0,d:1,e:0,f:0,inverse(){return this;}});
+largePc.pointer(largePc.els.scene,'pointerdown',{pointerType:'mouse',button:1,clientX:500,clientY:400});
+largePc.pointer(largePc.window.document,'pointermove',{pointerType:'mouse',clientX:-900,clientY:-1000});
+largePc.pointer(largePc.window.document,'pointerup',{pointerType:'mouse',button:1,clientX:-900,clientY:-1000});
+check('мышью можно добраться до новой области справа и снизу',largePc.api.touchView().x===1400&&largePc.api.touchView().y===1400);
+const largeTouch=load({interactive:true,mobile:true,width:430,height:860});geometry(largeTouch,430,860);
+largeTouch.pointer(largeTouch.els.scene,'pointerdown',{pointerId:1,clientX:200,clientY:400});
+largeTouch.pointer(largeTouch.els.scene,'pointermove',{pointerId:1,clientX:-300,clientY:-100});largeTouch.runFrames();
+check('сенсорный перенос открывает расширенную область',largeTouch.api.touchView().x>1000&&largeTouch.api.touchView().y>1000);
+largeTouch.pointer(largeTouch.els.scene,'pointerup',{pointerId:1,clientX:-300,clientY:-100});
 if(fails){console.error('\nОшибок: '+fails);process.exit(1);}
 console.log('\nМышь и сенсорное управление разделены; все проверки пройдены.');

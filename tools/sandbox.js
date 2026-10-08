@@ -20,6 +20,8 @@ globalThis.__t = {
   items:function(){return logItems;}, faults:function(){return logFaultCount;},
   filter:function(){return logFilter;},
   /* электрическая модель и аппараты */
+  undoAction:undoAction, redoAction:redoAction, beginActionHistory:beginActionHistory, finishActionHistory:finishActionHistory, resetActionHistory:resetActionHistory,
+  actionCounts:function(){return {undo:actionUndo.length,redo:actionRedo.length};},
   state:state, TYPES:TYPES, STOCK:STOCK, DCM:DCM,
   MODULE:MODULE, SLOTS:SLOTS, PANEL:PANEL, mountingRails:mountingRails,
   WC:WC, wireDefaults:wireDefaults, wireStartColor:wireStartColor, cancelWire:cancelWire, connectTerminals:connectTerminals,

@@ -11,7 +11,8 @@ const MODULE    = 17.5 * MM;         // один модуль 17,5 мм
 const RAIL_X0   = 90;
 const SLOTS     = 16;                 // щит на 16 модулей: на 20% уже прежних 20 модулей
 const RAIL_X1   = RAIL_X0 + SLOTS * MODULE;
-const VW        = 1240, VH = 1550;   // увеличенное поле снизу для осмотра двигателя
+const VW        = 1240, VH = 1550;   // начальное окно: привычный размер объектов
+const WORKSPACE_W = VW*2, WORKSPACE_H = VH*2; // рабочее поле вдвое шире и выше
 const RELAY_DROP = 0;                // реле стыкуется снизу вплотную (надписи клемм пускателя видны)
 const PIN_TOP    = 22;               // вылет щупов теплового реле над корпусом
 const PAD_W      = 34;               // ширина приставной колодки A1–A2 справа от пускателя
@@ -239,6 +240,7 @@ function meterProbeFallback(key){
 /* Исходное состояние: монтажный щит со встроенным вводом XT1 и двумя DIN-рейками.
    Все аппараты находятся в лотке. */
 function initialState(){
+  resetActionHistory();
   state.power = true;                // сеть на вводе XT1 уже есть — можно мерить мультиметром
   state.devices = [
     { id:1, type:'klemma', rail:0, slot:8, on:false, tripped:false, coil:false },  // XN — справа от QF2, как на образце
@@ -1871,6 +1873,113 @@ let drag = null;
 /* Касания перехватываются до обработчиков мыши. Короткое касание выполняет
    обычное действие, движение — перенос, удержание корпуса — контекстное меню.
    Второй палец переводит жест в масштабирование, сохраняя черновик провода. */
+
+/* Пять законченных действий; движения одного переноса объединяются. */
+let actionUndo=[],actionRedo=[],actionBefore=null,actionTimer=0,actionReady=false;
+const actionPointers=new Set();
+function actionSnapshot(){return JSON.parse(schemeSignature(schemeSnapshot('')));}
+function paintActionHistory(){
+  [['actionUndo',actionUndo,'Отменить'],['actionRedo',actionRedo,'Повторить']].forEach(function(item){
+    const el=document.getElementById(item[0]);if(!el)return;
+    el.disabled=!item[1].length||!!actionPointers.size;
+    el.title=item[2]+' ('+item[1].length+' из 5)';
+    el.setAttribute('aria-label',el.title);
+  });
+}
+function resetActionHistory(){
+  if(actionTimer)clearTimeout(actionTimer);actionTimer=0;
+  actionUndo=[];actionRedo=[];actionBefore=null;actionPointers.clear();actionReady=true;paintActionHistory();
+}
+function beginActionHistory(){
+  if(actionReady&&!actionBefore)actionBefore=actionSnapshot();
+}
+function finishActionHistory(){
+  if(actionTimer)clearTimeout(actionTimer);actionTimer=0;
+  if(!actionReady||!actionBefore||actionPointers.size)return;
+  const before=actionBefore,after=actionSnapshot();actionBefore=null;
+  if(JSON.stringify(before)!==JSON.stringify(after)){
+    actionUndo.push({before:before,after:after});if(actionUndo.length>5)actionUndo.shift();
+    actionRedo=[];paintActionHistory();
+  }
+}
+function queueActionHistory(){
+  if(!actionTimer)actionTimer=setTimeout(function(){actionTimer=0;finishActionHistory();},0);
+}
+
+function restoreActionHistory(entry,redo){
+  const target=redo?entry.after:entry.before,other=redo?entry.before:entry.after;
+  const clone=function(v){return v===undefined?undefined:JSON.parse(JSON.stringify(v));};
+  const same=function(a,b){return JSON.stringify(a)===JSON.stringify(b);};
+  cancelWire();hideWireMenu();hideObjectMenu();hideTouchLoupe();touchPlacement=null;
+  const next=clone(target.state);
+  ['devices','relays','motors','pushbuttons','panels','clamps','wires'].forEach(function(list){
+    (next[list]||[]).forEach(function(obj){
+      const live=(state[list]||[]).find(function(o){return o.id===obj.id;});
+      const previous=(other.state[list]||[]).find(function(o){return o.id===obj.id;});
+      if(!live||!previous||live.type!==obj.type)return;
+      // Не откатываем показания, нагрев и другие поля, которых это действие
+      // не меняло: симуляция продолжает работать между нажатиями отмены.
+      Object.keys(live).forEach(function(key){
+        if(same(obj[key],previous[key]))obj[key]=clone(live[key]);
+      });
+    });
+  });
+  Object.keys(next).forEach(function(key){
+    if(!Array.isArray(next[key])&&same(target.state[key],other.state[key]))next[key]=state[key];
+  });
+  Object.assign(state,next);
+  const pos=target.positions,old=other.positions;
+  [['inbox',INBOX],['pushbutton',PB],['motor',MOTOR],['multimeter',METER]].forEach(function(item){
+    const saved=pos[item[0]]||{},prior=old[item[0]]||{},live=item[1];
+    Object.keys(saved).forEach(function(key){if(!same(saved[key],prior[key]))live[key]=clone(saved[key]);});
+  });
+  const pm=pos.multimeter||{},prior=old.multimeter||{};
+  ['fn','power','a','b','aDocked','bDocked'].forEach(function(key){
+    if(!same(pm[key],prior[key]))state.mm[key]=clone(pm[key]);
+  });
+  state.pb={up:false,stop:false,down:false};
+  state.pushbuttons.forEach(function(pb){pb.buttons={up:false,stop:false,down:false};});
+  state.clamps.forEach(function(c){c.drag=false;});clampState=null;
+  wireSeq=Math.max(1,state.wires.reduce(function(n,w){return Math.max(n,Number(w.id)||0);},0)+1);
+  thermalLastTick=Date.now();renderAll();renderMM();touchStatus('');
+  paintActionHistory();saveSchemeDraft();
+}
+function undoAction(){
+  if(actionPointers.size)return false;finishActionHistory();
+  const entry=actionUndo.pop();if(!entry)return false;
+  restoreActionHistory(entry,false);actionRedo.push(entry);paintActionHistory();return true;
+}
+function redoAction(){
+  if(actionPointers.size)return false;finishActionHistory();
+  const entry=actionRedo.pop();if(!entry)return false;
+  restoreActionHistory(entry,true);actionUndo.push(entry);paintActionHistory();return true;
+}
+
+function initActionHistory(){
+  function ignored(evt){return evt.touchReplay||(evt.target.closest&&evt.target.closest('.history-controls'));}
+  document.addEventListener('pointerdown',function(evt){
+    if(ignored(evt)||evt.button>0)return;
+    beginActionHistory();actionPointers.add(evt.pointerId);paintActionHistory();
+  },true);
+  ['pointerup','pointercancel'].forEach(function(type){document.addEventListener(type,function(evt){
+    if(evt.touchReplay)return;actionPointers.delete(evt.pointerId);paintActionHistory();queueActionHistory();
+  },true);});
+  ['click','input','change'].forEach(function(type){document.addEventListener(type,function(evt){
+    if(ignored(evt))return;beginActionHistory();queueActionHistory();
+  },true);});
+  document.addEventListener('keydown',function(evt){
+    if(evt.target.closest&&evt.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+    if(!(evt.ctrlKey||evt.metaKey)||evt.altKey||evt.repeat)return;
+    const key=evt.code==='KeyZ'?'z':(evt.code==='KeyY'?'y':String(evt.key).toLowerCase());
+    if(key!=='z'&&key!=='y')return;
+    evt.preventDefault();evt.stopImmediatePropagation();
+    if(key==='y'||evt.shiftKey)redoAction();else undoAction();
+  },true);
+  if(typeof window.addEventListener==='function')window.addEventListener('blur',function(){actionPointers.clear();paintActionHistory();queueActionHistory();});
+  document.getElementById('actionUndo').addEventListener('click',undoAction);
+  document.getElementById('actionRedo').addEventListener('click',redoAction);
+}
+
 const touchPointers=new Map();
 let touchGesture=null,touchPlacement=null,touchMoveFrame=0,touchMoveEvent=null,touchViewFrame=0;
 function mobileTouchLayout(){
@@ -2157,6 +2266,7 @@ function initTouchControls(){
     touchPointers.forEach(cancelTouchAction);touchPointers.clear();touchGesture=null;
   });
 }
+initActionHistory();
 initTouchControls();
 
 /* координаты считаем в системе группы world (в ней лежат все слои) —
@@ -4595,8 +4705,8 @@ function renderTerminalGuides(){
   if(!guideLayer)return;
   if(!terminalGuidesEnabled||!pending){guideLayer.innerHTML='';return;}
   let s='';
-  if(pending.guideX!==null&&pending.guideX!==undefined)s+='<line x1="'+pending.guideX+'" y1="-260" x2="'+pending.guideX+'" y2="'+(VH+260)+'" stroke="#e887aa" stroke-width="0.7" opacity=".7" pointer-events="none"/>';
-  if(pending.guideY!==null&&pending.guideY!==undefined)s+='<line x1="-260" y1="'+pending.guideY+'" x2="'+(VW+260)+'" y2="'+pending.guideY+'" stroke="#e887aa" stroke-width="0.7" opacity=".7" pointer-events="none"/>';
+  if(pending.guideX!==null&&pending.guideX!==undefined)s+='<line x1="'+pending.guideX+'" y1="-260" x2="'+pending.guideX+'" y2="'+(WORKSPACE_H+260)+'" stroke="#e887aa" stroke-width="0.7" opacity=".7" pointer-events="none"/>';
+  if(pending.guideY!==null&&pending.guideY!==undefined)s+='<line x1="-260" y1="'+pending.guideY+'" x2="'+(WORKSPACE_W+260)+'" y2="'+pending.guideY+'" stroke="#e887aa" stroke-width="0.7" opacity=".7" pointer-events="none"/>';
   guideLayer.innerHTML=s;
 }
 
@@ -5832,7 +5942,7 @@ document.addEventListener('pointercancel',finishMeterPointer);
    ============================================================ */
 let view = { x:0, y:0, w:VW, h:VH };
 let pan = null;
-const Z_MIN = VW/8, Z_MAX = VW*1.4;
+const Z_MIN = VW/8, Z_MAX = WORKSPACE_W*1.4;
 
 /* Геометрия viewBox одинакова на ПК и мобильных устройствах. Адаптация экрана
    выполняется интерфейсом, а не изменением координат сцены: так колесо мыши
@@ -5846,9 +5956,9 @@ function clampView(){
   view.w = Math.max(Z_MIN, Math.min(Z_MAX, view.w));
   view.h = view.w * viewAspect();
   const mx = view.w*0.35, my = view.h*0.35;
-  view.x = Math.max(-mx, Math.min(VW - view.w + mx, view.x));
+  view.x = Math.max(-mx, Math.min(WORKSPACE_W - view.w + mx, view.x));
   // При отдалении не открываем сотни пикселей пустого поля над вводом XT1.
-  view.y = Math.max(-40, Math.min(VH - view.h + my, view.y));
+  view.y = Math.max(-40, Math.min(WORKSPACE_H - view.h + my, view.y));
 }
 function screenToScene(cx, cy){
   const m = scene.getScreenCTM();
@@ -6462,6 +6572,7 @@ function loadSelectedPreset(){
    проверить в тестах без обращения к хранилищу браузера. */
 function applyPreset(p){
   if(!p||!p.state)return false;
+  resetActionHistory();
   cancelWire(); hideWireMenu();
   state.power=p.state.power!==false;
   state.devices=JSON.parse(JSON.stringify(p.state.devices||[]));
