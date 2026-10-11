@@ -308,6 +308,8 @@ function caseScrew(cx, cy, r){
 }
 
 /* Автоматический выключатель */
+
+/* Front view of a three-pole breaker, keeping the trainer terminal geometry. */
 function mcbInner(type, o){
   const t = TYPES[type], w = t.modules*MODULE, h = t.h, poles = t.poles, poleW = w/poles;
   const on = !!o.on, tripped = !!o.tripped;
@@ -355,7 +357,7 @@ function mcbInner(type, o){
        + '</g>';
   }
   // рукоятки ходят вверх («I») / вниз («0»); у 3P они соединены общей жёлтой перемычкой
-  s += '<g class="hdl" transform="translate(0,'+hy+')">';
+  s += '<g class="hdl" style="cursor:pointer" transform="translate(0,'+hy+')">';
   if (poles > 1){
     const bx0 = 0.5*poleW - HANDLE_W/2 - 5, bx1 = (poles-0.5)*poleW + HANDLE_W/2 + 5;
     s += '<rect x="'+bx0+'" y="10.5" width="'+(bx1-bx0)+'" height="9.5" rx="4.75" fill="#f2c218" stroke="#b98d0a" stroke-width="1.1"/>';
@@ -393,7 +395,7 @@ function rcdInner(o){
   s += '<rect x="3" y="3" width="'+(w-6)+'" height="30" rx="5" fill="#e2e5e9" stroke="#b3b8be"/>';
   s += '<rect x="3" y="'+(h-33)+'" width="'+(w-6)+'" height="30" rx="5" fill="#e2e5e9" stroke="#b3b8be"/>';
   s += screw(xL,18,9)+screw(xN,18,9)+screw(xL,h-18,9)+screw(xN,h-18,9);
-  // Маркировка стоит справа от винтов и не перекрывает кресты клемм.
+  // Маркировка стоит сбоку от винтов и не перекрывает кресты клемм.
   s += '<text x="'+(xL+14)+'" y="22" text-anchor="start" font-size="8" font-weight="700" fill="#4b5563" font-family="Segoe UI,Arial">1</text>';
   s += '<text x="'+(xN-14)+'" y="22" text-anchor="end" font-size="8" font-weight="700" fill="#4b5563" font-family="Segoe UI,Arial">N</text>';
   s += '<text x="'+(xL+14)+'" y="'+(h-15)+'" text-anchor="start" font-size="8" font-weight="700" fill="#4b5563" font-family="Segoe UI,Arial">2</text>';
@@ -413,7 +415,7 @@ function rcdInner(o){
 
   s += '<rect x="57" y="'+TRACK_TOP+'" width="34" height="'+TRACK_H+'" rx="5" fill="#e4e7ea" stroke="#c2c7cd"/>';
   s += '<rect x="57" y="'+TRACK_TOP+'" width="34" height="7" rx="3" fill="rgba(0,0,0,.08)"/>';
-  s += '<g class="hdl" transform="translate(0,'+handleY(tripped,on)+')">'
+  s += '<g class="hdl" style="cursor:pointer" transform="translate(0,'+handleY(tripped,on)+')">'
      + '<rect x="56" y="0" width="36" height="26" rx="4" fill="#f2c218" stroke="#b98d0a" stroke-width="1.2"/>'
      + '<rect x="56" y="0" width="36" height="8" rx="4" fill="rgba(255,255,255,.5)"/>'
      + '<line x1="66" y1="17" x2="82" y2="17" stroke="#9a7300" stroke-width="2.4" stroke-linecap="round"/></g>';
@@ -2167,7 +2169,7 @@ function onTouchStart(evt){
   touchUI();stopTouchEvent(evt);
   const s={id:evt.pointerId,target:target,tray:!!tray,sx:evt.clientX,sy:evt.clientY,
     clientX:evt.clientX,clientY:evt.clientY,mode:'waiting',timer:null};
-  if(!tray&&!target.closest('.mm-probe,[data-pb],[data-zone],[data-vfd-control],[data-tp-control],[data-timer-control],.mm-mode,[data-switch-key],[data-two-way-switch],[data-appliance-toggle]')){
+  if(!tray&&!target.closest('.mm-probe,.hdl,[data-rcd-test],[data-pb],[data-zone],[data-vfd-control],[data-tp-control],[data-timer-control],.mm-mode,[data-switch-key],[data-two-way-switch],[data-appliance-toggle]')){
     const term=nearestTouchTerminal(evt);if(term)s.target=term;
   }
   touchPointers.set(s.id,s);
@@ -2328,6 +2330,11 @@ function computeCandidate(evt){
   return railPlacement(left,centerY,t.modules,drag.id);
 }
 
+function canToggleDeviceByClick(dev,target){
+  const kind=TYPES[dev.type].kind;
+  return kind!=='mcb'&&kind!=='rcd'||!!(target&&target.closest&&target.closest('.hdl'));
+}
+
 function startDrag(evt, spec){
   evt.preventDefault();
   cancelWire();
@@ -2341,6 +2348,7 @@ function startDrag(evt, spec){
     id: spec.id || null, relayId: spec.relayId || null, relaySet: spec.relaySet, relayState: spec.relayId?Object.assign({},anyRelayById(spec.relayId)):null,
     type: spec.type, offX: offX, offY: offY,
     sx: evt.clientX, sy: evt.clientY, moved:false, live:true,
+    toggleOnClick:canToggleDeviceByClick(spec,evt.target),
     ghost: buildGhost(spec.type), candidate:null, prev: spec.prev || null, attachedRelay:null
   };
   document.body.appendChild(drag.ghost);
@@ -2389,7 +2397,7 @@ function onPointerUp(evt){
       if (r) log('Тепловое реле '+tagOf('kk'+r.id)+': уставка '+r.set+' А, контакт 95-96 '+(r.tripped?'разомкнут (сработало)':'замкнут')+'.', 'info');
     } else if (d.id){
       const dev = devById(d.id);
-      if (dev) toggleDevice(dev);
+      if (dev && d.toggleOnClick && evt.type!=='pointercancel') toggleDevice(dev);
     }
     return;
   }
@@ -2575,7 +2583,8 @@ function startFreeDeviceDrag(evt, dev, offX, offY){
   cancelWire();
   const o = originOf(dev);
   freeDeviceDrag = { pointerId:evt.pointerId, devId:dev.id, type:dev.type, offX:offX, offY:offY,
-                     sx:evt.clientX, sy:evt.clientY, moved:false, startX:o.x, startY:o.y };
+                     sx:evt.clientX, sy:evt.clientY, moved:false, startX:o.x, startY:o.y,
+                     toggleOnClick:canToggleDeviceByClick(dev,evt.target) };
 }
 function computeFreeRailCandidate(evt, fd){
   const p = svgPoint(evt), t = TYPES[fd.type];
@@ -2601,7 +2610,7 @@ document.addEventListener('pointermove', function(evt){
 function finishFreeDeviceDrag(evt){
   if (!freeDeviceDrag || (evt.pointerId !== undefined && evt.pointerId !== freeDeviceDrag.pointerId)) return;
   const d = devById(freeDeviceDrag.devId), moved = freeDeviceDrag.moved;
-  const candidate = freeDeviceDrag.candidate;
+  const candidate = freeDeviceDrag.candidate, toggleOnClick = freeDeviceDrag.toggleOnClick;
   if (moved && d && candidate && candidate.ok){
     d.rail = candidate.rail;
     d.slot = candidate.slot;
@@ -2610,7 +2619,7 @@ function finishFreeDeviceDrag(evt){
     log('Аппарат установлен на DIN-рейку '+mountingRailTitle(candidate.rail)+', позиция '+(candidate.slot+1)+'.', 'ok');
   }
   freeDeviceDrag = null;
-  if (!moved && d) toggleDevice(d);
+  if (!moved && d && toggleOnClick && evt.type!=='pointercancel') toggleDevice(d);
   else {
     renderDevices();
     renderRelays();
