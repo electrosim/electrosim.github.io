@@ -1,0 +1,244 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="9000" height="3000" viewBox="0 0 9000 3000" role="img" aria-labelledby="roomsTitle roomsDesc">
+<title id="roomsTitle">Комнаты для бытового монтажа</title>
+<desc id="roomsDesc">Щитовая, прихожая с дверью, спальня с кроватью, кухня с раковиной, санузел с душем и пустой хозяйственный отсек. Векторное окружение в стиле аппаратов тренажёра.</desc>
+<rect x="0" y="0" width="9000" height="3000" rx="0" fill="#e7ebee" stroke="none" stroke-width="4"/>
+<g id="room-service">
+<rect x="160" y="600" width="1710" height="1720" rx="0" fill="#e4e8eb" stroke="#949ca4" stroke-width="4"/>
+<path d="M160 600 L250 690 H1805 L1870 600 Z" fill="#cbd3d9" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M160 600 L250 690 V2140 L160 2320 Z" fill="#cbd3d9" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M250 2140 H1805 L1870 2320 H160 Z" fill="#d5dde3" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1870 600 L1805 690 V2140 L1870 2320 Z" fill="#cbd3d9" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="250" y="2117" width="1555" height="23" rx="0" fill="#cbd3d9" stroke="#a8afb4" stroke-width="3"/>
+<path d="M254 2121 H1801" fill="none" stroke="#edf0f2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="room-hall">
+<rect x="1920" y="600" width="1170" height="1720" rx="0" fill="#e8e3d9" stroke="#949ca4" stroke-width="4"/>
+<path d="M1920 600 L2010 690 H3025 L3090 600 Z" fill="#d5cfc3" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1920 600 L2010 690 V2140 L1920 2320 Z" fill="#d5cfc3" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2010 2140 H3025 L3090 2320 H1920 Z" fill="#d3c1a6" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M3090 600 L3025 690 V2140 L3090 2320 Z" fill="#d5cfc3" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="2010" y="2117" width="1015" height="23" rx="0" fill="#d5cfc3" stroke="#a8afb4" stroke-width="3"/>
+<path d="M2014 2121 H3021" fill="none" stroke="#edf0f2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="room-bedroom">
+<rect x="3140" y="600" width="1320" height="1720" rx="0" fill="#dce6ec" stroke="#949ca4" stroke-width="4"/>
+<path d="M3140 600 L3230 690 H4395 L4460 600 Z" fill="#c4d2dc" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M3140 600 L3230 690 V2140 L3140 2320 Z" fill="#c4d2dc" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M3230 2140 H4395 L4460 2320 H3140 Z" fill="#d3c1a6" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M4460 600 L4395 690 V2140 L4460 2320 Z" fill="#c4d2dc" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="3230" y="2117" width="1165" height="23" rx="0" fill="#c4d2dc" stroke="#a8afb4" stroke-width="3"/>
+<path d="M3234 2121 H4391" fill="none" stroke="#edf0f2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="room-kitchen">
+<rect x="4510" y="600" width="1930" height="1720" rx="0" fill="#ece6d8" stroke="#949ca4" stroke-width="4"/>
+<path d="M4510 600 L4600 690 H6375 L6440 600 Z" fill="#d9d1c1" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M4510 600 L4600 690 V2140 L4510 2320 Z" fill="#d9d1c1" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M4600 2140 H6375 L6440 2320 H4510 Z" fill="#d5d8d8" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6440 600 L6375 690 V2140 L6440 2320 Z" fill="#d9d1c1" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<g id="kitchen-tiles">
+<rect x="4600" y="1340" width="1775" height="777" fill="#edf0ec" stroke="#bcc4ca" stroke-width="4"/>
+<path d="M4600 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4750 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4900 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M5050 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M5200 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M5350 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M5500 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M5650 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4600 1340 H6375" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4600 1440 H6375" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4600 1540 H6375" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4600 1640 H6375" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4600 1740 H6375" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4600 1840 H6375" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4600 1940 H6375" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4600 2040 H6375" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M4600 1340 H6375" stroke="#a8b3b5" stroke-width="6"/>
+<path d="M5800 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M5950 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M6100 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+<path d="M6250 1340 V2117" stroke="#cbd2cf" stroke-width="3"/>
+</g>
+<rect x="4600" y="2117" width="1775" height="23" rx="0" fill="#d9d1c1" stroke="#a8afb4" stroke-width="3"/>
+<path d="M4604 2121 H6371" fill="none" stroke="#edf0f2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="room-bathroom">
+<rect x="6490" y="600" width="1370" height="1720" rx="0" fill="#d7e6ec" stroke="#949ca4" stroke-width="4"/>
+<path d="M6490 600 L6580 690 H7795 L7860 600 Z" fill="#bfced8" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6490 600 L6580 690 V2140 L6490 2320 Z" fill="#bfced8" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 2140 H7795 L7860 2320 H6490 Z" fill="#c7d9e0" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7860 600 L7795 690 V2140 L7860 2320 Z" fill="#bfced8" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6680 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6780 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6880 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6980 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7080 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7180 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7280 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7380 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7480 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7580 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7680 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7780 690 V2140" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 790 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 890 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 990 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1090 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1190 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1290 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1390 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1490 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1590 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1690 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1790 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1890 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 1990 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6580 2090 H7795" fill="none" stroke="#c3d6df" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="6580" y="2117" width="1215" height="23" rx="0" fill="#bfced8" stroke="#a8afb4" stroke-width="3"/>
+<path d="M6584 2121 H7791" fill="none" stroke="#edf0f2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="room-utility">
+<rect x="7910" y="600" width="930" height="1720" rx="0" fill="#e4e8eb" stroke="#949ca4" stroke-width="4"/>
+<path d="M7910 600 L8000 690 H8775 L8840 600 Z" fill="#cbd3d9" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7910 600 L8000 690 V2140 L7910 2320 Z" fill="#cbd3d9" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8000 2140 H8775 L8840 2320 H7910 Z" fill="#d5dde3" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8840 600 L8775 690 V2140 L8840 2320 Z" fill="#cbd3d9" stroke="#949ca4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="8000" y="2117" width="775" height="23" rx="0" fill="#cbd3d9" stroke="#a8afb4" stroke-width="3"/>
+<path d="M8004 2121 H8771" fill="none" stroke="#edf0f2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="hall-door">
+<rect x="2550" y="1120" width="440" height="1020" rx="6" fill="#c6ccd1" stroke="#8f979f" stroke-width="5"/>
+<rect x="2560" y="1130" width="420" height="1000" rx="3" fill="none" stroke="#edf0f2" stroke-width="4"/>
+<rect x="2578" y="1148" width="384" height="978" rx="3" fill="#929da6" stroke="#66727e" stroke-width="5"/>
+<rect x="2600" y="1170" width="340" height="930" rx="2" fill="#aab4bc" stroke="#697886" stroke-width="4"/>
+<path d="M2605 1175 H2935 V2095" fill="none" stroke="#dce1e5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="2770" cy="1380" rx="12" ry="12" fill="#dfe3e6" stroke="#65737e" stroke-width="4"/>
+<ellipse cx="2910" cy="1655" rx="16" ry="22" fill="#dfe3e6" stroke="#697781" stroke-width="4"/>
+<rect x="2860" y="1668" width="64" height="14" rx="6" fill="#c6ccd1" stroke="#65737e" stroke-width="4"/>
+<ellipse cx="2910" cy="1730" rx="9" ry="13" fill="#697781" stroke="none" stroke-width="3"/>
+<rect x="2570" y="1230" width="15" height="62" rx="2" fill="#bcc6cf" stroke="#697886" stroke-width="3"/>
+<rect x="2570" y="1930" width="15" height="62" rx="2" fill="#bcc6cf" stroke="#697886" stroke-width="3"/>
+<rect x="2550" y="2140" width="440" height="17" rx="2" fill="#9eabb6" stroke="#697886" stroke-width="4"/>
+</g>
+<g id="bedroom-bed" transform="translate(793.8 0) scale(.82 1)">
+<ellipse cx="4035" cy="2250" rx="350" ry="25" fill="#69798522" stroke="none" stroke-width="3"/>
+<rect x="3690" y="1800" width="58" height="420" rx="3" fill="#b5a48d" stroke="#7f776b" stroke-width="4"/>
+<rect x="4330" y="1800" width="58" height="420" rx="3" fill="#b5a48d" stroke="#7f776b" stroke-width="4"/>
+<rect x="3680" y="1620" width="710" height="260" rx="6" fill="#c9b99f" stroke="#8b8070" stroke-width="5"/>
+<rect x="3692" y="1632" width="686" height="235" rx="3" fill="none" stroke="#e8dfd0" stroke-width="4"/>
+<path d="M3680 1940 L3750 1810 H4330 L4400 1940 Z" fill="#edf0f2" stroke="#8f979f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="3680" y="1940" width="720" height="180" rx="12" fill="#dce1e5" stroke="#949ca4" stroke-width="4"/>
+<path d="M3690 1942 L3752 1860 H4328 L4390 1942 Z" fill="#b7cbd9" stroke="#607e96" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="3690" y="1940" width="700" height="190" rx="10" fill="#8ba9be" stroke="#607e96" stroke-width="4"/>
+<rect x="3697" y="1948" width="686" height="18" rx="6" fill="#c0d3df" stroke="none" stroke-width="0"/>
+<path d="M3780 1845 Q3770 1795 3810 1785 H4250 Q4290 1795 4280 1845 Z" fill="#edf0f2" stroke="#a4afb8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M3815 1797 H4245" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="3675" y="2120" width="730" height="62" rx="4" fill="#c9b99f" stroke="#8b8070" stroke-width="5"/>
+<path d="M3683 2128 H4397" fill="none" stroke="#e8dfd0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="3690" y="2182" width="58" height="70" rx="3" fill="#b5a48d" stroke="#7f776b" stroke-width="4"/>
+<rect x="4330" y="2182" width="58" height="70" rx="3" fill="#b5a48d" stroke="#7f776b" stroke-width="4"/>
+</g>
+<g id="kitchen-sink" transform="translate(600 0)">
+<ellipse cx="5460" cy="2230" rx="290" ry="20" fill="#69798518"/>
+<!-- Plain kitchen base unit, inset doors and recessed plinth. -->
+<rect x="5190" y="1860" width="540" height="350" rx="4" fill="#a7babc" stroke="#6e858a" stroke-width="5"/>
+<rect x="5200" y="1870" width="520" height="322" rx="3" fill="#bfd0cf" stroke="#8b9fa1" stroke-width="4"/>
+<path d="M5460 1872 V2190" fill="none" stroke="#8b9fa1" stroke-width="4"/>
+<path d="M5208 1878 H5452 M5468 1878 H5712" fill="none" stroke="#e0e9e5" stroke-width="4"/>
+<rect x="5428" y="1903" width="10" height="75" rx="4" fill="#dce1e5" stroke="#697886" stroke-width="3"/>
+<rect x="5482" y="1903" width="10" height="75" rx="4" fill="#dce1e5" stroke="#697886" stroke-width="3"/>
+<rect x="5205" y="2210" width="510" height="25" rx="2" fill="#819394" stroke="#667b80" stroke-width="4"/>
+<!-- Countertop and recessed stainless steel bowl with a draining board. -->
+<path d="M5170 1825 L5220 1760 H5690 L5745 1825 Z" fill="#dce1e5" stroke="#8f979f" stroke-width="5" stroke-linejoin="round"/>
+<rect x="5170" y="1825" width="575" height="30" rx="3" fill="#b9c4ca" stroke="#8f979f" stroke-width="4"/>
+<path d="M5178 1831 H5737" stroke="#edf0f2" stroke-width="4"/>
+<path d="M5237 1812 L5265 1777 H5487 L5510 1812 Z" fill="#a5b4bd" stroke="#7e909b" stroke-width="4" stroke-linejoin="round"/>
+<path d="M5252 1808 L5273 1784 H5480 L5495 1808 Z" fill="#c6d1d7" stroke="#94a4af" stroke-width="3" stroke-linejoin="round"/>
+<ellipse cx="5374" cy="1800" rx="13" ry="5" fill="#697886" stroke="#e4e8eb" stroke-width="3"/>
+<path d="M5540 1776 L5517 1811 M5571 1776 L5548 1811 M5602 1776 L5579 1811 M5633 1776 L5610 1811 M5664 1776 L5641 1811" stroke="#a5b4bd" stroke-width="4" stroke-linecap="round"/>
+<!-- High kitchen mixer, directed into the bowl. -->
+<path d="M5425 1775 V1655 Q5425 1620 5388 1620 Q5350 1620 5350 1655 V1680" fill="none" stroke="#657581" stroke-width="24" stroke-linecap="round"/>
+<path d="M5425 1775 V1655 Q5425 1620 5388 1620 Q5350 1620 5350 1655 V1680" fill="none" stroke="#c6ccd1" stroke-width="15" stroke-linecap="round"/>
+<ellipse cx="5425" cy="1776" rx="22" ry="6" fill="#dce1e5" stroke="#8f979f" stroke-width="3"/>
+<path d="M5425 1740 L5454 1710" stroke="#697886" stroke-width="13" stroke-linecap="round"/>
+<path d="M5425 1737 L5454 1707" stroke="#edf0f2" stroke-width="5" stroke-linecap="round"/>
+</g>
+<g id="bathroom-shower">
+<rect x="7385" y="1100" width="405" height="1040" rx="5" fill="#e4eef2" stroke="#8f979f" stroke-width="5"/>
+<rect x="7400" y="1115" width="375" height="1010" rx="2" fill="#d7e6ec" stroke="#bcc4ca" stroke-width="3"/>
+<path d="M7405 1120 L7500 1120 L7405 1350 Z" fill="#edf4f6" stroke="none" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7785 1105 L7830 1160 V2230 L7785 2140 Z" fill="#dce7ec" stroke="#8f979f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7355 2140 H7785 L7840 2240 H7310 Z" fill="#edf0f2" stroke="#8f979f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7310 2240 H7840 V2290 H7310 Z" fill="#c6ccd1" stroke="#8f979f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7322 2248 H7828" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="7590" cy="2195" rx="22" ry="8" fill="#9eabb6" stroke="#697886" stroke-width="3"/>
+<path d="M7450 1170 V1830" fill="none" stroke="#697886" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7448 1170 V1830" fill="none" stroke="#dce1e5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="7430" y="1180" width="40" height="18" rx="3" fill="#c6ccd1" stroke="#697886" stroke-width="3"/>
+<rect x="7430" y="1810" width="40" height="18" rx="3" fill="#c6ccd1" stroke="#697886" stroke-width="3"/>
+<path d="M7450 1370 L7490 1305" fill="none" stroke="#697886" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="7498" cy="1298" rx="26" ry="15" fill="#c6ccd1" stroke="#697886" stroke-width="4"/>
+<path d="M7490 1325 C7580 1550 7370 1840 7470 1900 C7600 1940 7570 1820 7515 1805" fill="none" stroke="#697886" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7490 1325 C7580 1550 7370 1840 7470 1900 C7600 1940 7570 1820 7515 1805" fill="none" stroke="#dce1e5" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="7430" y="1785" width="110" height="28" rx="8" fill="#c6ccd1" stroke="#697886" stroke-width="4"/>
+<path d="M7610 1110 V2225" fill="none" stroke="#a4b4bf" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="7620" y="1660" width="12" height="95" rx="5" fill="#c6ccd1" stroke="#697886" stroke-width="3"/>
+</g>
+<rect x="120" y="560" width="40" height="1790" rx="3" fill="#9eabb6" stroke="#697886" stroke-width="5"/>
+<path d="M127 567 V2343" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="140" cy="580" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M136 580 H144" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="140" cy="2330" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M136 2330 H144" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="1880" y="560" width="40" height="1790" rx="3" fill="#9eabb6" stroke="#697886" stroke-width="5"/>
+<path d="M1887 567 V2343" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="1900" cy="580" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M1896 580 H1904" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="1900" cy="2330" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M1896 2330 H1904" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="3100" y="560" width="40" height="1790" rx="3" fill="#9eabb6" stroke="#697886" stroke-width="5"/>
+<path d="M3107 567 V2343" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="3120" cy="580" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M3116 580 H3124" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="3120" cy="2330" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M3116 2330 H3124" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="4470" y="560" width="40" height="1790" rx="3" fill="#9eabb6" stroke="#697886" stroke-width="5"/>
+<path d="M4477 567 V2343" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="4490" cy="580" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M4486 580 H4494" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="4490" cy="2330" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M4486 2330 H4494" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="6450" y="560" width="40" height="1790" rx="3" fill="#9eabb6" stroke="#697886" stroke-width="5"/>
+<path d="M6457 567 V2343" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="6470" cy="580" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M6466 580 H6474" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="6470" cy="2330" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M6466 2330 H6474" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="7870" y="560" width="40" height="1790" rx="3" fill="#9eabb6" stroke="#697886" stroke-width="5"/>
+<path d="M7877 567 V2343" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="7890" cy="580" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M7886 580 H7894" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="7890" cy="2330" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M7886 2330 H7894" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="8850" y="560" width="40" height="1790" rx="3" fill="#9eabb6" stroke="#697886" stroke-width="5"/>
+<path d="M8857 567 V2343" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="8870" cy="580" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M8866 580 H8874" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="8870" cy="2330" rx="7" ry="7" fill="#cbd4dc" stroke="#697781" stroke-width="3"/>
+<path d="M8866 2330 H8874" fill="none" stroke="#65737e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse cx="205" cy="2560" rx="68" ry="13" fill="#69798522" stroke="none" stroke-width="3"/>
+<rect x="180" y="2380" width="50" height="145" rx="3" fill="#9eabb6" stroke="#697886" stroke-width="4"/>
+<path d="M188 2385 V2515" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="172" y="2525" width="66" height="20" rx="5" fill="#66727e" stroke="#435460" stroke-width="4"/>
+<ellipse cx="205" cy="2545" rx="42" ry="11" fill="#818e97" stroke="#435460" stroke-width="4"/>
+<ellipse cx="8805" cy="2560" rx="68" ry="13" fill="#69798522" stroke="none" stroke-width="3"/>
+<rect x="8780" y="2380" width="50" height="145" rx="3" fill="#9eabb6" stroke="#697886" stroke-width="4"/>
+<path d="M8788 2385 V2515" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="8772" y="2525" width="66" height="20" rx="5" fill="#66727e" stroke="#435460" stroke-width="4"/>
+<ellipse cx="8805" cy="2545" rx="42" ry="11" fill="#818e97" stroke="#435460" stroke-width="4"/>
+<rect x="100" y="530" width="8800" height="50" rx="6" fill="#9eabb6" stroke="#697886" stroke-width="5"/>
+<path d="M108 538 H8892" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="100" y="2345" width="8800" height="65" rx="6" fill="#9eabb6" stroke="#697886" stroke-width="5"/>
+<path d="M108 2353 H8892" fill="none" stroke="#edf0f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

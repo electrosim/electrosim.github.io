@@ -11,10 +11,12 @@
 <main>
   <!-- ================= СЦЕНА ================= -->
   <section class="stage">
-    <svg id="scene" viewBox="0 0 1240 1550" preserveAspectRatio="xMidYMid meet">
+    <svg id="scene" viewBox="0 0 1240 1550" preserveAspectRatio="xMidYMax meet">
       <g id="world" transform="translate(0,200)">
+      <g id="workbenchLayer" pointer-events="none"></g>
       <g id="panelLayer"></g>
       <g id="railLayer"></g>
+      <g id="conduitLayer" pointer-events="none"></g>
       <g id="guideLayer"></g>
       <g id="motorLayer"></g>
       <g id="deviceLayer"></g>
@@ -77,9 +79,15 @@
           <div class="side-logo">АД</div>
           <div>
             <h1>Тренажёр-стенд</h1>
-            <strong>Пуск и реверс трёхфазного асинхронного двигателя</strong>
-            <span>Ввод, защита и магнитные пускатели</span>
+            <strong id="sceneDescription">Пуск и реверс трёхфазного асинхронного двигателя</strong>
+            <span id="sceneHint">Ввод, защита и магнитные пускатели</span>
           </div>
+        </div>
+        <div class="card scene-picker">
+          <h2>Сцены</h2>
+          <button id="sceneWorkbench" type="button">Верстак с двигателем</button>
+          <button id="sceneHousehold" type="button">Бытовой монтаж · комнаты</button>
+          <p>Комнаты и бытовые приборы. Подключение проводки добавим позже.</p>
         </div>
       </div>
     </details>

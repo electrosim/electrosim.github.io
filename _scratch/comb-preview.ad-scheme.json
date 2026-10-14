@@ -1,0 +1,174 @@
+{
+  "format": "ad-trainer-scheme",
+  "version": 1,
+  "preset": {
+    "version": 3,
+    "id": "scheme-mv8eimlw",
+    "name": "Проверка монтажных гребёнок",
+    "updated": 1791999975668,
+    "state": {
+      "power": false,
+      "devices": [
+        {
+          "id": 1,
+          "type": "mcb1",
+          "rail": "PN1:0",
+          "slot": 2,
+          "tag": "QF1",
+          "on": false,
+          "tripped": false
+        },
+        {
+          "id": 2,
+          "type": "mcb1",
+          "rail": "PN1:0",
+          "slot": 3,
+          "tag": "QF2",
+          "on": false,
+          "tripped": false
+        },
+        {
+          "id": 3,
+          "type": "mcb1",
+          "rail": "PN1:0",
+          "slot": 4,
+          "tag": "QF3",
+          "on": false,
+          "tripped": false
+        },
+        {
+          "id": 4,
+          "type": "mcb3",
+          "rail": "PN1:1",
+          "slot": 2,
+          "tag": "QF4",
+          "on": false,
+          "tripped": false
+        },
+        {
+          "id": 5,
+          "type": "mcb3",
+          "rail": "PN1:1",
+          "slot": 5,
+          "tag": "QF5",
+          "on": false,
+          "tripped": false
+        },
+        {
+          "id": 6,
+          "type": "mcb3",
+          "rail": "PN1:1",
+          "slot": 8,
+          "tag": "QF6",
+          "on": false,
+          "tripped": false
+        },
+        {
+          "id": 7,
+          "type": "comb",
+          "x": 297,
+          "y": 25,
+          "combAnchorId": 1,
+          "combCount": 3,
+          "combPoles": 1,
+          "tag": "GS1"
+        },
+        {
+          "id": 8,
+          "type": "comb",
+          "x": 297,
+          "y": 425,
+          "combAnchorId": 4,
+          "combCount": 3,
+          "combPoles": 3,
+          "tag": "GS2"
+        }
+      ],
+      "relays": [],
+      "wires": [],
+      "nextId": 9,
+      "motors": [],
+      "pushbuttons": [],
+      "panels": [
+        {
+          "id": "PN1",
+          "tag": "ЩР1",
+          "railCount": 2,
+          "x": 160,
+          "y": -140,
+          "inbox": true,
+          "inletVoltage": 380,
+          "fixed": true
+        }
+      ],
+      "standaloneRails": false,
+      "workbench": null,
+      "roomScene": null,
+      "clamps": [],
+      "specialProps": {
+        "inbox": {
+          "tag": "XT1",
+          "customName": "Ввод 3×380 В",
+          "ratedVoltage": 380,
+          "frequency": 50
+        },
+        "multimeter": {
+          "tag": "PV1",
+          "customName": "Цифровой мультиметр"
+        }
+      },
+      "special": {
+        "inbox": true,
+        "pushbutton": false,
+        "motor": false,
+        "multimeter": false
+      }
+    },
+    "positions": {
+      "inbox": {
+        "x": 186,
+        "y": -104
+      },
+      "pushbutton": {
+        "x": 930,
+        "y": 720
+      },
+      "motor": {
+        "x": 463,
+        "y": 875,
+        "load": 0
+      },
+      "multimeter": {
+        "x": 875,
+        "y": 1080,
+        "redX": 1051,
+        "redY": 1034,
+        "blackX": 935,
+        "blackY": 1034,
+        "fn": "voltage",
+        "power": true,
+        "aDocked": true,
+        "bDocked": true,
+        "a": null,
+        "b": null
+      }
+    },
+    "journal": {
+      "items": [
+        {
+          "ts": "20:46:15",
+          "msg": "Тренажёр запущен: верстак с двигателем, пустой щит и ввод XT1 — 3×380 В, N и PE.",
+          "kind": "info"
+        }
+      ],
+      "faultCount": 0,
+      "filter": "work"
+    },
+    "view": {
+      "x": 130,
+      "y": 20,
+      "w": 1100,
+      "h": 1375
+    }
+  }
+}

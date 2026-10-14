@@ -1,6 +1,98 @@
 // Создан tools/update-presets.js из файлов папки presets.
 globalThis.ELECTROSIM_PRESET_CATALOG = [
   {
+    "file": "Бытовой монтаж — комнаты.ad-scheme.json",
+    "modified": 1791995069605,
+    "data": {
+      "format": "ad-trainer-scheme",
+      "version": 1,
+      "exported": "2026-10-14T16:13:55.824Z",
+      "preset": {
+        "version": 3,
+        "id": "stand-household-rooms",
+        "name": "Бытовой монтаж — комнаты",
+        "updated": 1791994973988,
+        "state": {
+          "power": true,
+          "devices": [],
+          "relays": [],
+          "wires": [],
+          "nextId": 1,
+          "motors": [],
+          "pushbuttons": [],
+          "panels": [
+            {
+              "id": "PN1",
+              "tag": "ЩР1",
+              "railCount": 2,
+              "x": 670,
+              "y": 650,
+              "inbox": true,
+              "inletVoltage": 220,
+              "fixed": true
+            }
+          ],
+          "standaloneRails": false,
+          "workbench": null,
+          "clamps": [],
+          "specialProps": {
+            "inbox": {
+              "tag": "XT1",
+              "customName": "Ввод 220 В",
+              "ratedVoltage": 220,
+              "frequency": 50
+            },
+            "multimeter": {
+              "tag": "PV1",
+              "customName": "Цифровой мультиметр"
+            }
+          },
+          "special": {
+            "inbox": true,
+            "pushbutton": false,
+            "motor": false,
+            "multimeter": false
+          },
+          "roomScene": "household"
+        },
+        "positions": {
+          "inbox": {
+            "x": 50,
+            "y": -140
+          },
+          "pushbutton": {
+            "x": 930,
+            "y": 720
+          },
+          "motor": {
+            "x": 463,
+            "y": 875,
+            "load": 0
+          },
+          "multimeter": {
+            "x": 875,
+            "y": 1080,
+            "redX": 1051,
+            "redY": 1034,
+            "blackX": 935,
+            "blackY": 1034,
+            "fn": "voltage",
+            "power": true,
+            "aDocked": true,
+            "bDocked": true,
+            "a": null,
+            "b": null
+          }
+        },
+        "journal": {
+          "items": [],
+          "faultCount": 0,
+          "filter": "work"
+        }
+      }
+    }
+  },
+  {
     "file": "Пуск-реверс АД 3Ф.ad-scheme.json",
     "modified": 1790502773764.9297,
     "data": {
@@ -741,6 +833,129 @@ globalThis.ELECTROSIM_PRESET_CATALOG = [
         }
       }
     }
+  },
+  {
+    "file": "Стенд двигателя — пустой.ad-scheme.json",
+    "modified": 1791991501937.2036,
+    "data": {
+      "format": "ad-trainer-scheme",
+      "version": 1,
+      "exported": "2026-10-14T15:25:01.937Z",
+      "preset": {
+        "version": 3,
+        "id": "stand-motor-workbench",
+        "name": "Стенд двигателя — пустой",
+        "updated": 1791991501937,
+        "state": {
+          "power": true,
+          "devices": [],
+          "relays": [],
+          "wires": [],
+          "nextId": 1,
+          "motors": [
+            {
+              "id": "M1",
+              "tag": "M1",
+              "kind": "ac",
+              "x": 1250,
+              "y": 960,
+              "w": 313,
+              "h": 351,
+              "scale": 1.5,
+              "load": 0,
+              "rpmActual": 0,
+              "angle": 0,
+              "polePairs": 2,
+              "ratedSlipPercent": 10,
+              "ratedFrequency": 50,
+              "ratedVoltage": 380,
+              "ratedCurrent": 9,
+              "ratedPower": 4
+            }
+          ],
+          "pushbuttons": [],
+          "panels": [
+            {
+              "id": "PN1",
+              "tag": "ЩР1",
+              "railCount": 2,
+              "x": 160,
+              "y": -140,
+              "inbox": true,
+              "inletVoltage": 380,
+              "fixed": true
+            }
+          ],
+          "standaloneRails": false,
+          "workbench": {
+            "x": 60,
+            "y": 1350,
+            "width": 1900,
+            "height": 520,
+            "panelId": "PN1",
+            "motorId": "M1"
+          },
+          "clamps": [],
+          "specialProps": {
+            "inbox": {
+              "tag": "XT1",
+              "customName": "Ввод 3×380 В",
+              "ratedVoltage": 380,
+              "frequency": 50
+            },
+            "multimeter": {
+              "tag": "PV1",
+              "customName": "Цифровой мультиметр"
+            }
+          },
+          "special": {
+            "inbox": true,
+            "pushbutton": false,
+            "motor": false,
+            "multimeter": false
+          }
+        },
+        "positions": {
+          "inbox": {
+            "x": 50,
+            "y": -140
+          },
+          "pushbutton": {
+            "x": 930,
+            "y": 720
+          },
+          "motor": {
+            "x": 463,
+            "y": 875,
+            "load": 0
+          },
+          "multimeter": {
+            "x": 875,
+            "y": 1080,
+            "redX": 1051,
+            "redY": 1034,
+            "blackX": 935,
+            "blackY": 1034,
+            "fn": "voltage",
+            "power": true,
+            "aDocked": true,
+            "bDocked": true,
+            "a": null,
+            "b": null
+          }
+        },
+        "journal": {
+          "items": [],
+          "faultCount": 0,
+          "filter": "work"
+        },
+        "view": {
+          "x": 0,
+          "y": 0,
+          "w": 2000,
+          "h": 2500
+        }
+      }
+    }
   }
 ];
-

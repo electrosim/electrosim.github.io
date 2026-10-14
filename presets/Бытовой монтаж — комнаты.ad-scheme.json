@@ -1,0 +1,88 @@
+{
+  "format": "ad-trainer-scheme",
+  "version": 1,
+  "exported": "2026-10-14T16:13:55.824Z",
+  "preset": {
+    "version": 3,
+    "id": "stand-household-rooms",
+    "name": "Бытовой монтаж — комнаты",
+    "updated": 1791994973988,
+    "state": {
+      "power": true,
+      "devices": [],
+      "relays": [],
+      "wires": [],
+      "nextId": 1,
+      "motors": [],
+      "pushbuttons": [],
+      "panels": [
+        {
+          "id": "PN1",
+          "tag": "ЩР1",
+          "railCount": 2,
+          "x": 670,
+          "y": 650,
+          "inbox": true,
+          "inletVoltage": 220,
+          "fixed": true
+        }
+      ],
+      "standaloneRails": false,
+      "workbench": null,
+      "clamps": [],
+      "specialProps": {
+        "inbox": {
+          "tag": "XT1",
+          "customName": "Ввод 220 В",
+          "ratedVoltage": 220,
+          "frequency": 50
+        },
+        "multimeter": {
+          "tag": "PV1",
+          "customName": "Цифровой мультиметр"
+        }
+      },
+      "special": {
+        "inbox": true,
+        "pushbutton": false,
+        "motor": false,
+        "multimeter": false
+      },
+      "roomScene": "household"
+    },
+    "positions": {
+      "inbox": {
+        "x": 50,
+        "y": -140
+      },
+      "pushbutton": {
+        "x": 930,
+        "y": 720
+      },
+      "motor": {
+        "x": 463,
+        "y": 875,
+        "load": 0
+      },
+      "multimeter": {
+        "x": 875,
+        "y": 1080,
+        "redX": 1051,
+        "redY": 1034,
+        "blackX": 935,
+        "blackY": 1034,
+        "fn": "voltage",
+        "power": true,
+        "aDocked": true,
+        "bDocked": true,
+        "a": null,
+        "b": null
+      }
+    },
+    "journal": {
+      "items": [],
+      "faultCount": 0,
+      "filter": "work"
+    }
+  }
+}

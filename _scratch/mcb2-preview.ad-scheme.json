@@ -1,0 +1,127 @@
+{
+  "format": "ad-trainer-scheme",
+  "version": 1,
+  "preset": {
+    "version": 3,
+    "id": "scheme-mv8fap9v",
+    "name": "Автоматы 1P, 2P и 3P",
+    "updated": 1792001285491,
+    "state": {
+      "power": false,
+      "devices": [
+        {
+          "id": 1,
+          "type": "mcb1",
+          "rail": "PN1:0",
+          "slot": 2,
+          "tag": "QF1",
+          "on": false,
+          "breakerType": "C10"
+        },
+        {
+          "id": 2,
+          "type": "mcb2",
+          "rail": "PN1:0",
+          "slot": 4,
+          "tag": "QF2",
+          "on": false,
+          "breakerType": "C10"
+        },
+        {
+          "id": 3,
+          "type": "mcb3",
+          "rail": "PN1:0",
+          "slot": 7,
+          "tag": "QF3",
+          "on": false,
+          "breakerType": "C25"
+        }
+      ],
+      "relays": [],
+      "wires": [],
+      "nextId": 4,
+      "motors": [],
+      "pushbuttons": [],
+      "panels": [
+        {
+          "id": "PN1",
+          "tag": "ЩР1",
+          "railCount": 2,
+          "x": 160,
+          "y": -140,
+          "inbox": true,
+          "inletVoltage": 380,
+          "fixed": true
+        }
+      ],
+      "standaloneRails": false,
+      "workbench": null,
+      "roomScene": null,
+      "clamps": [],
+      "specialProps": {
+        "inbox": {
+          "tag": "XT1",
+          "customName": "Ввод 3×380 В",
+          "ratedVoltage": 380,
+          "frequency": 50
+        },
+        "multimeter": {
+          "tag": "PV1",
+          "customName": "Цифровой мультиметр"
+        }
+      },
+      "special": {
+        "inbox": true,
+        "pushbutton": false,
+        "motor": false,
+        "multimeter": false
+      }
+    },
+    "positions": {
+      "inbox": {
+        "x": 186,
+        "y": -104
+      },
+      "pushbutton": {
+        "x": 930,
+        "y": 720
+      },
+      "motor": {
+        "x": 463,
+        "y": 875,
+        "load": 0
+      },
+      "multimeter": {
+        "x": 875,
+        "y": 1080,
+        "redX": 1051,
+        "redY": 1034,
+        "blackX": 935,
+        "blackY": 1034,
+        "fn": "voltage",
+        "power": true,
+        "aDocked": true,
+        "bDocked": true,
+        "a": null,
+        "b": null
+      }
+    },
+    "journal": {
+      "items": [
+        {
+          "ts": "21:08:05",
+          "msg": "Тренажёр запущен: верстак с двигателем, пустой щит и ввод XT1 — 3×380 В, N и PE.",
+          "kind": "info"
+        }
+      ],
+      "faultCount": 0,
+      "filter": "work"
+    },
+    "view": {
+      "x": 130,
+      "y": 20,
+      "w": 1100,
+      "h": 1375
+    }
+  }
+}

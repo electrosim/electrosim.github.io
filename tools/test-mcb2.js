@@ -1,0 +1,25 @@
+const assert=require('assert/strict'),{load}=require('./sandbox');
+const e=load({interactive:true}),t=e.api,s=t.state;
+s.power=true;s.motors=[];s.relays=[];s.wires=[];
+const d={id:1,type:'mcb2',x:200,y:300,on:true,tripped:false,breakerType:'C10',tag:'QF1'};
+s.devices=[d,{id:2,type:'lamp',x:500,y:300,ratedVoltage:220,ratedPower:1,indicator:'green'}];
+function wire(a,key,b,end){s.wires.push({id:s.wires.length+1,a:{devId:a,key},b:{devId:b,key:end}});}
+wire('IN','L1',1,'t0');wire('IN','N',1,'t1');wire(1,'b0',2,'t0');wire(1,'b1',2,'b0');
+assert.equal(t.TYPES.mcb2.modules,2);assert.equal(t.TYPES.mcb2.poles,2);
+assert.equal(t.termDefs('mcb2',d).map(x=>x.key).join(','),'t0,t1,b0,b1');assert.equal(t.termDefs('mcb2',d).map(x=>x.label).join(','),'1,3,2,4');
+assert(t.lampVoltage(s.devices[1])>200,'фаза и нейтраль проходят через два полюса');
+d.on=false;assert.equal(t.lampVoltage(s.devices[1]),0);assert.equal(t.internalLinks().filter(p=>p[0].devId===1).length,0,'выключение разрывает оба полюса');
+d.on=true;d.tripped=true;assert.equal(t.internalLinks().filter(p=>p[0].devId===1).length,0);d.tripped=false;
+const trip=t.breakerProtectionStep(.25,{1:0,2:60,3:0,4:60});assert(trip.tripped);assert.equal(trip.tripped.phases.length,2);assert(d.tripped&&!d.on,'перегрузка второго полюса отключает весь автомат');
+d.on=true;d.tripped=false;d.breakerHeat=0;wire(1,'b0',1,'b1');const map=t.potentialMap();assert(map.conflict);assert(t.electricalShortFault(map));assert(d.tripped&&!d.on,'КЗ на выходах отключает оба полюса');s.wires.pop();
+d.on=false;d.tripped=false;
+const matrix={a:1,b:0,c:0,d:1,e:0,f:0,inverse(){return this;}};e.els.scene.getScreenCTM=()=>matrix;e.els.world.getScreenCTM=()=>matrix;
+const body=e.makeEl('g');body.classList.add('dev');body.dataset.id='1';body.parentNode=e.els.deviceLayer;
+const label=e.makeEl('text');label.parentNode=body;
+e.pointer(label,'pointerdown',{pointerType:'mouse',clientX:230,clientY:350});e.pointer(e.window.document,'pointerup',{pointerType:'mouse',clientX:230,clientY:350});assert(!d.on,'корпус не включает автомат');
+const handle=e.makeEl('g');handle.classList.add('hdl');handle.parentNode=body;
+e.pointer(handle,'pointerdown',{pointerType:'mouse',clientX:230,clientY:450});e.pointer(e.window.document,'pointerup',{pointerType:'mouse',clientX:230,clientY:450});assert(d.on);assert(t.lampVoltage(s.devices[1])>200,'общая рукоятка включает оба полюса');
+const props=t.characteristicsFor({kind:'device',id:1});assert(props.type.includes('2P'));assert(props.fields.some(f=>f.key==='breakerType'));
+const svg=t.deviceInner('mcb2',d);assert(svg.includes('2P  230В~'));assert(svg.includes('class="hdl"'));
+const saved=t.schemeSnapshot('2P');assert(t.applyPreset(saved));assert.equal(s.devices[0].type,'mcb2');assert.equal(t.termDefs('mcb2',s.devices[0]).length,4);
+console.log('Автомат 2P: четыре клеммы, два независимых полюса, общая рукоятка, отключение, перегрузка второго полюса, КЗ, свойства и сохранение — проверки пройдены.');

@@ -10,9 +10,9 @@ function wheel(box,delta){return box.pointer(box.els.scene,'wheel',{pointerType:
 console.log('ПК: отдельная геометрия и управление мышью');
 const pc=load({interactive:true,width:1575,height:892});
 check('мобильная компоновка на ПК выключена',!pc.api.mobileTouchLayout()&&!pc.window.document.documentElement.classList.contains('touch-ui'));
-check('исходный масштаб 100%',pc.api.touchView().w===1240&&pc.api.touchView().h===1550);
+check('исходный масштаб показывает весь стенд',pc.api.touchView().w===2000&&pc.api.touchView().h===2500);
 const out=wheel(pc,120);
-check('колесо отдаляет и отменяет прокрутку страницы',out.defaultPrevented&&pc.api.touchView().w>1240);
+check('колесо отдаляет и отменяет прокрутку страницы',out.defaultPrevented&&pc.api.touchView().w>2000);
 for(let i=0;i<40;i++)wheel(pc,120);
 check('максимальное отдаление достижимо',pc.api.touchView().w===3472);
 for(let i=0;i<80;i++)wheel(pc,-120);
@@ -24,7 +24,7 @@ function geometry(box,width,height){
   box.els.scene.getBoundingClientRect=()=>({left:0,top:0,width,height});
   function matrix(world){
     const v=box.api.touchView(),a=Math.min(width/v.w,height/v.h);
-    const e=(width-v.w*a)/2-v.x*a,f=(height-v.h*a)/2-v.y*a+(world?200*a:0);
+    const e=(width-v.w*a)/2-v.x*a,f=(height-v.h*a)-v.y*a+(world?200*a:0);
     return {a,b:0,c:0,d:a,e,f,inverse(){return {a:1/a,b:0,c:0,d:1/a,e:-e/a,f:-f/a};}};
   }
   box.els.scene.getScreenCTM=()=>matrix(false);
@@ -109,11 +109,12 @@ limit.pointer(limit.els.scene,'pointerup',{pointerId:1,clientX:210,clientY:400})
 
 console.log('\nРасширенное рабочее поле');
 const largePc=load({interactive:true});
+const initialPcY=largePc.api.touchView().y;
 largePc.els.scene.getScreenCTM=()=>({a:1,b:0,c:0,d:1,e:0,f:0,inverse(){return this;}});
 largePc.pointer(largePc.els.scene,'pointerdown',{pointerType:'mouse',button:1,clientX:500,clientY:400});
 largePc.pointer(largePc.window.document,'pointermove',{pointerType:'mouse',clientX:-900,clientY:-1000});
 largePc.pointer(largePc.window.document,'pointerup',{pointerType:'mouse',button:1,clientX:-900,clientY:-1000});
-check('мышью можно добраться до новой области справа и снизу',largePc.api.touchView().x===1400&&largePc.api.touchView().y===1400);
+check('мышью можно добраться до новой области справа и снизу',largePc.api.touchView().x===1180&&largePc.api.touchView().y===initialPcY+1400);
 const largeTouch=load({interactive:true,mobile:true,width:430,height:860});geometry(largeTouch,430,860);
 largeTouch.pointer(largeTouch.els.scene,'pointerdown',{pointerId:1,clientX:200,clientY:400});
 largeTouch.pointer(largeTouch.els.scene,'pointermove',{pointerId:1,clientX:-300,clientY:-100});largeTouch.runFrames();

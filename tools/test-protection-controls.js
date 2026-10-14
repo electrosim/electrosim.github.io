@@ -42,8 +42,8 @@ for(const mobile of [false,true])for(const type of ['mcb1','mcb3','rcd']){
   event(f,f.body,'pointermove',{clientX:350,clientY:330});f.e.runFrames();
   event(f,f.body,'pointerup',{clientX:350,clientY:330});
   assert.equal(d.on,true,name+': перенос корпуса не отключает');
-  assert.equal(d.x,150,name+': корпус перемещается по X');
-  assert.equal(d.y,130,name+': корпус перемещается по Y');
+  assert.equal(d.x,100,name+': вне рейки перенос корпуса отменяется по X');
+  assert.equal(d.y,100,name+': вне рейки перенос корпуса отменяется по Y');
   event(f,f.paddle,'pointerdown');event(f,f.e.window.document,'pointerup');f.e.runTimers(0);
   assert.equal(d.on,false,name+': отпускание на document завершает клик ручки');
   d.on=true;
@@ -51,7 +51,7 @@ for(const mobile of [false,true])for(const type of ['mcb1','mcb3','rcd']){
   event(f,f.paddle,'pointermove',{clientX:350,clientY:330});f.e.runFrames();
   event(f,f.paddle,'pointerup',{clientX:350,clientY:330});
   assert.equal(d.on,true,name+': перенос за ручку не отключает');
-  assert.equal(d.x,200,name+': перенос за ручку сохраняется');
+  assert.equal(d.x,100,name+': вне рейки перенос за ручку отменяется');
   console.log('OK '+name+': корпус, ручка, взведение, отмена и перенос.');
 }
 for(const type of ['mcb1','mcb3','rcd']){
