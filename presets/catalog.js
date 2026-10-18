@@ -5629,6 +5629,43 @@ globalThis.ELECTROSIM_PRESET_CATALOG = [
     }
   },
   {
+    "file": "Свободный монтаж.ad-scheme.json",
+    "modified": 1792325253568.1594,
+    "data": {
+      "format": "ad-trainer-scheme",
+      "version": 1,
+      "preset": {
+        "version": 3,
+        "id": "stand-free-mounting",
+        "name": "Свободный монтаж",
+        "state": {
+          "power": true,
+          "standId": "free-mounting",
+          "roomScene": null,
+          "workbench": null,
+          "devices": [],
+          "relays": [],
+          "wires": [],
+          "conduits": [],
+          "alignmentGuides": [],
+          "alignmentSnapEnabled": true,
+          "nextId": 1,
+          "motors": [],
+          "pushbuttons": [],
+          "panels": [],
+          "clamps": [],
+          "standaloneRails": false,
+          "special": {
+            "inbox": false,
+            "pushbutton": false,
+            "motor": false,
+            "multimeter": false
+          }
+        }
+      }
+    }
+  },
+  {
     "file": "Стенд двигателя — пустой.ad-scheme.json",
     "modified": 1792319911160.3481,
     "data": {

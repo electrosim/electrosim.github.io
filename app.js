@@ -8477,7 +8477,10 @@ const STAND_OPTIONS=[
     hint:'Квартира и пустой щит для самостоятельного монтажа'},
   {key:'apartment-connected',button:'sceneHouseholdConnected',title:'Квартирный щит. Готовый',
     file:'Монтаж квартирного щита.ad-scheme.json',sourceName:'Монтаж квартирного щита',
-    hint:'Готовый щит, приборы и подключённая проводка'}
+    hint:'Готовый щит, приборы и подключённая проводка'},
+  {key:'free-mounting',button:'sceneFreeMounting',title:'Свободный монтаж',
+    file:'Свободный монтаж.ad-scheme.json',sourceName:'Свободный монтаж',
+    hint:'Чистое поле для самостоятельного размещения щитов и оборудования'}
 ];
 function openDesignScene(file){
   const preset=folderPresets.find(function(p){return p._folderFile===file;});
@@ -8490,15 +8493,19 @@ function openDesignScene(file){
 function newWorkspaceScheme(){
   requestSchemeReplace(function(){
     const household=state.roomScene==='household';
+    const freeMounting=state.standId==='free-mounting';
     cancelWire();hideWireMenu();hideObjectMenu();touchPlacement=null;
-    if(household){
+    if(freeMounting){
+      const preset=JSON.parse(JSON.stringify(folderPresets.find(function(p){return p._folderFile==='Свободный монтаж.ad-scheme.json';})));
+      delete preset.view;applyPreset(preset);
+    }else if(household){
       const preset=JSON.parse(JSON.stringify(folderPresets.find(function(p){return p._folderFile==='Бытовой монтаж — комнаты.ad-scheme.json';})));
       delete preset.view;applyPreset(preset);
     }else{initialState();resetView();}
     clearLog();renderAll();
     document.getElementById('presetName').value='';
     clearSchemeRecovery();markSchemeClean();schemeLastDraftPayload='';saveSchemeDraft();
-    presetStatus(household?'Новая сцена: комнаты для бытового монтажа.':'Новая схема: ДПТ слева, асинхронный двигатель справа и пустой щит на две DIN-рейки.');
+    presetStatus(freeMounting?'Новая схема: чистое поле для свободного монтажа.':household?'Новая сцена: комнаты для бытового монтажа.':'Новая схема: ДПТ слева, асинхронный двигатель справа и пустой щит на две DIN-рейки.');
   });
 }
 function restoreWorkspaceScheme(){

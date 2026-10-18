@@ -1,0 +1,33 @@
+{
+  "format": "ad-trainer-scheme",
+  "version": 1,
+  "preset": {
+    "version": 3,
+    "id": "stand-free-mounting",
+    "name": "Свободный монтаж",
+    "state": {
+      "power": true,
+      "standId": "free-mounting",
+      "roomScene": null,
+      "workbench": null,
+      "devices": [],
+      "relays": [],
+      "wires": [],
+      "conduits": [],
+      "alignmentGuides": [],
+      "alignmentSnapEnabled": true,
+      "nextId": 1,
+      "motors": [],
+      "pushbuttons": [],
+      "panels": [],
+      "clamps": [],
+      "standaloneRails": false,
+      "special": {
+        "inbox": false,
+        "pushbutton": false,
+        "motor": false,
+        "multimeter": false
+      }
+    }
+  }
+}
