@@ -19,9 +19,9 @@
         {
           "id": "PN1",
           "tag": "ЩР1",
-          "railCount": 2,
+          "railCount": 3,
           "x": 670,
-          "y": 650,
+          "y": 820,
           "inbox": true,
           "inletVoltage": 220,
           "fixed": true

@@ -11,7 +11,7 @@ s.devices=[
   {id:2,type:'mcb3',on:true,tripped:false,breakerType:'C2',ratedCurrent:2,tag:'QF1'},
   {id:4,type:'km1',on:false,tripped:false,coil:true,tag:'KM1'}
 ];
-s.motors=[{id:'M1',tag:'M1',kind:'ac',load:0,polePairs:2,ratedSlipPercent:10,
+s.motors=[{id:'M1',tag:'M1',kind:'ac',load:100,polePairs:2,ratedSlipPercent:10,
   ratedFrequency:50,ratedVoltage:380,ratedCurrent:9,ratedPower:4}];
 s.wires=[];
 wire('IN','L1',2,'t0');wire('IN','L2',2,'t1');wire('IN','L3',2,'t2');

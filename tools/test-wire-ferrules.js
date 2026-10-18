@@ -27,7 +27,7 @@ for(const c of cases){
  assert(v,c.type+' '+c.key+': вход задан');assert(Number.isFinite(p.entryInset)&&p.entryInset>=0);
  if(c.obj){near(p.x,c.obj.x+c.td.dx,'винт X сохранён');near(p.y,c.obj.y+c.td.dy,'винт Y сохранён');}
  if(c.motor){near(p.x,c.motor.x+c.td.dx*c.motor.scale,'винт X масштаб');near(p.y,c.motor.y+c.td.dy*c.motor.scale,'винт Y масштаб');}
- if(c.type==='kk1'&&c.key[0]==='r'){assert.equal(p.entrySide,'bottom','98–95 подключаются снизу');near(p.entryInset,19.5,'нижний край компактной вспомогательной колодки');const o=t.originOf({type:'kk1',kmId:km.id});near(p.y-o.y,121,'винты 98–95 подняты вместе с колодкой');}
+ if(c.type==='kk1'&&c.key[0]==='r'){assert.equal(p.entrySide,'bottom','98–95 подключаются снизу');near(p.entryInset,19.5,'нижний край компактной вспомогательной колодки');const o=t.originOf({type:'kk1',kmId:km.id});near(p.y-o.y,85,'винты 98–95 подняты вместе с колодкой');}
  if(c.type==='IN')near(p.y+p.entryInset,p.y+15.75,'манжета на нижней грани вводной клеммы');
  for(const sectionMm2 of [0.5,2.5,35])for(const shape of ['smooth','straight','orthogonal','arc','s']){
   const wr={shape,sectionMm2,pts:[]},cap=(t.wireVisualWidth(wr)+2.5)/2;

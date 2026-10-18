@@ -18,7 +18,7 @@
           "id": "M1",
           "tag": "M1",
           "kind": "ac",
-          "x": 1250,
+          "x": 2130,
           "y": 960,
           "w": 313,
           "h": 351,
@@ -32,6 +32,27 @@
           "ratedVoltage": 380,
           "ratedCurrent": 9,
           "ratedPower": 4
+        },
+        {
+          "id": "MD1",
+          "tag": "MD1",
+          "kind": "dc",
+          "x": 346,
+          "y": 960,
+          "w": 313,
+          "h": 351,
+          "scale": 1.5,
+          "load": 0,
+          "rpmActual": 0,
+          "angle": 0,
+          "ratedArmatureVoltage": 220,
+          "ratedFieldVoltage": 220,
+          "ratedArmatureCurrent": 5,
+          "ratedSpeed": 1500,
+          "armatureResistance": 1.6,
+          "fieldResistance": 220,
+          "ratedPower": 1.2,
+          "inertiaFactor": 0.6
         }
       ],
       "pushbuttons": [],
@@ -40,7 +61,7 @@
           "id": "PN1",
           "tag": "ЩР1",
           "railCount": 2,
-          "x": 160,
+          "x": 960,
           "y": -140,
           "inbox": true,
           "inletVoltage": 380,
@@ -51,10 +72,11 @@
       "workbench": {
         "x": 60,
         "y": 1350,
-        "width": 1900,
+        "width": 2700,
         "height": 520,
         "panelId": "PN1",
-        "motorId": "M1"
+        "motorId": "M1",
+        "dcMotorId": "MD1"
       },
       "clamps": [],
       "specialProps": {
@@ -112,8 +134,8 @@
     },
     "view": {
       "x": 0,
-      "y": 0,
-      "w": 2000,
+      "y": -350,
+      "w": 2800,
       "h": 2500
     }
   }

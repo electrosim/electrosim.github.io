@@ -9,7 +9,7 @@ m.rpmActual=1350;
 let op=t.motorVisualOperating(m,1),v=t.motorInstrumentValues(m,op);
 assert.equal(op.frequencyHz,50);assert.equal(v.sync,'1500 об/мин');assert.equal(v.slip,'10.0 %');assert.equal(v.torque,'0.0 Н·м');
 m.rpmActual=750;assert.equal(t.motorInstrumentValues(m,t.motorVisualOperating(m,1)).slip,'50.0 %','скольжение следует фактической скорости');
-m.load=65;op=t.motorVisualOperating(m,1);assert.equal(op.load,65);assert(op.current>9,'нагрузка повышает ток');assert.equal(t.motorInstrumentValues(m,op).torque,'18.4 Н·м');
+m.load=65;op=t.motorVisualOperating(m,1);assert.equal(op.load,65);assert(op.current>2.7&&op.current<9,'частичная нагрузка между холостым ходом и номиналом');assert.equal(t.motorInstrumentValues(m,op).torque,'18.4 Н·м');
 s.power=false;op=t.motorVisualOperating(m,0);v=t.motorInstrumentValues(m,op);
 assert.equal(op.frequencyHz,0);assert.equal(op.current,0);assert.equal(v.slip,'—');assert.equal(op.rpm,750,'выбег ротора остаётся виден');assert.equal(v.torque,'18.4 Н·м');
 m.rpmActual=0;assert.equal(t.motorInstrumentValues(m,t.motorVisualOperating(m,0)).torque,'0.0 Н·м');

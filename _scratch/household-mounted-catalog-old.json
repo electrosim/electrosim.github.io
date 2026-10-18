@@ -1,0 +1,3094 @@
+{
+  "file": "Бытовой монтаж — собранный щит 63 А.ad-scheme.json",
+  "modified": 1792249797208,
+  "data": {
+    "format": "ad-trainer-scheme",
+    "version": 1,
+    "exported": "2026-10-17T15:09:57.206Z",
+    "preset": {
+      "version": 3,
+      "id": "household-mounted-63a",
+      "name": "Бытовой монтаж — собранный щит 63 А",
+      "updated": 1792249797206,
+      "state": {
+        "power": true,
+        "devices": [
+          {
+            "id": 1,
+            "type": "mcb2",
+            "tag": "QF0",
+            "rail": "PN1:0",
+            "slot": 0,
+            "breakerType": "C63",
+            "on": true,
+            "tripped": false,
+            "customName": "Ввод 220 В · 63 А"
+          },
+          {
+            "id": 2,
+            "type": "rcd",
+            "tag": "QD1",
+            "rail": "PN1:0",
+            "slot": 3,
+            "ratedCurrent": 63,
+            "ratedLeakageMa": 30,
+            "rcdType": "F",
+            "on": true,
+            "tripped": false
+          },
+          {
+            "id": 3,
+            "type": "crossN",
+            "tag": "XN1",
+            "rail": "PN1:0",
+            "slot": 11
+          },
+          {
+            "id": 4,
+            "type": "pebus",
+            "tag": "XPE1",
+            "rail": "PN1:0",
+            "slot": 15,
+            "wireEntrySide": "left"
+          },
+          {
+            "id": 5,
+            "type": "rcd",
+            "tag": "QD2",
+            "rail": "PN1:1",
+            "slot": 3,
+            "ratedCurrent": 63,
+            "ratedLeakageMa": 30,
+            "rcdType": "A",
+            "on": true,
+            "tripped": false
+          },
+          {
+            "id": 6,
+            "type": "crossN",
+            "tag": "XN2",
+            "rail": "PN1:1",
+            "slot": 11
+          },
+          {
+            "id": 7,
+            "type": "pebus",
+            "tag": "XPE2",
+            "rail": "PN1:1",
+            "slot": 15,
+            "wireEntrySide": "left"
+          },
+          {
+            "id": 8,
+            "type": "rcd",
+            "tag": "QD3",
+            "rail": "PN1:2",
+            "slot": 3,
+            "ratedCurrent": 63,
+            "ratedLeakageMa": 30,
+            "rcdType": "F",
+            "on": true,
+            "tripped": false
+          },
+          {
+            "id": 9,
+            "type": "crossN",
+            "tag": "XN3",
+            "rail": "PN1:2",
+            "slot": 11
+          },
+          {
+            "id": 10,
+            "type": "pebus",
+            "tag": "XPE3",
+            "rail": "PN1:2",
+            "slot": 15,
+            "wireEntrySide": "left"
+          },
+          {
+            "id": 11,
+            "type": "mcb1",
+            "tag": "QF1",
+            "rail": "PN1:0",
+            "slot": 5,
+            "breakerType": "C10",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Освещение: щитовая, прихожая, спальня"
+          },
+          {
+            "id": 12,
+            "type": "mcb1",
+            "tag": "QF2",
+            "rail": "PN1:0",
+            "slot": 6,
+            "breakerType": "C16",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Розетка щитовой"
+          },
+          {
+            "id": 13,
+            "type": "mcb1",
+            "tag": "QF3",
+            "rail": "PN1:0",
+            "slot": 7,
+            "breakerType": "C16",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Розетка прихожей"
+          },
+          {
+            "id": 14,
+            "type": "mcb1",
+            "tag": "QF4",
+            "rail": "PN1:0",
+            "slot": 8,
+            "breakerType": "C10",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Кондиционер спальни"
+          },
+          {
+            "id": 15,
+            "type": "mcb1",
+            "tag": "QF5",
+            "rail": "PN1:0",
+            "slot": 9,
+            "breakerType": "C10",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Холодильник кухни"
+          },
+          {
+            "id": 16,
+            "type": "mcb1",
+            "tag": "QF6",
+            "rail": "PN1:1",
+            "slot": 5,
+            "breakerType": "C10",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Освещение: кухня, ванная, подсобка"
+          },
+          {
+            "id": 17,
+            "type": "mcb1",
+            "tag": "QF7",
+            "rail": "PN1:1",
+            "slot": 6,
+            "breakerType": "C16",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Розетка спальни"
+          },
+          {
+            "id": 18,
+            "type": "mcb1",
+            "tag": "QF8",
+            "rail": "PN1:1",
+            "slot": 7,
+            "breakerType": "C16",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Розетка кухни"
+          },
+          {
+            "id": 19,
+            "type": "mcb1",
+            "tag": "QF9",
+            "rail": "PN1:1",
+            "slot": 8,
+            "breakerType": "C32",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Электроплита 7 кВт"
+          },
+          {
+            "id": 20,
+            "type": "mcb1",
+            "tag": "QF10",
+            "rail": "PN1:2",
+            "slot": 5,
+            "breakerType": "C16",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Розетка ванной"
+          },
+          {
+            "id": 21,
+            "type": "mcb1",
+            "tag": "QF11",
+            "rail": "PN1:2",
+            "slot": 6,
+            "breakerType": "C16",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Розетка подсобки"
+          },
+          {
+            "id": 22,
+            "type": "mcb1",
+            "tag": "QF12",
+            "rail": "PN1:2",
+            "slot": 7,
+            "breakerType": "C16",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Стиральная машина"
+          },
+          {
+            "id": 23,
+            "type": "mcb1",
+            "tag": "QF13",
+            "rail": "PN1:2",
+            "slot": 8,
+            "breakerType": "C16",
+            "on": true,
+            "tripped": false,
+            "circuitName": "Бойлер"
+          },
+          {
+            "id": 24,
+            "type": "comb",
+            "tag": "GS1",
+            "combPoles": 1,
+            "combCount": 5,
+            "combAnchorId": 11,
+            "x": 964.5,
+            "y": 1027
+          },
+          {
+            "id": 25,
+            "type": "comb",
+            "tag": "GS2",
+            "combPoles": 1,
+            "combCount": 4,
+            "combAnchorId": 16,
+            "x": 964.5,
+            "y": 1427
+          },
+          {
+            "id": 26,
+            "type": "comb",
+            "tag": "GS3",
+            "combPoles": 1,
+            "combCount": 4,
+            "combAnchorId": 20,
+            "x": 964.5,
+            "y": 1827
+          },
+          {
+            "id": 27,
+            "type": "outlet",
+            "tag": "XS1",
+            "x": 1830,
+            "y": 2150,
+            "customName": "Розеточный блок · Щитовая"
+          },
+          {
+            "id": 28,
+            "type": "bulb",
+            "tag": "EL1",
+            "x": 1830,
+            "y": 850,
+            "ratedPower": 10,
+            "customName": "Лампа 10 Вт · Щитовая"
+          },
+          {
+            "id": 29,
+            "type": "wallSwitch",
+            "tag": "SA1",
+            "x": 1830,
+            "y": 1450,
+            "gangs": 1,
+            "switchOn1": true,
+            "customName": "Свет · Щитовая"
+          },
+          {
+            "id": 30,
+            "type": "outlet",
+            "tag": "XS2",
+            "x": 2780,
+            "y": 2150,
+            "customName": "Розеточный блок · Прихожая"
+          },
+          {
+            "id": 31,
+            "type": "bulb",
+            "tag": "EL2",
+            "x": 3070,
+            "y": 850,
+            "ratedPower": 10,
+            "customName": "Лампа 10 Вт · Прихожая"
+          },
+          {
+            "id": 32,
+            "type": "wallSwitch",
+            "tag": "SA2",
+            "x": 2780,
+            "y": 1420,
+            "gangs": 1,
+            "switchOn1": true,
+            "customName": "Свет · Прихожая"
+          },
+          {
+            "id": 33,
+            "type": "outlet",
+            "tag": "XS3",
+            "x": 4300,
+            "y": 2150,
+            "customName": "Розеточный блок · Спальня"
+          },
+          {
+            "id": 34,
+            "type": "bulb",
+            "tag": "EL3",
+            "x": 5480,
+            "y": 850,
+            "ratedPower": 10,
+            "customName": "Лампа 10 Вт · Спальня"
+          },
+          {
+            "id": 35,
+            "type": "wallSwitch",
+            "tag": "SA3",
+            "x": 4260,
+            "y": 1450,
+            "gangs": 1,
+            "switchOn1": true,
+            "customName": "Свет · Спальня"
+          },
+          {
+            "id": 36,
+            "type": "outlet",
+            "tag": "XS4",
+            "x": 7950,
+            "y": 1300,
+            "customName": "Розеточный блок · Кухня"
+          },
+          {
+            "id": 37,
+            "type": "bulb",
+            "tag": "EL4",
+            "x": 7280,
+            "y": 850,
+            "ratedPower": 10,
+            "customName": "Лампа 10 Вт · Кухня"
+          },
+          {
+            "id": 38,
+            "type": "wallSwitch",
+            "tag": "SA4",
+            "x": 6030,
+            "y": 1000,
+            "gangs": 1,
+            "switchOn1": true,
+            "customName": "Свет · Кухня"
+          },
+          {
+            "id": 39,
+            "type": "outlet",
+            "tag": "XS5",
+            "x": 8620,
+            "y": 1420,
+            "customName": "Розеточный блок · Ванная"
+          },
+          {
+            "id": 40,
+            "type": "bulb",
+            "tag": "EL5",
+            "x": 9100,
+            "y": 850,
+            "ratedPower": 10,
+            "customName": "Лампа 10 Вт · Ванная"
+          },
+          {
+            "id": 41,
+            "type": "wallSwitch",
+            "tag": "SA5",
+            "x": 8500,
+            "y": 1100,
+            "gangs": 1,
+            "switchOn1": true,
+            "customName": "Свет · Ванная"
+          },
+          {
+            "id": 42,
+            "type": "outlet",
+            "tag": "XS6",
+            "x": 10520,
+            "y": 2150,
+            "customName": "Розеточный блок · Подсобка"
+          },
+          {
+            "id": 43,
+            "type": "bulb",
+            "tag": "EL6",
+            "x": 11000,
+            "y": 850,
+            "ratedPower": 10,
+            "customName": "Лампа 10 Вт · Подсобка"
+          },
+          {
+            "id": 44,
+            "type": "wallSwitch",
+            "tag": "SA6",
+            "x": 10520,
+            "y": 1400,
+            "gangs": 1,
+            "switchOn1": true,
+            "customName": "Свет · Подсобка"
+          },
+          {
+            "id": 45,
+            "type": "split",
+            "tag": "E1",
+            "x": 4400,
+            "y": 850,
+            "ratedPower": 1500,
+            "applianceOn": false,
+            "customName": "Кондиционер спальни · 1,5 кВт"
+          },
+          {
+            "id": 46,
+            "type": "fridge",
+            "tag": "E2",
+            "x": 6050,
+            "y": 1400,
+            "ratedPower": 300,
+            "applianceOn": false,
+            "customName": "Холодильник кухни · 0,3 кВт"
+          },
+          {
+            "id": 47,
+            "type": "stove",
+            "tag": "E3",
+            "x": 6640,
+            "y": 1850,
+            "ratedPower": 7000,
+            "applianceOn": false,
+            "customName": "Плита кухни · 7 кВт"
+          },
+          {
+            "id": 48,
+            "type": "washer",
+            "tag": "E4",
+            "x": 8620,
+            "y": 1850,
+            "ratedPower": 2200,
+            "applianceOn": false,
+            "customName": "Стиральная машина · 2,2 кВт"
+          },
+          {
+            "id": 49,
+            "type": "boiler",
+            "tag": "E5",
+            "x": 11000,
+            "y": 1600,
+            "ratedPower": 2000,
+            "applianceOn": false,
+            "customName": "Бойлер подсобки · 2 кВт"
+          }
+        ],
+        "relays": [],
+        "wires": [
+          {
+            "id": 1,
+            "a": {
+              "devId": "IN",
+              "key": "L1"
+            },
+            "b": {
+              "devId": 1,
+              "key": "t0"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 16,
+            "shape": "orthogonal",
+            "pts": [],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 2,
+            "a": {
+              "devId": "IN",
+              "key": "N"
+            },
+            "b": {
+              "devId": 1,
+              "key": "t1"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 16,
+            "shape": "orthogonal",
+            "pts": [],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 3,
+            "a": {
+              "devId": "IN",
+              "key": "PE"
+            },
+            "b": {
+              "devId": 4,
+              "key": "k0"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 16,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1546,
+                "y": 1030
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 4,
+            "a": {
+              "devId": 1,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 2,
+              "key": "tL"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 785,
+                "y": 1360
+              },
+              {
+                "x": 785,
+                "y": 990
+              },
+              {
+                "x": 885.75,
+                "y": 990
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 5,
+            "a": {
+              "devId": 1,
+              "key": "b1"
+            },
+            "b": {
+              "devId": 2,
+              "key": "tN"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 805,
+                "y": 1375
+              },
+              {
+                "x": 805,
+                "y": 1005
+              },
+              {
+                "x": 938.25,
+                "y": 1005
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 6,
+            "a": {
+              "devId": 2,
+              "key": "bL"
+            },
+            "b": {
+              "devId": 11,
+              "key": "t0"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 885.75,
+                "y": 1335
+              },
+              {
+                "x": 1250,
+                "y": 1335
+              },
+              {
+                "x": 1250,
+                "y": 995
+              },
+              {
+                "x": 990.75,
+                "y": 995
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 7,
+            "a": {
+              "devId": 2,
+              "key": "bN"
+            },
+            "b": {
+              "devId": 3,
+              "key": "k0"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 938.25,
+                "y": 1360
+              },
+              {
+                "x": 1290,
+                "y": 1360
+              },
+              {
+                "x": 1290,
+                "y": 1025
+              },
+              {
+                "x": 1306.5,
+                "y": 1025
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 8,
+            "a": {
+              "devId": 2,
+              "key": "tL"
+            },
+            "b": {
+              "devId": 5,
+              "key": "tL"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 785,
+                "y": 1350
+              },
+              {
+                "x": 785,
+                "y": 1390
+              },
+              {
+                "x": 885.75,
+                "y": 1390
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 9,
+            "a": {
+              "devId": 2,
+              "key": "tN"
+            },
+            "b": {
+              "devId": 5,
+              "key": "tN"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 805,
+                "y": 1360
+              },
+              {
+                "x": 805,
+                "y": 1405
+              },
+              {
+                "x": 938.25,
+                "y": 1405
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 10,
+            "a": {
+              "devId": 5,
+              "key": "bL"
+            },
+            "b": {
+              "devId": 16,
+              "key": "t0"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 885.75,
+                "y": 1735
+              },
+              {
+                "x": 1250,
+                "y": 1735
+              },
+              {
+                "x": 1250,
+                "y": 1395
+              },
+              {
+                "x": 990.75,
+                "y": 1395
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 11,
+            "a": {
+              "devId": 5,
+              "key": "bN"
+            },
+            "b": {
+              "devId": 6,
+              "key": "k0"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 938.25,
+                "y": 1760
+              },
+              {
+                "x": 1290,
+                "y": 1760
+              },
+              {
+                "x": 1290,
+                "y": 1425
+              },
+              {
+                "x": 1306.5,
+                "y": 1425
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 12,
+            "a": {
+              "devId": 4,
+              "key": "k5"
+            },
+            "b": {
+              "devId": 7,
+              "key": "k0"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1340
+              },
+              {
+                "x": 1465,
+                "y": 1510
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 13,
+            "a": {
+              "devId": 5,
+              "key": "tL"
+            },
+            "b": {
+              "devId": 8,
+              "key": "tL"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 785,
+                "y": 1750
+              },
+              {
+                "x": 785,
+                "y": 1790
+              },
+              {
+                "x": 885.75,
+                "y": 1790
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 14,
+            "a": {
+              "devId": 5,
+              "key": "tN"
+            },
+            "b": {
+              "devId": 8,
+              "key": "tN"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 805,
+                "y": 1760
+              },
+              {
+                "x": 805,
+                "y": 1805
+              },
+              {
+                "x": 938.25,
+                "y": 1805
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 15,
+            "a": {
+              "devId": 8,
+              "key": "bL"
+            },
+            "b": {
+              "devId": 20,
+              "key": "t0"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 885.75,
+                "y": 2135
+              },
+              {
+                "x": 1250,
+                "y": 2135
+              },
+              {
+                "x": 1250,
+                "y": 1795
+              },
+              {
+                "x": 990.75,
+                "y": 1795
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 16,
+            "a": {
+              "devId": 8,
+              "key": "bN"
+            },
+            "b": {
+              "devId": 9,
+              "key": "k0"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 938.25,
+                "y": 2160
+              },
+              {
+                "x": 1290,
+                "y": 2160
+              },
+              {
+                "x": 1290,
+                "y": 1825
+              },
+              {
+                "x": 1306.5,
+                "y": 1825
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 17,
+            "a": {
+              "devId": 7,
+              "key": "k5"
+            },
+            "b": {
+              "devId": 10,
+              "key": "k0"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 10,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1740
+              },
+              {
+                "x": 1465,
+                "y": 1910
+              }
+            ],
+            "label": "Внутренний монтаж щита"
+          },
+          {
+            "id": 18,
+            "a": {
+              "devId": 11,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 29,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 990.75,
+                "y": 1355
+              },
+              {
+                "x": 625,
+                "y": 1355
+              },
+              {
+                "x": 625,
+                "y": 275
+              },
+              {
+                "x": 1880.4,
+                "y": 275
+              },
+              {
+                "x": 1880.4,
+                "y": 1403
+              }
+            ],
+            "label": "QF1 · Освещение: щитовая, прихожая, спальня · L"
+          },
+          {
+            "id": 19,
+            "a": {
+              "devId": 29,
+              "key": "O1"
+            },
+            "b": {
+              "devId": 28,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1937.1,
+                "y": 770
+              },
+              {
+                "x": 1859.4,
+                "y": 770
+              },
+              {
+                "x": 1859.4,
+                "y": 823
+              }
+            ],
+            "label": "QF1 · Фаза после выключателя"
+          },
+          {
+            "id": 20,
+            "a": {
+              "devId": 3,
+              "key": "k1"
+            },
+            "b": {
+              "devId": 28,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1341,
+                "y": 975
+              },
+              {
+                "x": 623,
+                "y": 975
+              },
+              {
+                "x": 623,
+                "y": 281
+              },
+              {
+                "x": 1905.6,
+                "y": 281
+              },
+              {
+                "x": 1905.6,
+                "y": 813
+              }
+            ],
+            "label": "QF1 · Освещение: щитовая, прихожая, спальня · N"
+          },
+          {
+            "id": 21,
+            "a": {
+              "devId": 29,
+              "key": "L"
+            },
+            "b": {
+              "devId": 32,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1880.4,
+                "y": 277
+              },
+              {
+                "x": 2830.4,
+                "y": 277
+              },
+              {
+                "x": 2830.4,
+                "y": 1373
+              }
+            ],
+            "label": "QF1 · Освещение: щитовая, прихожая, спальня · L"
+          },
+          {
+            "id": 22,
+            "a": {
+              "devId": 32,
+              "key": "O1"
+            },
+            "b": {
+              "devId": 31,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 2887.1,
+                "y": 770
+              },
+              {
+                "x": 3099.4,
+                "y": 770
+              },
+              {
+                "x": 3099.4,
+                "y": 823
+              }
+            ],
+            "label": "QF1 · Фаза после выключателя"
+          },
+          {
+            "id": 23,
+            "a": {
+              "devId": 3,
+              "key": "k2"
+            },
+            "b": {
+              "devId": 31,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1375.5,
+                "y": 972
+              },
+              {
+                "x": 623,
+                "y": 972
+              },
+              {
+                "x": 623,
+                "y": 283
+              },
+              {
+                "x": 3145.6,
+                "y": 283
+              },
+              {
+                "x": 3145.6,
+                "y": 813
+              }
+            ],
+            "label": "QF1 · Освещение: щитовая, прихожая, спальня · N"
+          },
+          {
+            "id": 24,
+            "a": {
+              "devId": 32,
+              "key": "L"
+            },
+            "b": {
+              "devId": 35,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 2830.4,
+                "y": 279
+              },
+              {
+                "x": 4310.4,
+                "y": 279
+              },
+              {
+                "x": 4310.4,
+                "y": 1403
+              }
+            ],
+            "label": "QF1 · Освещение: щитовая, прихожая, спальня · L"
+          },
+          {
+            "id": 25,
+            "a": {
+              "devId": 35,
+              "key": "O1"
+            },
+            "b": {
+              "devId": 34,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 4367.1,
+                "y": 770
+              },
+              {
+                "x": 5509.4,
+                "y": 770
+              },
+              {
+                "x": 5509.4,
+                "y": 823
+              }
+            ],
+            "label": "QF1 · Фаза после выключателя"
+          },
+          {
+            "id": 26,
+            "a": {
+              "devId": 3,
+              "key": "k3"
+            },
+            "b": {
+              "devId": 34,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1410,
+                "y": 969
+              },
+              {
+                "x": 623,
+                "y": 969
+              },
+              {
+                "x": 623,
+                "y": 285
+              },
+              {
+                "x": 5555.6,
+                "y": 285
+              },
+              {
+                "x": 5555.6,
+                "y": 813
+              }
+            ],
+            "label": "QF1 · Освещение: щитовая, прихожая, спальня · N"
+          },
+          {
+            "id": 27,
+            "a": {
+              "devId": 12,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 27,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1043.25,
+                "y": 1355
+              },
+              {
+                "x": 619,
+                "y": 1355
+              },
+              {
+                "x": 619,
+                "y": 297
+              },
+              {
+                "x": 1897.2,
+                "y": 297
+              },
+              {
+                "x": 1897.2,
+                "y": 2101
+              }
+            ],
+            "label": "QF2 · Розетка щитовой · L"
+          },
+          {
+            "id": 28,
+            "a": {
+              "devId": 3,
+              "key": "k7"
+            },
+            "b": {
+              "devId": 27,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1306.5,
+                "y": 1355
+              },
+              {
+                "x": 617,
+                "y": 1355
+              },
+              {
+                "x": 617,
+                "y": 303
+              },
+              {
+                "x": 1935,
+                "y": 303
+              },
+              {
+                "x": 1935,
+                "y": 2101
+              }
+            ],
+            "label": "QF2 · Розетка щитовой · N"
+          },
+          {
+            "id": 29,
+            "a": {
+              "devId": 4,
+              "key": "k1"
+            },
+            "b": {
+              "devId": 27,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1136.5
+              },
+              {
+                "x": 1465,
+                "y": 975
+              },
+              {
+                "x": 615,
+                "y": 975
+              },
+              {
+                "x": 615,
+                "y": 309
+              },
+              {
+                "x": 1972.8,
+                "y": 309
+              },
+              {
+                "x": 1972.8,
+                "y": 2101
+              }
+            ],
+            "label": "QF2 · Розетка щитовой · PE"
+          },
+          {
+            "id": 30,
+            "a": {
+              "devId": 13,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 30,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1095.75,
+                "y": 1355
+              },
+              {
+                "x": 613,
+                "y": 1355
+              },
+              {
+                "x": 613,
+                "y": 319
+              },
+              {
+                "x": 2847.2,
+                "y": 319
+              },
+              {
+                "x": 2847.2,
+                "y": 2101
+              }
+            ],
+            "label": "QF3 · Розетка прихожей · L"
+          },
+          {
+            "id": 31,
+            "a": {
+              "devId": 3,
+              "key": "k8"
+            },
+            "b": {
+              "devId": 30,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1341,
+                "y": 1355
+              },
+              {
+                "x": 611,
+                "y": 1355
+              },
+              {
+                "x": 611,
+                "y": 325
+              },
+              {
+                "x": 2885,
+                "y": 325
+              },
+              {
+                "x": 2885,
+                "y": 2101
+              }
+            ],
+            "label": "QF3 · Розетка прихожей · N"
+          },
+          {
+            "id": 32,
+            "a": {
+              "devId": 4,
+              "key": "k2"
+            },
+            "b": {
+              "devId": 30,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1165.5
+              },
+              {
+                "x": 1465,
+                "y": 975
+              },
+              {
+                "x": 609,
+                "y": 975
+              },
+              {
+                "x": 609,
+                "y": 331
+              },
+              {
+                "x": 2922.8,
+                "y": 331
+              },
+              {
+                "x": 2922.8,
+                "y": 2101
+              }
+            ],
+            "label": "QF3 · Розетка прихожей · PE"
+          },
+          {
+            "id": 33,
+            "a": {
+              "devId": 14,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 45,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1148.25,
+                "y": 1355
+              },
+              {
+                "x": 607,
+                "y": 1355
+              },
+              {
+                "x": 607,
+                "y": 341
+              },
+              {
+                "x": 4776,
+                "y": 341
+              },
+              {
+                "x": 4776,
+                "y": 803
+              }
+            ],
+            "label": "QF4 · Кондиционер спальни · L"
+          },
+          {
+            "id": 34,
+            "a": {
+              "devId": 3,
+              "key": "k9"
+            },
+            "b": {
+              "devId": 45,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1375.5,
+                "y": 1355
+              },
+              {
+                "x": 605,
+                "y": 1355
+              },
+              {
+                "x": 605,
+                "y": 347
+              },
+              {
+                "x": 4820,
+                "y": 347
+              },
+              {
+                "x": 4820,
+                "y": 803
+              }
+            ],
+            "label": "QF4 · Кондиционер спальни · N"
+          },
+          {
+            "id": 35,
+            "a": {
+              "devId": 4,
+              "key": "k3"
+            },
+            "b": {
+              "devId": 45,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1194.5
+              },
+              {
+                "x": 1465,
+                "y": 975
+              },
+              {
+                "x": 603,
+                "y": 975
+              },
+              {
+                "x": 603,
+                "y": 353
+              },
+              {
+                "x": 4864,
+                "y": 353
+              },
+              {
+                "x": 4864,
+                "y": 803
+              }
+            ],
+            "label": "QF4 · Кондиционер спальни · PE"
+          },
+          {
+            "id": 36,
+            "a": {
+              "devId": 15,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 46,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1200.75,
+                "y": 1355
+              },
+              {
+                "x": 601,
+                "y": 1355
+              },
+              {
+                "x": 601,
+                "y": 363
+              },
+              {
+                "x": 6268.5,
+                "y": 363
+              },
+              {
+                "x": 6268.5,
+                "y": 1353
+              }
+            ],
+            "label": "QF5 · Холодильник кухни · L"
+          },
+          {
+            "id": 37,
+            "a": {
+              "devId": 3,
+              "key": "k10"
+            },
+            "b": {
+              "devId": 46,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1410,
+                "y": 1355
+              },
+              {
+                "x": 599,
+                "y": 1355
+              },
+              {
+                "x": 599,
+                "y": 369
+              },
+              {
+                "x": 6312.5,
+                "y": 369
+              },
+              {
+                "x": 6312.5,
+                "y": 1353
+              }
+            ],
+            "label": "QF5 · Холодильник кухни · N"
+          },
+          {
+            "id": 38,
+            "a": {
+              "devId": 4,
+              "key": "k4"
+            },
+            "b": {
+              "devId": 46,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1223.5
+              },
+              {
+                "x": 1465,
+                "y": 975
+              },
+              {
+                "x": 597,
+                "y": 975
+              },
+              {
+                "x": 597,
+                "y": 375
+              },
+              {
+                "x": 6356.5,
+                "y": 375
+              },
+              {
+                "x": 6356.5,
+                "y": 1353
+              }
+            ],
+            "label": "QF5 · Холодильник кухни · PE"
+          },
+          {
+            "id": 39,
+            "a": {
+              "devId": 16,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 38,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 990.75,
+                "y": 1755
+              },
+              {
+                "x": 595,
+                "y": 1755
+              },
+              {
+                "x": 595,
+                "y": 385
+              },
+              {
+                "x": 6080.4,
+                "y": 385
+              },
+              {
+                "x": 6080.4,
+                "y": 953
+              }
+            ],
+            "label": "QF6 · Освещение: кухня, ванная, подсобка · L"
+          },
+          {
+            "id": 40,
+            "a": {
+              "devId": 38,
+              "key": "O1"
+            },
+            "b": {
+              "devId": 37,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 6137.1,
+                "y": 770
+              },
+              {
+                "x": 7309.4,
+                "y": 770
+              },
+              {
+                "x": 7309.4,
+                "y": 823
+              }
+            ],
+            "label": "QF6 · Фаза после выключателя"
+          },
+          {
+            "id": 41,
+            "a": {
+              "devId": 6,
+              "key": "k1"
+            },
+            "b": {
+              "devId": 37,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1341,
+                "y": 1375
+              },
+              {
+                "x": 593,
+                "y": 1375
+              },
+              {
+                "x": 593,
+                "y": 391
+              },
+              {
+                "x": 7355.6,
+                "y": 391
+              },
+              {
+                "x": 7355.6,
+                "y": 813
+              }
+            ],
+            "label": "QF6 · Освещение: кухня, ванная, подсобка · N"
+          },
+          {
+            "id": 42,
+            "a": {
+              "devId": 38,
+              "key": "L"
+            },
+            "b": {
+              "devId": 41,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 6080.4,
+                "y": 387
+              },
+              {
+                "x": 8550.4,
+                "y": 387
+              },
+              {
+                "x": 8550.4,
+                "y": 1053
+              }
+            ],
+            "label": "QF6 · Освещение: кухня, ванная, подсобка · L"
+          },
+          {
+            "id": 43,
+            "a": {
+              "devId": 41,
+              "key": "O1"
+            },
+            "b": {
+              "devId": 40,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 8607.1,
+                "y": 770
+              },
+              {
+                "x": 9129.4,
+                "y": 770
+              },
+              {
+                "x": 9129.4,
+                "y": 823
+              }
+            ],
+            "label": "QF6 · Фаза после выключателя"
+          },
+          {
+            "id": 44,
+            "a": {
+              "devId": 6,
+              "key": "k2"
+            },
+            "b": {
+              "devId": 40,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1375.5,
+                "y": 1372
+              },
+              {
+                "x": 593,
+                "y": 1372
+              },
+              {
+                "x": 593,
+                "y": 393
+              },
+              {
+                "x": 9175.6,
+                "y": 393
+              },
+              {
+                "x": 9175.6,
+                "y": 813
+              }
+            ],
+            "label": "QF6 · Освещение: кухня, ванная, подсобка · N"
+          },
+          {
+            "id": 45,
+            "a": {
+              "devId": 41,
+              "key": "L"
+            },
+            "b": {
+              "devId": 44,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 8550.4,
+                "y": 389
+              },
+              {
+                "x": 10570.4,
+                "y": 389
+              },
+              {
+                "x": 10570.4,
+                "y": 1353
+              }
+            ],
+            "label": "QF6 · Освещение: кухня, ванная, подсобка · L"
+          },
+          {
+            "id": 46,
+            "a": {
+              "devId": 44,
+              "key": "O1"
+            },
+            "b": {
+              "devId": 43,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 10627.1,
+                "y": 770
+              },
+              {
+                "x": 11029.4,
+                "y": 770
+              },
+              {
+                "x": 11029.4,
+                "y": 823
+              }
+            ],
+            "label": "QF6 · Фаза после выключателя"
+          },
+          {
+            "id": 47,
+            "a": {
+              "devId": 6,
+              "key": "k3"
+            },
+            "b": {
+              "devId": 43,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 1.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1410,
+                "y": 1369
+              },
+              {
+                "x": 593,
+                "y": 1369
+              },
+              {
+                "x": 593,
+                "y": 395
+              },
+              {
+                "x": 11075.6,
+                "y": 395
+              },
+              {
+                "x": 11075.6,
+                "y": 813
+              }
+            ],
+            "label": "QF6 · Освещение: кухня, ванная, подсобка · N"
+          },
+          {
+            "id": 48,
+            "a": {
+              "devId": 17,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 33,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1043.25,
+                "y": 1755
+              },
+              {
+                "x": 589,
+                "y": 1755
+              },
+              {
+                "x": 589,
+                "y": 407
+              },
+              {
+                "x": 4367.2,
+                "y": 407
+              },
+              {
+                "x": 4367.2,
+                "y": 2101
+              }
+            ],
+            "label": "QF7 · Розетка спальни · L"
+          },
+          {
+            "id": 49,
+            "a": {
+              "devId": 6,
+              "key": "k7"
+            },
+            "b": {
+              "devId": 33,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1306.5,
+                "y": 1755
+              },
+              {
+                "x": 587,
+                "y": 1755
+              },
+              {
+                "x": 587,
+                "y": 413
+              },
+              {
+                "x": 4405,
+                "y": 413
+              },
+              {
+                "x": 4405,
+                "y": 2101
+              }
+            ],
+            "label": "QF7 · Розетка спальни · N"
+          },
+          {
+            "id": 50,
+            "a": {
+              "devId": 7,
+              "key": "k1"
+            },
+            "b": {
+              "devId": 33,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1536.5
+              },
+              {
+                "x": 1465,
+                "y": 1375
+              },
+              {
+                "x": 585,
+                "y": 1375
+              },
+              {
+                "x": 585,
+                "y": 419
+              },
+              {
+                "x": 4442.8,
+                "y": 419
+              },
+              {
+                "x": 4442.8,
+                "y": 2101
+              }
+            ],
+            "label": "QF7 · Розетка спальни · PE"
+          },
+          {
+            "id": 51,
+            "a": {
+              "devId": 18,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 36,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1095.75,
+                "y": 1755
+              },
+              {
+                "x": 583,
+                "y": 1755
+              },
+              {
+                "x": 583,
+                "y": 429
+              },
+              {
+                "x": 8017.2,
+                "y": 429
+              },
+              {
+                "x": 8017.2,
+                "y": 1251
+              }
+            ],
+            "label": "QF8 · Розетка кухни · L"
+          },
+          {
+            "id": 52,
+            "a": {
+              "devId": 6,
+              "key": "k8"
+            },
+            "b": {
+              "devId": 36,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1341,
+                "y": 1755
+              },
+              {
+                "x": 581,
+                "y": 1755
+              },
+              {
+                "x": 581,
+                "y": 435
+              },
+              {
+                "x": 8055,
+                "y": 435
+              },
+              {
+                "x": 8055,
+                "y": 1251
+              }
+            ],
+            "label": "QF8 · Розетка кухни · N"
+          },
+          {
+            "id": 53,
+            "a": {
+              "devId": 7,
+              "key": "k2"
+            },
+            "b": {
+              "devId": 36,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1565.5
+              },
+              {
+                "x": 1465,
+                "y": 1375
+              },
+              {
+                "x": 579,
+                "y": 1375
+              },
+              {
+                "x": 579,
+                "y": 441
+              },
+              {
+                "x": 8092.8,
+                "y": 441
+              },
+              {
+                "x": 8092.8,
+                "y": 1251
+              }
+            ],
+            "label": "QF8 · Розетка кухни · PE"
+          },
+          {
+            "id": 54,
+            "a": {
+              "devId": 19,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 47,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 6,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1148.25,
+                "y": 1755
+              },
+              {
+                "x": 577,
+                "y": 1755
+              },
+              {
+                "x": 577,
+                "y": 451
+              },
+              {
+                "x": 6858.5,
+                "y": 451
+              },
+              {
+                "x": 6858.5,
+                "y": 1803
+              }
+            ],
+            "label": "QF9 · Электроплита 7 кВт · L"
+          },
+          {
+            "id": 55,
+            "a": {
+              "devId": 6,
+              "key": "k9"
+            },
+            "b": {
+              "devId": 47,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 6,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1375.5,
+                "y": 1755
+              },
+              {
+                "x": 575,
+                "y": 1755
+              },
+              {
+                "x": 575,
+                "y": 457
+              },
+              {
+                "x": 6902.5,
+                "y": 457
+              },
+              {
+                "x": 6902.5,
+                "y": 1803
+              }
+            ],
+            "label": "QF9 · Электроплита 7 кВт · N"
+          },
+          {
+            "id": 56,
+            "a": {
+              "devId": 7,
+              "key": "k3"
+            },
+            "b": {
+              "devId": 47,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 6,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1594.5
+              },
+              {
+                "x": 1465,
+                "y": 1375
+              },
+              {
+                "x": 573,
+                "y": 1375
+              },
+              {
+                "x": 573,
+                "y": 463
+              },
+              {
+                "x": 6946.5,
+                "y": 463
+              },
+              {
+                "x": 6946.5,
+                "y": 1803
+              }
+            ],
+            "label": "QF9 · Электроплита 7 кВт · PE"
+          },
+          {
+            "id": 57,
+            "a": {
+              "devId": 20,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 39,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 990.75,
+                "y": 2155
+              },
+              {
+                "x": 571,
+                "y": 2155
+              },
+              {
+                "x": 571,
+                "y": 473
+              },
+              {
+                "x": 8687.2,
+                "y": 473
+              },
+              {
+                "x": 8687.2,
+                "y": 1371
+              }
+            ],
+            "label": "QF10 · Розетка ванной · L"
+          },
+          {
+            "id": 58,
+            "a": {
+              "devId": 9,
+              "key": "k1"
+            },
+            "b": {
+              "devId": 39,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1341,
+                "y": 1775
+              },
+              {
+                "x": 569,
+                "y": 1775
+              },
+              {
+                "x": 569,
+                "y": 479
+              },
+              {
+                "x": 8725,
+                "y": 479
+              },
+              {
+                "x": 8725,
+                "y": 1371
+              }
+            ],
+            "label": "QF10 · Розетка ванной · N"
+          },
+          {
+            "id": 59,
+            "a": {
+              "devId": 10,
+              "key": "k1"
+            },
+            "b": {
+              "devId": 39,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1936.5
+              },
+              {
+                "x": 1465,
+                "y": 1775
+              },
+              {
+                "x": 567,
+                "y": 1775
+              },
+              {
+                "x": 567,
+                "y": 485
+              },
+              {
+                "x": 8762.8,
+                "y": 485
+              },
+              {
+                "x": 8762.8,
+                "y": 1371
+              }
+            ],
+            "label": "QF10 · Розетка ванной · PE"
+          },
+          {
+            "id": 60,
+            "a": {
+              "devId": 21,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 42,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1043.25,
+                "y": 2155
+              },
+              {
+                "x": 565,
+                "y": 2155
+              },
+              {
+                "x": 565,
+                "y": 495
+              },
+              {
+                "x": 10587.2,
+                "y": 495
+              },
+              {
+                "x": 10587.2,
+                "y": 2101
+              }
+            ],
+            "label": "QF11 · Розетка подсобки · L"
+          },
+          {
+            "id": 61,
+            "a": {
+              "devId": 9,
+              "key": "k2"
+            },
+            "b": {
+              "devId": 42,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1375.5,
+                "y": 1775
+              },
+              {
+                "x": 563,
+                "y": 1775
+              },
+              {
+                "x": 563,
+                "y": 501
+              },
+              {
+                "x": 10625,
+                "y": 501
+              },
+              {
+                "x": 10625,
+                "y": 2101
+              }
+            ],
+            "label": "QF11 · Розетка подсобки · N"
+          },
+          {
+            "id": 62,
+            "a": {
+              "devId": 10,
+              "key": "k2"
+            },
+            "b": {
+              "devId": 42,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1965.5
+              },
+              {
+                "x": 1465,
+                "y": 1775
+              },
+              {
+                "x": 561,
+                "y": 1775
+              },
+              {
+                "x": 561,
+                "y": 507
+              },
+              {
+                "x": 10662.8,
+                "y": 507
+              },
+              {
+                "x": 10662.8,
+                "y": 2101
+              }
+            ],
+            "label": "QF11 · Розетка подсобки · PE"
+          },
+          {
+            "id": 63,
+            "a": {
+              "devId": 22,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 48,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1095.75,
+                "y": 2155
+              },
+              {
+                "x": 559,
+                "y": 2155
+              },
+              {
+                "x": 559,
+                "y": 517
+              },
+              {
+                "x": 8838.5,
+                "y": 517
+              },
+              {
+                "x": 8838.5,
+                "y": 1803
+              }
+            ],
+            "label": "QF12 · Стиральная машина · L"
+          },
+          {
+            "id": 64,
+            "a": {
+              "devId": 9,
+              "key": "k3"
+            },
+            "b": {
+              "devId": 48,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1410,
+                "y": 1775
+              },
+              {
+                "x": 557,
+                "y": 1775
+              },
+              {
+                "x": 557,
+                "y": 523
+              },
+              {
+                "x": 8882.5,
+                "y": 523
+              },
+              {
+                "x": 8882.5,
+                "y": 1803
+              }
+            ],
+            "label": "QF12 · Стиральная машина · N"
+          },
+          {
+            "id": 65,
+            "a": {
+              "devId": 10,
+              "key": "k3"
+            },
+            "b": {
+              "devId": 48,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 1994.5
+              },
+              {
+                "x": 1465,
+                "y": 1775
+              },
+              {
+                "x": 555,
+                "y": 1775
+              },
+              {
+                "x": 555,
+                "y": 529
+              },
+              {
+                "x": 8926.5,
+                "y": 529
+              },
+              {
+                "x": 8926.5,
+                "y": 1803
+              }
+            ],
+            "label": "QF12 · Стиральная машина · PE"
+          },
+          {
+            "id": 66,
+            "a": {
+              "devId": 23,
+              "key": "b0"
+            },
+            "b": {
+              "devId": 49,
+              "key": "L"
+            },
+            "color": "#8b5a2b",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1148.25,
+                "y": 2155
+              },
+              {
+                "x": 553,
+                "y": 2155
+              },
+              {
+                "x": 553,
+                "y": 539
+              },
+              {
+                "x": 11166,
+                "y": 539
+              },
+              {
+                "x": 11166,
+                "y": 1553
+              }
+            ],
+            "label": "QF13 · Бойлер · L"
+          },
+          {
+            "id": 67,
+            "a": {
+              "devId": 9,
+              "key": "k7"
+            },
+            "b": {
+              "devId": 49,
+              "key": "N"
+            },
+            "color": "#2a6fd6",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1306.5,
+                "y": 2155
+              },
+              {
+                "x": 551,
+                "y": 2155
+              },
+              {
+                "x": 551,
+                "y": 545
+              },
+              {
+                "x": 11210,
+                "y": 545
+              },
+              {
+                "x": 11210,
+                "y": 1553
+              }
+            ],
+            "label": "QF13 · Бойлер · N"
+          },
+          {
+            "id": 68,
+            "a": {
+              "devId": 10,
+              "key": "k4"
+            },
+            "b": {
+              "devId": 49,
+              "key": "PE"
+            },
+            "color": "#e8d800",
+            "sectionMm2": 2.5,
+            "shape": "orthogonal",
+            "pts": [
+              {
+                "x": 1465,
+                "y": 2023.5
+              },
+              {
+                "x": 1465,
+                "y": 1775
+              },
+              {
+                "x": 549,
+                "y": 1775
+              },
+              {
+                "x": 549,
+                "y": 551
+              },
+              {
+                "x": 11254,
+                "y": 551
+              },
+              {
+                "x": 11254,
+                "y": 1553
+              }
+            ],
+            "label": "QF13 · Бойлер · PE"
+          }
+        ],
+        "conduits": [],
+        "nextId": 50,
+        "motors": [],
+        "pushbuttons": [],
+        "panels": [
+          {
+            "id": "PN1",
+            "tag": "ЩР1",
+            "railCount": 3,
+            "x": 670,
+            "y": 820,
+            "inbox": true,
+            "inletVoltage": 220,
+            "fixed": true
+          }
+        ],
+        "standaloneRails": false,
+        "workbench": null,
+        "roomScene": "household",
+        "clamps": [],
+        "specialProps": {
+          "inbox": {
+            "tag": "XT1",
+            "customName": "Ввод 220 В",
+            "ratedVoltage": 220,
+            "frequency": 50
+          },
+          "multimeter": {
+            "tag": "PV1",
+            "customName": "Цифровой мультиметр"
+          }
+        },
+        "special": {
+          "inbox": true,
+          "pushbutton": false,
+          "motor": false,
+          "multimeter": false
+        }
+      },
+      "positions": {
+        "inbox": {
+          "x": 696,
+          "y": 856
+        },
+        "pushbutton": {
+          "x": 930,
+          "y": 720
+        },
+        "motor": {
+          "x": 463,
+          "y": 875,
+          "load": 0
+        },
+        "multimeter": {
+          "x": 875,
+          "y": 1080,
+          "redX": 1051,
+          "redY": 1034,
+          "blackX": 935,
+          "blackY": 1034,
+          "fn": "voltage",
+          "power": true,
+          "aDocked": true,
+          "bDocked": true,
+          "a": null,
+          "b": null
+        }
+      },
+      "journal": {
+        "items": [],
+        "faultCount": 0,
+        "filter": "work"
+      },
+      "description": "Учебный ввод 220 В 63 А; 13 групп, 3 УЗО 63 А / 30 мА; шесть розеточных блоков, шесть ламп, пять бытовых приборов.",
+      "design": {
+        "supplyV": 220,
+        "incomerA": 63,
+        "circuits": [
+          {
+            "row": 0,
+            "tag": "QF1",
+            "rating": 10,
+            "name": "Освещение: щитовая, прихожая, спальня",
+            "loadType": "lighting",
+            "section": 1.5,
+            "index": 0,
+            "consumerIds": [
+              28,
+              31,
+              34
+            ],
+            "breakerId": 11
+          },
+          {
+            "row": 0,
+            "tag": "QF2",
+            "rating": 16,
+            "name": "Розетка щитовой",
+            "loadType": "socket0",
+            "section": 2.5,
+            "index": 1,
+            "consumerIds": [
+              27
+            ],
+            "breakerId": 12
+          },
+          {
+            "row": 0,
+            "tag": "QF3",
+            "rating": 16,
+            "name": "Розетка прихожей",
+            "loadType": "socket1",
+            "section": 2.5,
+            "index": 2,
+            "consumerIds": [
+              30
+            ],
+            "breakerId": 13
+          },
+          {
+            "row": 0,
+            "tag": "QF4",
+            "rating": 10,
+            "name": "Кондиционер спальни",
+            "loadType": "split",
+            "section": 2.5,
+            "index": 3,
+            "consumerIds": [
+              45
+            ],
+            "breakerId": 14
+          },
+          {
+            "row": 0,
+            "tag": "QF5",
+            "rating": 10,
+            "name": "Холодильник кухни",
+            "loadType": "fridge",
+            "section": 2.5,
+            "index": 4,
+            "consumerIds": [
+              46
+            ],
+            "breakerId": 15
+          },
+          {
+            "row": 1,
+            "tag": "QF6",
+            "rating": 10,
+            "name": "Освещение: кухня, ванная, подсобка",
+            "loadType": "lighting",
+            "section": 1.5,
+            "index": 5,
+            "consumerIds": [
+              37,
+              40,
+              43
+            ],
+            "breakerId": 16
+          },
+          {
+            "row": 1,
+            "tag": "QF7",
+            "rating": 16,
+            "name": "Розетка спальни",
+            "loadType": "socket2",
+            "section": 2.5,
+            "index": 6,
+            "consumerIds": [
+              33
+            ],
+            "breakerId": 17
+          },
+          {
+            "row": 1,
+            "tag": "QF8",
+            "rating": 16,
+            "name": "Розетка кухни",
+            "loadType": "socket3",
+            "section": 2.5,
+            "index": 7,
+            "consumerIds": [
+              36
+            ],
+            "breakerId": 18
+          },
+          {
+            "row": 1,
+            "tag": "QF9",
+            "rating": 32,
+            "name": "Электроплита 7 кВт",
+            "loadType": "stove",
+            "section": 6,
+            "index": 8,
+            "consumerIds": [
+              47
+            ],
+            "breakerId": 19
+          },
+          {
+            "row": 2,
+            "tag": "QF10",
+            "rating": 16,
+            "name": "Розетка ванной",
+            "loadType": "socket4",
+            "section": 2.5,
+            "index": 9,
+            "consumerIds": [
+              39
+            ],
+            "breakerId": 20
+          },
+          {
+            "row": 2,
+            "tag": "QF11",
+            "rating": 16,
+            "name": "Розетка подсобки",
+            "loadType": "socket5",
+            "section": 2.5,
+            "index": 10,
+            "consumerIds": [
+              42
+            ],
+            "breakerId": 21
+          },
+          {
+            "row": 2,
+            "tag": "QF12",
+            "rating": 16,
+            "name": "Стиральная машина",
+            "loadType": "washer",
+            "section": 2.5,
+            "index": 11,
+            "consumerIds": [
+              48
+            ],
+            "breakerId": 22
+          },
+          {
+            "row": 2,
+            "tag": "QF13",
+            "rating": 16,
+            "name": "Бойлер",
+            "loadType": "boiler",
+            "section": 2.5,
+            "index": 12,
+            "consumerIds": [
+              49
+            ],
+            "breakerId": 23
+          }
+        ],
+        "rcdIds": [
+          2,
+          5,
+          8
+        ],
+        "neutralIds": [
+          3,
+          6,
+          9
+        ],
+        "earthIds": [
+          4,
+          7,
+          10
+        ],
+        "mainId": 1
+      }
+    }
+  }
+}

@@ -83,7 +83,7 @@
   .rcd-test{transform-box:fill-box;transform-origin:center;transition:transform .08s ease-out,filter .08s ease-out}
   .rcd-test:active{transform:translateY(3px) scale(.97);filter:brightness(.82)}
   .lamp-window{transition:fill .16s,filter .16s,stroke .16s}
-  .lamp-window.lit{filter:drop-shadow(0 0 7px #35e47d) drop-shadow(0 0 14px rgba(53,228,125,.75))}
+  .lamp-window.lit,.meter-supply-led.lit{filter:drop-shadow(0 0 7px #35e47d) drop-shadow(0 0 14px rgba(53,228,125,.75))}
   .lamp-window.lamp-yellow.lit{filter:drop-shadow(0 0 7px #ffd928) drop-shadow(0 0 14px rgba(255,217,40,.75))}
   .lamp-window.lamp-red.lit{filter:drop-shadow(0 0 7px #f34a45) drop-shadow(0 0 14px rgba(243,74,69,.75))}
   .bulb-glass{transition:fill .18s,filter .18s,stroke .18s}
@@ -108,11 +108,7 @@
   .side-menu-item>summary:hover,.side-menu-item[open]>summary{
     border-color:var(--accent);background:#222b37;color:#ffd79a
   }
-  .menu-logo{
-    width:27px;height:27px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;
-    background:linear-gradient(135deg,var(--accent),#e2761b);color:#24170a;font-size:11px;font-weight:900
-  }
-  .menu-icon{font-size:20px;line-height:1;color:#f5a623}
+  .menu-icon{display:block;width:25px;height:25px;flex:0 0 25px}
   .side-flyout{
     position:absolute;top:49px;right:0;width:370px;max-height:calc(100vh - 74px);overflow:auto;
     padding:0;border-radius:12px;background:linear-gradient(180deg,#111821,#0c1118);
@@ -124,14 +120,12 @@
     .side{top:8px;right:8px;gap:4px}
     .side-menu-item>summary{height:38px;padding:0 9px;font-size:0}
     .side-menu-item>summary span{font-size:0}
-    .side-menu-item>summary .menu-icon{font-size:19px}
-    .side-menu-item>summary .menu-logo{font-size:10px}
+    .side-menu-item>summary .menu-icon{width:24px;height:24px;flex-basis:24px}
     .side-flyout{top:45px;right:0;width:min(370px,calc(100vw - 16px));max-height:calc(100vh - 61px)}
   }
   .side-title{display:flex;align-items:flex-start;gap:11px;padding:12px 13px;background:var(--panel);
     border:1px solid var(--line);border-radius:12px}
-  .side-logo{width:40px;height:40px;border-radius:9px;flex:0 0 auto;background:linear-gradient(135deg,var(--accent),#e2761b);
-    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#24170a}
+  .side-logo{display:block;width:40px;height:40px;border-radius:10px;flex:0 0 auto}
   .side-title h1{margin:0 0 3px;font-size:16px;line-height:1.15;color:#f4f7fa}
   .side-title strong{display:block;font-size:12px;line-height:1.3;color:#d4dce5;font-weight:600}
   .side-title span{display:block;margin-top:4px;font-size:10.5px;color:var(--muted)}
@@ -433,8 +427,7 @@ button,summary,label.preset-import{touch-action:manipulation;-webkit-tap-highlig
 @media(max-width:900px){
   .touch-ui .side-menu-item>summary{font-size:0;padding:0;justify-content:center}
   .touch-ui .side-menu-item>summary span{font-size:0}
-  .touch-ui .side-menu-item>summary .menu-icon{font-size:19px}
-  .touch-ui .side-menu-item>summary .menu-logo{font-size:10px}
+  .touch-ui .side-menu-item>summary .menu-icon{width:24px;height:24px;flex-basis:24px}
   .side-flyout{position:fixed;top:calc(64px + env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));left:max(8px,env(safe-area-inset-left));width:auto;max-width:420px;margin-left:auto;max-height:calc(100dvh - 80px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
 }
 @media(max-height:500px){
@@ -480,9 +473,44 @@ button,summary,label.preset-import{touch-action:manipulation;-webkit-tap-highlig
 .motor-instrument-panel .motor-load-title{font-size:23px;color:#596168;margin-bottom:14px}
 .motor-instrument-panel input[type="range"]{height:28px;accent-color:#657f91}
 .motor-instrument-panel .motor-load-value{font:700 26px Consolas,monospace;margin:5px 0;color:#264b63}
+.dc-motor-instrument .motor-instrument-heading{border-bottom-color:#73a989}
+.dc-motor-instrument .motor-tag{color:#356348;margin-bottom:16px}
+.dc-motor-instrument .motor-instrument-meter{height:128px}
+.dc-motor-instrument .motor-instrument-meter b{color:#275e3d;background:#e0ebe3}
+.motor-instrument-extra{display:flex;justify-content:space-between;gap:18px;margin:14px 2px 0;color:#616d77;font-size:17px}
+.motor-instrument-extra b{margin-left:8px;color:#275e3d;white-space:nowrap}
+.dc-motor-instrument .motor-instrument-load{margin-top:16px}
+.dc-motor-instrument input[type="range"]{accent-color:#4c8863}
+.dc-motor-instrument .motor-load-value{color:#275e3d}
+.dc-motor-instrument .motor-alert{position:absolute;bottom:10px;left:38px;right:38px;margin:0;font-size:15px;text-align:center}
 .instrument-screw{position:absolute;width:15px;height:15px;background:#c6cdd2;border:2px solid #98a3ac;border-radius:50%;box-shadow:inset 0 0 0 2px #e4e9ed}
 .instrument-screw:after{content:"";position:absolute;left:2px;right:2px;top:5px;height:1px;background:#7a8790;transform:rotate(-35deg)}
 .instrument-screw.tl{left:14px;top:14px}.instrument-screw.tr{right:14px;top:14px}.instrument-screw.bl{left:14px;bottom:14px}.instrument-screw.br{right:14px;bottom:14px}
 
 /* Компактное превью гребёнки, как у остальных деталей лотка. */
 .tray-item[data-type="comb"] .mini{width:64px;height:74px;flex:0 0 64px;min-width:0;max-width:64px}
+/* Прокладываемая гофра и её управляющие точки. */
+.conduit-controls{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:35;display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:calc(100vw - 30px);padding:10px 14px;border:1px solid #6d7e8b;border-radius:10px;background:#202c36;color:#edf3f7;box-shadow:0 4px 18px #0005;font:13px 'Segoe UI',Arial,sans-serif}
+.conduit-controls[hidden]{display:none}
+.conduit-controls button[hidden],#wireMenu button[hidden]{display:none}
+.conduit-controls button{padding:7px 10px;border:1px solid #71828e;border-radius:5px;background:#394b59;color:#fff;cursor:pointer}
+.conduit-controls .danger{color:#ffb7b7}
+#conduitTool[aria-pressed="true"]{background:#47657a;color:#fff}
+.routing-conduit{cursor:grab}
+.conduit-handle{cursor:move}
+#scene.drawing-conduit{cursor:crosshair}
+.alignment-tools{margin-top:8px;font:11.5px 'Segoe UI',Arial,sans-serif}
+.alignment-tools summary{padding:8px;border-radius:6px;cursor:pointer;list-style:none;color:#8ce2ef}
+.alignment-tools summary:hover,.alignment-tools[open] summary{background:#223642}
+.alignment-tool-options{display:grid;gap:5px;padding:5px 4px}
+.alignment-tool-options button{padding:8px;border:1px solid #4b6675;border-radius:5px;background:#253743;color:#edf5f8;text-align:left;font:inherit;cursor:pointer}
+.alignment-tool-options button:hover{background:#36515f}
+.alignment-tool-options button:disabled{opacity:.45;cursor:default}
+.alignment-tool-options p{margin:4px;color:#a7bac7;font-size:11px;line-height:1.45}
+#alignmentSnapToggle[aria-pressed="true"]{border-color:#65c7da;color:#8ce2ef}
+#scene.placing-alignment-guide{cursor:crosshair}
+.alignment-handle{cursor:grab;touch-action:none;outline:none}
+.alignment-handle:focus rect{stroke:#fff;stroke-width:2}
+.alignment-controls{border-color:#65c7da}
+.touch-ui .wire-defaults:not(.expanded) .alignment-tools{display:none}
+.touch-ui .alignment-tools summary,.touch-ui .alignment-tool-options button{min-height:44px;box-sizing:border-box;font-size:13px}

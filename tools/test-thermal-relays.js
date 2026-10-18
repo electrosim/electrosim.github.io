@@ -41,6 +41,12 @@ r=isolated();t.thermalProtectionStep(6.01,{1:72,2:10,3:10});check('перегр�
 
 console.log('— диапазон, шкала и окно характеристик —');
 r=isolated();r.settingRange='7-10';r.set=9;
+const dialSvg=t.deviceInner('kk1',r),dialLabels=[...dialSvg.matchAll(/font-size="7"[^>]*>([^<]+)<\/text>/g)].map(m=>m[1]);
+check('шкала 7–10 А подписана 7, 8, 9, 10',JSON.stringify(dialLabels)===JSON.stringify(['7','8','9','10']));
+r.set=7;const dialSequence=[];
+for(let i=0;i<4;i++){t.cycleSetpoint(r);dialSequence.push(r.set);}
+check('регулятор 7–10 А переключается 7 → 8 → 9 → 10 → 7',JSON.stringify(dialSequence)===JSON.stringify([8,9,10,7]));
+r.set=8.5;t.cycleSetpoint(r);check('дробная сохранённая уставка переходит на следующую целую',r.set===9);
 t.openProperties({kind:'relay',id:r.id});
 const rangeInput={value:'2.5-4',getAttribute(){return 'settingRange';}},setInput={value:'9'};
 env.els.propertiesFields.querySelector=sel=>sel.includes('settingRange')?rangeInput:sel.includes('"set"')?setInput:null;
@@ -48,11 +54,14 @@ env.els.propertiesFields.dispatchEvent({type:'change',target:rangeInput,bubbles:
 check('смена диапазона сразу обновляет границы и уставку',setInput.min===2.5&&setInput.max===4&&Number(setInput.value)===4);
 setInput.value='3.2';t.saveProperties();check('уставка сохраняется в выбранном диапазоне',r.settingRange==='2.5-4'&&r.set===3.2);
 check('шкала модели отражает выбранную уставку',t.deviceInner('kk1',r).includes('уставка 3,2 А'));
-t.cycleSetpoint(r);check('регулятор действует в выбранном диапазоне',r.set>3.2&&r.set<=4);
+const relayBody=env.makeEl('g'),dialZone=env.makeEl('rect');relayBody.classList.add('relay');relayBody.dataset.rid=String(r.id);relayBody.parentNode=env.els.relayLayer;dialZone.setAttribute('data-zone','dial');dialZone.parentNode=relayBody;
+check('поворотный регулятор показан на корпусе',t.deviceInner('kk1',r).includes('data-zone="dial"'));
+env.pointer(dialZone,'pointerdown',{pointerType:'mouse'});env.pointer(env.window.document,'pointerup',{pointerType:'mouse'});env.runTimers(0);
+check('нажатие на регулятор меняет ток в выбранном диапазоне',r.set>3.2&&r.set<=4);
 
 console.log('— ток реальной схемы и отключение катушки —');
 s.power=true;s.special.inbox=true;s.panels=[];s.devices=[{id:4,type:'km1',coil:true,tag:'KM1'}];
-s.motors=[{id:'M1',tag:'M1',kind:'ac',load:0,polePairs:2,ratedSlipPercent:10,ratedFrequency:50,ratedVoltage:380,ratedCurrent:9,ratedPower:4}];
+s.motors=[{id:'M1',tag:'M1',kind:'ac',load:100,polePairs:2,ratedSlipPercent:10,ratedFrequency:50,ratedVoltage:380,ratedCurrent:9,ratedPower:4}];
 r={id:5,kmId:4,set:4.5,heat:0,tripped:false};s.relays=[r];s.wires=[];let id=1;
 function wire(aDev,aKey,bDev,bKey){s.wires.push({id:id++,a:{devId:aDev,key:aKey},b:{devId:bDev,key:bKey}});}
 for(let i=0;i<3;i++){wire('IN','L'+(i+1),4,'t'+i);wire('kk5','p'+i,'M1',['U1','V1','W1'][i]);}

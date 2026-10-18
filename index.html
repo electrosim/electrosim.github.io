@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Тренажёр-стенд «Пуск-реверс трёхфазного АД» — Этап 1: вводные автоматы</title>
+<title>Испытание электродвигателей · Тренажёр-стенд</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="icon" href="assets/menu-icons/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/svg+xml" href="assets/menu-icons/favicon.svg" sizes="any">
 </head>
 <body>
 
@@ -17,6 +19,7 @@
       <g id="panelLayer"></g>
       <g id="railLayer"></g>
       <g id="conduitLayer" pointer-events="none"></g>
+      <g id="routingConduitLayer"></g>
       <g id="guideLayer"></g>
       <g id="motorLayer"></g>
       <g id="deviceLayer"></g>
@@ -26,6 +29,7 @@
       <g id="termLayer"></g>
       <g id="mmLayer"></g>
       <g id="clampLayer"></g>
+      <g id="alignmentGuideLayer" pointer-events="none"></g>
       </g>
     </svg>
     <div class="history-controls" role="group" aria-label="История действий"><button id="actionUndo" type="button" disabled title="Отменить (0 из 5)" aria-label="Отменить">↶</button><button id="actionRedo" type="button" disabled title="Повторить (0 из 5)" aria-label="Повторить">↷</button></div>
@@ -64,6 +68,17 @@
         </div>
       </div>
       <button type="button" id="guideToggle" class="guide-toggle" aria-pressed="false"><i></i><span>Направляющие клемм</span></button>
+      <details id="alignmentTools" class="alignment-tools">
+        <summary>╋ Направляющие</summary>
+        <div class="alignment-tool-options">
+          <button type="button" id="addVerticalGuide">↕ Вертикальная</button>
+          <button type="button" id="addHorizontalGuide">↔ Горизонтальная</button>
+          <button type="button" id="alignmentSnapToggle" aria-pressed="true">Привязка включена</button>
+          <button type="button" id="clearAlignmentGuides" disabled>Удалить все линии</button>
+          <p>Поставьте линию на поле. Переносите её за метку у края. Shift — временно без привязки.</p>
+        </div>
+      </details>
+      <button type="button" id="conduitTool" class="guide-toggle" aria-pressed="false">▥ Проложить гофру</button>
       <button id="touchCancel" class="touch-cancel" type="button" disabled>Отменить действие</button>
     </div>
 <div id="touchLoupe" class="touch-loupe" hidden aria-hidden="true"><div class="touch-loupe-window"><svg id="touchLoupeScene" aria-hidden="true"><use href="#world"></use></svg><span class="touch-loupe-reticle"></span></div><div id="touchLoupeLabel" class="touch-loupe-label"></div></div>
@@ -73,31 +88,11 @@
   <!-- ========== СВОРАЧИВАЕМОЕ МЕНЮ ========== -->
   <aside class="side">
     <details class="side-menu-item">
-      <summary><span class="menu-logo">АД</span><span>Стенд</span></summary>
-      <div class="side-flyout about-flyout">
-        <div class="side-title">
-          <div class="side-logo">АД</div>
-          <div>
-            <h1>Тренажёр-стенд</h1>
-            <strong id="sceneDescription">Пуск и реверс трёхфазного асинхронного двигателя</strong>
-            <span id="sceneHint">Ввод, защита и магнитные пускатели</span>
-          </div>
-        </div>
-        <div class="card scene-picker">
-          <h2>Сцены</h2>
-          <button id="sceneWorkbench" type="button">Верстак с двигателем</button>
-          <button id="sceneHousehold" type="button">Бытовой монтаж · комнаты</button>
-          <p>Комнаты и бытовые приборы. Подключение проводки добавим позже.</p>
-        </div>
-      </div>
-    </details>
-
-    <details class="side-menu-item">
-      <summary><span class="menu-icon">▦</span><span>Детали</span></summary>
+      <summary aria-label="Оборудование" title="Оборудование"><img class="menu-icon" src="assets/menu-icons/equipment.svg" width="25" height="25" alt="" aria-hidden="true"><span>Оборудование</span></summary>
       <div class="side-flyout">
         <div class="card">
-          <h2>Лоток деталей</h2>
-          <label class="tray-search-label" for="traySearch">Найти деталь</label>
+          <h2>Оборудование</h2>
+          <label class="tray-search-label" for="traySearch">Найти оборудование</label>
           <input id="traySearch" class="tray-search" type="search" placeholder="Название или обозначение" autocomplete="off">
           <div class="tray-category-actions">
             <button id="trayCollapseAll" type="button">Свернуть всё</button>
@@ -109,7 +104,28 @@
     </details>
 
     <details class="side-menu-item">
-      <summary><span class="menu-icon">▤</span><span>Схемы</span></summary>
+      <summary aria-label="Стенд" title="Стенд"><img class="menu-icon" src="assets/menu-icons/stand.svg" width="25" height="25" alt="" aria-hidden="true"><span>Стенд</span></summary>
+      <div class="side-flyout about-flyout">
+        <div class="side-title">
+          <img class="side-logo" src="assets/menu-icons/favicon.svg" width="40" height="40" alt="" aria-hidden="true">
+          <div>
+            <h1>Тренажёр-стенд</h1>
+            <strong id="sceneDescription">Испытание электродвигателей</strong>
+            <span id="sceneHint">ДПТ и асинхронный двигатель · пустой электрический щит</span>
+          </div>
+        </div>
+        <div class="card scene-picker">
+          <h2>Стенды</h2>
+          <button id="sceneWorkbench" type="button">Испытание электродвигателей</button>
+          <button id="sceneMotorReverse" type="button">Пуск-реверс асинхронного двигателя</button>
+          <button id="sceneHousehold" type="button">Квартирный щит. Пустой</button>
+          <button id="sceneHouseholdConnected" type="button">Квартирный щит. Готовый</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="side-menu-item">
+      <summary aria-label="Схемы" title="Схемы"><img class="menu-icon" src="assets/menu-icons/schemes.svg" width="25" height="25" alt="" aria-hidden="true"><span>Схемы</span></summary>
       <div class="side-flyout">
         <div class="card preset-card">
           <h2>Схемы</h2>
@@ -138,7 +154,7 @@
     </details>
 
     <details class="side-menu-item">
-      <summary><span class="menu-icon">☰</span><span>Протокол</span></summary>
+      <summary aria-label="Протокол" title="Протокол"><img class="menu-icon" src="assets/menu-icons/protocol.svg" width="25" height="25" alt="" aria-hidden="true"><span>Протокол</span></summary>
       <div class="side-flyout">
         <div class="card log-card">
           <h2>Протокол испытаний</h2>
@@ -198,6 +214,20 @@
     <div id="wireSectionMenu" class="wire-shapes wire-sections" aria-label="Сечение этого медного провода"></div>
   </div>
   <button data-act="remove" class="danger">Удалить провод</button>
+  <button data-act="unconduit" hidden>Вынуть из гофры</button>
+</div>
+
+<div id="alignmentControls" class="conduit-controls alignment-controls" hidden>
+  <span id="alignmentHint"></span>
+  <button type="button" id="removeAlignmentGuide">Удалить линию</button>
+  <button type="button" id="finishAlignmentGuide">Готово</button>
+</div>
+<div id="conduitControls" class="conduit-controls" hidden>
+  <span id="conduitHint"></span>
+  <button type="button" data-conduit-act="finish">Завершить</button>
+  <button type="button" data-conduit-act="undo">Убрать последнюю точку</button>
+  <button type="button" data-conduit-act="cancel">Отмена</button>
+  <button type="button" data-conduit-act="remove" class="danger">Удалить гофру</button>
 </div>
 
 <div id="objectMenu" class="ctxmenu object-menu">

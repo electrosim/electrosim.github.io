@@ -47,7 +47,7 @@ check('обозначение машины постоянного тока', t.t
 check('зажим якоря существует', !!t.terminal('MD1','ya1'));
 check('у машины 5 зажимов', t.DC_MOTOR_TERMS.length === 5);
 check('отрисовка преобразователя не пустая', t.deviceInner('tp', tp).indexOf('ТП') >= 0);
-check('отрисовка машины содержит пометку ДПТ', t.dcMotorInner(0, null, {angle:0}).indexOf('ДПТ') >= 0);
+check('на корпусе машины нет надписей ДПТ и независимое возбуждение', !/ДПТ|независимое возбуждение/.test(t.dcMotorInner(0, null, {angle:0})));
 
 console.log('— окраска машины —');
 const dcSvg = t.dcMotorInner(0, null, {angle:0});

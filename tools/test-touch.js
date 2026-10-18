@@ -10,9 +10,9 @@ function wheel(box,delta){return box.pointer(box.els.scene,'wheel',{pointerType:
 console.log('ПК: отдельная геометрия и управление мышью');
 const pc=load({interactive:true,width:1575,height:892});
 check('мобильная компоновка на ПК выключена',!pc.api.mobileTouchLayout()&&!pc.window.document.documentElement.classList.contains('touch-ui'));
-check('исходный масштаб показывает весь стенд',pc.api.touchView().w===2000&&pc.api.touchView().h===2500);
+check('исходный масштаб показывает оба стенда',pc.api.touchView().w===2800&&pc.api.touchView().h===2500);
 const out=wheel(pc,120);
-check('колесо отдаляет и отменяет прокрутку страницы',out.defaultPrevented&&pc.api.touchView().w>2000);
+check('колесо отдаляет и отменяет прокрутку страницы',out.defaultPrevented&&pc.api.touchView().w>2800);
 for(let i=0;i<40;i++)wheel(pc,120);
 check('максимальное отдаление достижимо',pc.api.touchView().w===3472);
 for(let i=0;i<80;i++)wheel(pc,-120);
@@ -36,21 +36,22 @@ function close(a,b){return Math.abs(a-b)<1e-6;}
 geometry(mobile,430,860);
 check('мобильная компоновка включена',mobile.api.mobileTouchLayout()&&mobile.window.document.documentElement.classList.contains('touch-ui'));
 const before=mobile.api.touchView().w;
-mobile.pointer(mobile.els.scene,'pointerdown',{pointerId:1,clientX:100,clientY:300});
-mobile.pointer(mobile.els.scene,'pointerdown',{pointerId:2,clientX:300,clientY:300});
-const anchor=scenePoint(mobile,200,300);
-mobile.pointer(mobile.els.scene,'pointermove',{pointerId:2,clientX:380,clientY:300});
+// Жест на видимой сцене, ниже верхнего поля SVG в портретном окне.
+mobile.pointer(mobile.els.scene,'pointerdown',{pointerId:1,clientX:100,clientY:600});
+mobile.pointer(mobile.els.scene,'pointerdown',{pointerId:2,clientX:300,clientY:600});
+const anchor=scenePoint(mobile,200,600);
+mobile.pointer(mobile.els.scene,'pointermove',{pointerId:2,clientX:380,clientY:600});
 check('движения объединяются до кадра отрисовки',mobile.api.touchView().w===before);
 mobile.runFrames();
 check('разведение пальцев приближает',mobile.api.touchView().w<before);
 let p=point(mobile,anchor.x,anchor.y);
-check('точка под центром пальцев сохраняется с полями SVG',close(p.x,240)&&close(p.y,300));
-mobile.pointer(mobile.els.scene,'pointerup',{pointerId:2,clientX:380,clientY:300});
-const singleAnchor=scenePoint(mobile,100,300);
-mobile.pointer(mobile.els.scene,'pointermove',{pointerId:1,clientX:80,clientY:320});
+check('точка под центром пальцев сохраняется с полями SVG',close(p.x,240)&&close(p.y,600));
+mobile.pointer(mobile.els.scene,'pointerup',{pointerId:2,clientX:380,clientY:600});
+const singleAnchor=scenePoint(mobile,100,600);
+mobile.pointer(mobile.els.scene,'pointermove',{pointerId:1,clientX:80,clientY:620});
 mobile.runFrames();p=point(mobile,singleAnchor.x,singleAnchor.y);
-check('после pinch один палец продолжает перенос без скачка',close(p.x,80)&&close(p.y,320));
-mobile.pointer(mobile.els.scene,'pointerup',{pointerId:1,clientX:80,clientY:320});
+check('после pinch один палец продолжает перенос без скачка',close(p.x,80)&&close(p.y,620));
+mobile.pointer(mobile.els.scene,'pointerup',{pointerId:1,clientX:80,clientY:620});
 check('жест полностью завершается',mobile.api.touchPointers.size===0);
 
 console.log('\nАльбомная ориентация и перенос по закреплённому щиту');
@@ -114,11 +115,11 @@ largePc.els.scene.getScreenCTM=()=>({a:1,b:0,c:0,d:1,e:0,f:0,inverse(){return th
 largePc.pointer(largePc.els.scene,'pointerdown',{pointerType:'mouse',button:1,clientX:500,clientY:400});
 largePc.pointer(largePc.window.document,'pointermove',{pointerType:'mouse',clientX:-900,clientY:-1000});
 largePc.pointer(largePc.window.document,'pointerup',{pointerType:'mouse',button:1,clientX:-900,clientY:-1000});
-check('мышью можно добраться до новой области справа и снизу',largePc.api.touchView().x===1180&&largePc.api.touchView().y===initialPcY+1400);
+check('мышью можно добраться до новой области справа и снизу',close(largePc.api.touchView().x,940)&&largePc.api.touchView().y===initialPcY+1400);
 const largeTouch=load({interactive:true,mobile:true,width:430,height:860});geometry(largeTouch,430,860);
 largeTouch.pointer(largeTouch.els.scene,'pointerdown',{pointerId:1,clientX:200,clientY:400});
 largeTouch.pointer(largeTouch.els.scene,'pointermove',{pointerId:1,clientX:-300,clientY:-100});largeTouch.runFrames();
-check('сенсорный перенос открывает расширенную область',largeTouch.api.touchView().x>1000&&largeTouch.api.touchView().y>1000);
+check('сенсорный перенос открывает расширенную область',largeTouch.api.touchView().x>900&&largeTouch.api.touchView().y>1000);
 largeTouch.pointer(largeTouch.els.scene,'pointerup',{pointerId:1,clientX:-300,clientY:-100});
 if(fails){console.error('\nОшибок: '+fails);process.exit(1);}
 console.log('\nМышь и сенсорное управление разделены; все проверки пройдены.');

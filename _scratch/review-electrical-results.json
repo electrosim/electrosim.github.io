@@ -1,0 +1,212 @@
+[
+  {
+    "name": "parallel-resistance",
+    "actual": 242.02499741758345,
+    "expected": 242.02499741762216,
+    "defect": false
+  },
+  {
+    "name": "rcd-loaded-return-to-PE",
+    "actual": {
+      "current": 10,
+      "tripped": true,
+      "leakageMa": 9999.999999999995
+    },
+    "expected": {
+      "current": 10,
+      "tripped": true,
+      "leakageMa": 10000
+    },
+    "defect": false
+  },
+  {
+    "name": "rcd-loaded-return-to-N",
+    "actual": {
+      "current": 10,
+      "tripped": true,
+      "leakageMa": 9999.999999999995
+    },
+    "expected": {
+      "current": 10,
+      "tripped": true,
+      "leakageMa": 10000
+    },
+    "defect": false
+  },
+  {
+    "name": "wrong-branch-short-trip",
+    "actual": {
+      "conflict": true,
+      "tripped": [
+        2
+      ]
+    },
+    "expected": {
+      "tripped": [
+        2
+      ]
+    },
+    "defect": false
+  },
+  {
+    "name": "comb-breaker-overcount",
+    "actual": {
+      "memberCount": 2,
+      "branch1": 7.000000000000001,
+      "branch2": 7.000000000000001,
+      "indicated": 6.999999999999979,
+      "trip": null
+    },
+    "expected": {
+      "indicated": 7,
+      "trip": null
+    },
+    "defect": false
+  },
+  {
+    "name": "vfd-input-current",
+    "actual": {
+      "ready": true,
+      "input": [
+        0.4050000000000001,
+        0.4050000000000001,
+        0.40500000000000014
+      ],
+      "output": [
+        2.6999999999999997,
+        2.6999999999999997,
+        2.7
+      ],
+      "breaker": [
+        0.40499999999999914,
+        0.40499999999999947,
+        0.40499999999999964
+      ]
+    },
+    "expected": {
+      "input": "nonzero when output delivers power"
+    },
+    "defect": false
+  },
+  {
+    "name": "tp-input-current",
+    "actual": {
+      "ready": true,
+      "input": [
+        2.0055325140271214,
+        2.005532514027121,
+        2.005532514027121
+      ],
+      "output": [
+        5,
+        5,
+        1,
+        1
+      ],
+      "breaker": [
+        2.0055325140271205,
+        2.0055325140271205,
+        2.0055325140271214
+      ]
+    },
+    "expected": {
+      "input": "nonzero when output delivers power"
+    },
+    "defect": false
+  },
+  {
+    "name": "dc-open-armature-brakes",
+    "actual": {
+      "present": false,
+      "current": 0,
+      "torque": 0,
+      "before": 1500,
+      "after": 1500
+    },
+    "expected": {
+      "current": 0,
+      "torque": 0,
+      "after": 1500
+    },
+    "defect": false
+  },
+  {
+    "name": "ac-energized-star-point",
+    "actual": {
+      "conflict": false,
+      "direction": 0,
+      "current": 4.676537180435969,
+      "starToU1": 0
+    },
+    "expected": {
+      "balanced": false,
+      "current": "must reflect zero U1 winding voltage and unbalance"
+    },
+    "defect": false
+  },
+  {
+    "name": "thermal-terminal-transit",
+    "actual": {
+      "wireCurrents": [
+        10,
+        10,
+        10
+      ],
+      "phases": [
+        0,
+        0,
+        0
+      ]
+    },
+    "expected": {
+      "phases": [
+        0,
+        0,
+        0
+      ]
+    },
+    "defect": false
+  },
+  {
+    "name": "ac-rated-load",
+    "actual": {
+      "rpm": 1350,
+      "current": 9.000000000000002,
+      "slipPercent": 10,
+      "torque": "28.3 Н·м"
+    },
+    "expected": {
+      "current": 9,
+      "rpm": 1350,
+      "slipPercent": 10
+    },
+    "defect": false
+  },
+  {
+    "name": "ac-one-phase-loss",
+    "actual": {
+      "direction": 0,
+      "currents": [
+        2.3382685902179836,
+        2.3382685902179836
+      ]
+    },
+    "expected": {
+      "direction": 0,
+      "currents": "nonzero in two remaining series-connected windings"
+    },
+    "defect": false
+  },
+  {
+    "name": "tp-field-on-armature-off",
+    "actual": {
+      "current1": 1,
+      "current2": 1
+    },
+    "expected": {
+      "current1": 1,
+      "current2": 1
+    },
+    "defect": false
+  }
+]

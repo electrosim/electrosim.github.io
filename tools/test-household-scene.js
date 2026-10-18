@@ -18,9 +18,13 @@ function checkInlet(api){
 }
 checkInlet(t);
 const cabinet=t.state.panels[0];
-assert.equal(cabinet.railCount,2);assert.equal(cabinet.inletVoltage,220);
+assert.equal(cabinet.railCount,3);assert.equal(cabinet.inletVoltage,220);
 assert(cabinet.x>=0&&cabinet.x+904<1850,'щит входит в щитовую по ширине');
-assert(cabinet.y>=490&&cabinet.y+1120<1950,'щит входит в щитовую по высоте');
+const ceiling=690*1.3-200,floor=2117*1.3-200;
+const height=t.PANEL.baseHeight+(cabinet.railCount-1)*t.PANEL.pitch;
+assert(cabinet.y-ceiling>=100,'между потолком и щитом остаётся заметный зазор');
+assert(cabinet.y+height<floor,'щит с тремя рейками расположен выше пола');
+assert.equal(cabinet.y,house.state.panels[0].y,'каталог использует положение из файла сцены');
 const initialWidth=t.touchView().w;
 assert(initialWidth>=9000,'весь широкий стенд виден');
 e.pointer(e.els.scene,'wheel',{pointerType:'mouse',deltaY:-120,clientX:600,clientY:400});

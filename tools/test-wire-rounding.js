@@ -56,3 +56,44 @@ for(const shape of ['smooth','straight','orthogonal','arc','s'])for(const side o
  }
 }
 console.log('Обратный подход: четыре стороны, пять форм, оба конца и измерение радиуса — OK.');
+
+// Очень короткое продолжение прямого ввода не сжимает соседний поворот.
+function cubicMinRadius(curve){
+ let radius=Infinity;
+ for(let j=0;j<=80;j++){
+  const t=j/80,u=1-t,[a,b,c,d]=curve;
+  const dx=3*u*u*(b.x-a.x)+6*u*t*(c.x-b.x)+3*t*t*(d.x-c.x);
+  const dy=3*u*u*(b.y-a.y)+6*u*t*(c.y-b.y)+3*t*t*(d.y-c.y);
+  const ddx=6*u*(c.x-2*b.x+a.x)+6*t*(d.x-2*c.x+b.x),ddy=6*u*(c.y-2*b.y+a.y)+6*t*(d.y-2*c.y+b.y);
+  const cross=Math.abs(dx*ddy-dy*ddx);if(cross>1e-10)radius=Math.min(radius,Math.pow(dx*dx+dy*dy,1.5)/cross);
+ }
+ return radius;
+}
+let shortTurnCount=0;
+for(const shape of ['straight','orthogonal'])for(const sectionMm2 of [.5,2.5,35])for(const delta of [.001,.1,1,5,15])for(let rotation=0;rotation<4;rotation++)for(const reversed of [false,true]){
+ const wr={shape,sectionMm2},target={x:400,y:150,entrySide:'top',entryInset:18},lead=t.wireRoutingEndpoint(target,wr);
+ const origin={x:0,y:lead.y-delta},point={x:400,y:lead.y-delta};
+ function rotate(p){let x=p.x,y=p.y;for(let i=0;i<rotation;i++)[x,y]=[-y,x];return {...p,x,y};}
+ const a=rotate(origin),b={...rotate(target),entrySide:['top','right','bottom','left'][rotation]};wr.pts=[rotate(point)];
+ const parts=smooth(reversed?t.wirePathD(b,a,wr):t.wirePathD(a,b,wr),'короткий подход '+shape);
+ const turns=parts.filter(p=>p.length===4);assert(turns.length,'поворот содержит плавную дугу');
+ for(const curve of turns)assert(cubicMinRadius(curve)>8,'радиус не сжат коротким отрезком: '+JSON.stringify({shape,sectionMm2,delta,rotation,reversed,radius:cubicMinRadius(curve)}));
+ shortTurnCount++;
+}
+console.log('Короткий подход к клемме: '+shortTurnCount+' вариантов, радиус поворота больше 8, четыре стороны и оба направления — OK.');
+
+// У теплового реле теснее только собственный изгиб, второй аппарат не меняется.
+t.state.devices=[{id:990,type:'km1',x:100,y:100}];t.state.relays=[{id:991,kmId:990,set:25}];t.state.wires=[];
+let thermalTurns=0;
+for(const key of ['r0','r1','r2','r3','p0','p1','p2'])for(const shape of ['straight','orthogonal','smooth'])for(const sectionMm2 of [.5,2.5,35])for(const reversed of [false,true]){
+ const relay=t.terminal('kk991',key),wr={shape,sectionMm2,pts:[]};
+ const lead=t.wireRoutingEndpoint(relay,wr),cap=(t.wireVisualWidth(wr)+2.5)/2;
+ const ordinary={x:relay.x+250,y:lead.y-18-cap-(24-cap+12),entrySide:'bottom',entryInset:18};
+ const curves=smooth(reversed?t.wirePathD(ordinary,relay,wr):t.wirePathD(relay,ordinary,wr),'компактный изгиб теплового реле').filter(p=>p.length===4);
+ assert.equal(curves.length>=2,true,'оба конца содержат независимые повороты');
+ const nearRelay=cubicMinRadius(reversed?curves.at(-1):curves[0]),nearOther=cubicMinRadius(reversed?curves[0]:curves.at(-1));
+ assert(nearRelay>4&&nearRelay<8,'радиус реле уменьшен: '+nearRelay);
+ assert(nearOther>8,'у второго аппарата обычный радиус: '+nearOther);
+ thermalTurns++;
+}
+console.log('Индивидуальный радиус: '+thermalTurns+' подключений теплового реле; обычный изгиб второго аппарата сохранён — OK.');

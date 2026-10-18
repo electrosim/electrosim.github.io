@@ -23,6 +23,10 @@ globalThis.__t = {
   undoAction:undoAction, redoAction:redoAction, beginActionHistory:beginActionHistory, finishActionHistory:finishActionHistory, resetActionHistory:resetActionHistory,
   actionCounts:function(){return {undo:actionUndo.length,redo:actionRedo.length};},
   state:state, TYPES:TYPES, STOCK:STOCK, DCM:DCM,
+  snapAlignmentPoint:snapAlignmentPoint,snapAlignmentBox:snapAlignmentBox,renderAlignmentGuides:renderAlignmentGuides,
+  INBOX:INBOX,inboxWidth:inboxWidth,panelHeight:panelHeight,
+  startAlignmentGuide:startAlignmentGuide,cancelAlignmentGuide:cancelAlignmentGuide,
+  startConduit:startConduit,finishConduit:finishConduit,
   MODULE:MODULE, SLOTS:SLOTS, PANEL:PANEL, mountingRails:mountingRails,
   WC:WC, wireDefaults:wireDefaults, wireStartColor:wireStartColor, cancelWire:cancelWire, connectTerminals:connectTerminals,
   WIRE_SECTIONS_MM2:WIRE_SECTIONS_MM2, wireSectionOf:wireSectionOf, normalizeWireSection:normalizeWireSection,
@@ -52,6 +56,8 @@ globalThis.__t = {
   motorVisualOperating:motorVisualOperating, motorSupplyRelay:motorSupplyRelay,
   combPlacement:combPlacement,combMembers:combMembers,combWidth:combWidth,combCount:combCount,originOf:originOf,
   motorInstrumentValues:motorInstrumentValues, motorInstrumentPosition:motorInstrumentPosition,
+  dcMotorInstrumentValues:dcMotorInstrumentValues, motorInstrumentInner:motorInstrumentInner,
+  updateMotorReadout:updateMotorReadout,
   clampWireCurrents:clampWireCurrents, breakerNominalCurrent:breakerNominalCurrent,
   breakerPoleCurrents:breakerPoleCurrents, breakerProtectionStep:breakerProtectionStep,
   THERMAL_RANGES:THERMAL_RANGES, thermalRange:thermalRange, syncThermalSettings:syncThermalSettings,
@@ -130,7 +136,13 @@ globalThis.__t = {
       addEventListener(type,fn,opts){if(!options.interactive)return;(this.listeners[type]||(this.listeners[type]=[])).push({fn:fn,capture:opts===true||!!(opts&&opts.capture)});}, removeEventListener(){}, focus(){}, blur(){},
       dispatchEvent(evt){return dispatch(this,evt);},
       appendChild(child){child.parentNode=this;this.children.push(child);}, remove(){this.parentNode=null;}, click(){}, contains(){ return false; },
-      querySelector(){ return null; }, querySelectorAll(){ return []; },
+      querySelector(selector){
+        if(selector&&(/^\[data-conduit-act=/.test(selector)||selector==='[data-act="unconduit"]')){
+          if(!this.queryElements)this.queryElements={};
+          return this.queryElements[selector]||(this.queryElements[selector]=makeEl('button'));
+        }
+        return null;
+      }, querySelectorAll(){ return []; },
       closest(sel){if(!options.interactive)return null;for(let n=this;n;n=n.parentNode)if(matches(n,sel))return n;return null;}, insertAdjacentHTML(){},
       getScreenCTM(){ return null; }, getBoundingClientRect(){ return {left:0,top:0,width:1000,height:1000}; }
     };

@@ -12,13 +12,16 @@ const RAIL_X0   = 90;
 const SLOTS     = 16;                 // щит на 16 модулей: на 20% уже прежних 20 модулей
 const RAIL_X1   = RAIL_X0 + SLOTS * MODULE;
 const VW        = 1240, VH = 1550;   // начальное окно: привычный размер объектов
-const HOUSEHOLD_W=9000,HOUSEHOLD_H=3000; // комнаты используют тот же размер аппаратов, что и верстак
+const HOUSEHOLD_ROOM_SCALE=1.3;
+const HOUSEHOLD_W=9000*HOUSEHOLD_ROOM_SCALE,HOUSEHOLD_H=3000*HOUSEHOLD_ROOM_SCALE; // увеличиваем комнаты, размер аппаратов прежний
 const WORKSPACE_W = VW*2, WORKSPACE_H = VH*2; // рабочее поле вдвое шире и выше
 const RELAY_DROP = 0;                // реле стыкуется снизу вплотную (надписи клемм пускателя видны)
 const PIN_TOP    = 22;               // вылет щупов теплового реле над корпусом
 const PAD_W      = 34;               // ширина приставной колодки A1–A2 справа от пускателя
 // Компактная колодка 98–95 оставляет место для изгиба над T1–T3.
-const THERMAL_AUX={top:110,height:30,terminalY:121,labelY:138,pairLabelY:124};
+const THERMAL_AUX={top:74,height:30,terminalY:85,labelY:102,pairLabelY:88};
+const THERMAL_POWER={top:130,terminalY:150,labelY:170};
+const THERMAL_WIRE_BEND_RADIUS=6;
 /* цвета проводов аппаратов: L1 — коричневый, L2 — чёрный, L3 — серый, N — синий, PE — жёлто-зелёный */
 const WC = { L1:'#8b5a2b', L2:'#1c1c1c', L3:'#8d939a', N:'#2a6fd6', PE:'#e8d800', C:'#d64545', C2:'#2f8fd6' };
 /* цвета проводов ввода: фазы — красный, жёлтый, зелёный */
@@ -66,6 +69,8 @@ function withElectricalRead(read){
 /* обозначения аппаратов на стенде */
 const TAGS = { comb:'GS1', klemma:'XN', pebus:'XPE', mcb3:'QF1', mcb1:'QF2', mcb2:'QF', rcd:'QD1', meter:'PI1', sensor:'PVA1', lamp:'HL1', bulb:'EL1', outlet:'XS1', wallSwitch:'SA1', twoWaySwitch:'SA1', junction:'XR1', fridge:'E1', washer:'E1', boiler:'E1', stove:'E1', split:'E1', vfd:'UZ1', tp:'UZT1', km1:'KM1', kk1:'KK1', timer:'KT1', M1:'M1', IN:'XT1', PB:'SB1–SB3' };
 const TAG_PREFIX = { comb:'GS', klemma:'XN', pebus:'XPE', mcb3:'QF', mcb1:'QF', mcb2:'QF', rcd:'QD', meter:'PI', sensor:'PVA', lamp:'HL', bulb:'EL', outlet:'XS', wallSwitch:'SA', twoWaySwitch:'SA', junction:'XR', fridge:'E', washer:'E', boiler:'E', stove:'E', split:'E', vfd:'UZ', tp:'UZT', km1:'KM', kk1:'KK', timer:'KT' };
+Object.assign(TAGS,{crossN:'XN',crossPE:'XPE'});
+Object.assign(TAG_PREFIX,{crossN:'XN',crossPE:'XPE'});
 /* клеммная коробка ввода (в исходном щите, слева сверху): болты окрашены
    в цвета подходящих проводов — L1 красный, L2 жёлтый, L3 зелёный, N синий, PE жёлто-зелёный */
 const INBOX = { x:90, y:-194, w:240, h:120 };
@@ -89,6 +94,8 @@ const INBOX_SINGLE_TERMS = [
 const TYPES = {
   klemma: { title:'Нулевая колодка XN (шина N)',   modules:1, h:58*MM, kind:'terminal' },
   pebus:  { title:'Защитная колодка XPE (шина PE)', modules:1, h:58*MM, kind:'terminal' },
+  crossN: { title:'Кросс-модуль нулевой N (2×4)', modules:2, h:48*MM, kind:'terminal', crossModule:true },
+  crossPE:{ title:'Кросс-модуль заземляющий PE (2×4)', modules:2, h:48*MM, kind:'terminal', crossModule:true },
   mcb3:   { title:'Вводной автомат 3P, C25',        modules:3, h:82*MM, kind:'mcb', poles:3, rating:'C25' },
   mcb1:   { title:'Автомат 1P, C10',                modules:1, h:82*MM, kind:'mcb', poles:1, rating:'C10' },
   mcb2:   { title:'Автомат 2P, C10', modules:2, h:82*MM, kind:'mcb', poles:2, rating:'C10' },
@@ -111,9 +118,10 @@ const TYPES = {
   tp:     { title:'Тиристорный преобразователь, 3×380 В', modules:4, h:82*MM, kind:'converter' },
   timer:  { title:'Реле времени KT1, 220 В', modules:1, h:82*MM, kind:'timer' },
   km1:    { title:'Магнитный пускатель KM1', modules:3, h:82*MM, kind:'contactor', overR:PAD_W },
-  kk1:    { title:'Тепловое реле KK1',    modules:3, h:74*MM, kind:'relay', over:PIN_TOP }
+  kk1:    { title:'Тепловое реле KK1',    modules:3, h:62*MM-10, kind:'relay', over:PIN_TOP }
 };
 const STOCK = { comb:1, klemma:1, pebus:1, mcb3:1, mcb1:1, mcb2:1, rcd:1, meter:1, sensor:1, lamp:3, bulb:1, outlet:1, wallSwitch:1, twoWaySwitch:1, junction:1, fridge:1, washer:1, boiler:1, stove:1, split:1, vfd:1, tp:1, timer:1, km1:2, kk1:2 };
+Object.assign(STOCK,{crossN:1,crossPE:1});
 
 const KIND_RU = { comb:'соединительная шина верхних клемм автоматов', mcb:'автоматический выключатель', terminal:'клеммная шина: все зажимы соединены внутри',
                   junction:'открытая коробка: 4 независимые колодки по 3 клеммы',
@@ -193,13 +201,16 @@ function voltageBrightness(voltage,obj,fallback){
   return ratio<.15?0:Math.max(.08,Math.min(1,ratio*ratio));
 }
 
-const state = { power:false, devices:[], relays:[], wires:[], nextId:1,
+const state = { power:false, devices:[], relays:[], wires:[], conduits:[], alignmentGuides:[], alignmentSnapEnabled:true, nextId:1,
                 pb:{ up:false, stop:false, down:false },
                  motors:[], pushbuttons:[], clamps:[], panels:[], standaloneRails:false, workbench:null, roomScene:null,
                 mm:{ mode:false, power:true, fn:'voltage', a:null, b:null },
                 specialProps:{inbox:{tag:'XT1',customName:'Ввод 3×380 В',ratedVoltage:380,frequency:50},multimeter:{tag:'PV1',customName:'Цифровой мультиметр'}},
                 special:{ inbox:true, pushbutton:false, motor:false, multimeter:true } };
 let terminalGuidesEnabled = false;
+let alignmentDraft=null,alignmentSelected=null,alignmentGrab=null;
+let conduitDraft=null,conduitEdit=null,conduitGrab=null,conduitMagnet=null;
+const conduitGeometryCache=new Map();
 /* Цифровой мультиметр. Габариты и разводка повторяют ZOYI ZT-X:
    тёмный корпус с красным бампером, крупный ЖК-индикатор со шкалой,
    круглые гнёзда для щупов в нижней части прибора. */
@@ -242,20 +253,22 @@ function meterProbeFallback(key){
   return (key==='a')?{x:METER.redX,y:METER.redY}:{x:METER.blackX,y:METER.blackY};
 }
 
-/* Единственная начальная сцена: верстак с двигателем и пустой щит. */
+/* Начальная сцена: ДПТ слева, асинхронный двигатель справа и общий пустой щит. */
 function initialState(){
   resetActionHistory();
   state.roomScene=null;
+  state.standId='motor-empty';
   state.power=true;
-  state.devices=[];state.relays=[];state.wires=[];
-  state.workbench={x:60,y:1350,width:1900,height:520,panelId:'PN1',motorId:'M1'};
+  state.devices=[];state.relays=[];state.wires=[];state.conduits=[];cancelConduit();
+  state.alignmentGuides=[];state.alignmentSnapEnabled=true;cancelAlignmentGuide();
+  state.workbench={x:60,y:1350,width:2700,height:520,panelId:'PN1',motorId:'M1',dcMotorId:'MD1'};
   state.mm={mode:false,power:true,fn:'voltage',a:null,b:null,aDocked:true,bDocked:true};
   state.pb={up:false,stop:false,down:false};
-  state.motors=[{id:'M1',tag:'M1',kind:'ac',x:1250,y:960,w:MOTOR.w,h:MOTOR.h,scale:1.5,
+  state.motors=[{id:'M1',tag:'M1',kind:'ac',x:2130,y:960,w:MOTOR.w,h:MOTOR.h,scale:1.5,
     load:0,rpmActual:0,angle:0,polePairs:2,ratedSlipPercent:10,ratedFrequency:50,
-    ratedVoltage:380,ratedCurrent:9,ratedPower:4}];
+    ratedVoltage:380,ratedCurrent:9,ratedPower:4},newDcMotor('MD1',346,960)];
   state.pushbuttons=[];state.clamps=[];
-  state.panels=[{id:'PN1',tag:'ЩР1',railCount:2,x:160,y:-140,inbox:true,inletVoltage:380,fixed:true}];
+  state.panels=[{id:'PN1',tag:'ЩР1',railCount:2,x:960,y:-140,inbox:true,inletVoltage:380,fixed:true}];
   state.standaloneRails=false;
   clampState=null;
   state.specialProps={inbox:{tag:'XT1',customName:'Ввод 3×380 В',ratedVoltage:380,frequency:50},multimeter:{tag:'PV1',customName:'Цифровой мультиметр'}};
@@ -417,6 +430,7 @@ function meterInner(o){
   const power=Math.max(0,Number(o.meterPowerW)||0);
   const digits=meterEnergyText(energy);
   const pulse=!!o.meterPulse;
+  const powered=o.id!=null&&meterVoltage(o)>=50;
   let s='';
   s+='<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="8" fill="#f3f4f1" stroke="#9aa0a8" stroke-width="1.5"/>';
   s+='<rect x="4" y="4" width="'+(w-8)+'" height="'+(h-8)+'" rx="6" fill="none" stroke="rgba(255,255,255,.9)"/>';
@@ -437,7 +451,7 @@ function meterInner(o){
   s+='<rect x="21" y="78" width="'+(w-42)+'" height="54" rx="2" fill="#d58a35" stroke="#efb15d"/>';
   s+='<text class="meter-energy" x="'+(w/2)+'" y="112" text-anchor="middle" font-size="25" font-weight="700" fill="#151515" font-family="Consolas,monospace">'+digits+'</text>';
   s+='<text x="'+(w-25)+'" y="128" text-anchor="end" font-size="9" font-weight="800" fill="#382612" font-family="Segoe UI,Arial">кВт·ч</text>';
-  s+='<circle cx="31" cy="149" r="6" fill="#245d39" stroke="#384047"/><text x="42" y="152" font-size="7" fill="#4b5563" font-family="Segoe UI,Arial">ПИТАНИЕ</text>';
+  s+='<circle class="meter-supply-led'+(powered?' lit':'')+'" cx="31" cy="149" r="6" fill="'+(powered?'#35e47d':'#245d39')+'" stroke="#384047"/><text x="42" y="152" font-size="7" fill="#4b5563" font-family="Segoe UI,Arial">ПИТАНИЕ</text>';
   s+='<circle class="meter-pulse" cx="88" cy="149" r="6" fill="'+(pulse?'#ff3b30':'#657079')+'" stroke="#384047"/><text x="99" y="152" font-size="7" fill="#4b5563" font-family="Segoe UI,Arial">ИМПУЛЬС</text>';
   s+='<text class="meter-power" x="'+(w/2)+'" y="173" text-anchor="middle" font-size="13" font-weight="800" fill="#26333c" font-family="Segoe UI,Arial">'+meterPowerText(power)+'</text>';
   s+='<text x="'+(w/2)+'" y="184" text-anchor="middle" font-size="7.5" fill="#5b6470" font-family="Segoe UI,Arial">5(60) А · 50 Гц · 1000 имп/кВт·ч</text>';
@@ -476,15 +490,20 @@ function sensorInner(o){
 
 /* Нулевая колодка: один модуль, шесть зажимов в столбик.
    Все зажимы соединены внутри общей шиной — это один узел «ноль». */
+const TERMINAL_COLORS={
+  N:{body:'#1d6fb8',edge:'#12507f',cell:'#2a80cc',text:'#cfe4f5'},
+  PE:{body:'#2f9d48',edge:'#176b2c',cell:'#43b85d',text:'#efff68'}
+};
 function terminalInner(type,o){
   type = type || 'klemma';
   o = o || {};
   const w = TYPES.klemma.modules*MODULE, h = TYPES.klemma.h;
   const N = 6;
   const pe = type === 'pebus';
+  const colors=TERMINAL_COLORS[pe?'PE':'N'];
   let s = '';
   // корпус
-  s += '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="5" fill="'+(pe?'#2f9d48':'#1d6fb8')+'" stroke="'+(pe?'#176b2c':'#12507f')+'" stroke-width="1.5"/>';
+  s += '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="5" fill="'+colors.body+'" stroke="'+colors.edge+'" stroke-width="1.5"/>';
   s += '<rect x="4" y="4" width="'+(w-8)+'" height="'+(h-8)+'" rx="4" fill="none" stroke="rgba(255,255,255,.35)"/>';
   const cell = h/N;
   // внутренняя шина, связывающая все зажимы
@@ -492,15 +511,68 @@ function terminalInner(type,o){
   s += '<rect x="'+(w/2-3)+'" y="'+(cell/2+2)+'" width="4" height="'+(h-cell-4)+'" rx="2" fill="#d99a5b" opacity=".7"/>';
   for (let i=0;i<N;i++){
     const cy = (i+0.5)*cell;
-    s += '<rect x="6" y="'+(cy-cell/2+3)+'" width="'+(w-12)+'" height="'+(cell-6)+'" rx="3" fill="'+(pe?'#43b85d':'#2a80cc')+'"/>';
+    s += '<rect x="6" y="'+(cy-cell/2+3)+'" width="'+(w-12)+'" height="'+(cell-6)+'" rx="3" fill="'+colors.cell+'"/>';
     s += screw(w/2, cy, 8.5);
   }
   // обозначение нулевой шины
-  s += '<text x="5" y="12" font-size="7" font-weight="700" fill="'+(pe?'#efff68':'#cfe4f5')+'" font-family="Segoe UI,Arial">'+(o.tag||(pe?'XPE':'XN'))+'</text>';
-  s += '<text x="'+(w-5)+'" y="'+(h-7)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+(pe?'#efff68':'#cfe4f5')+'" font-family="Segoe UI,Arial">'+(pe?'PE':'N')+'</text>';
+  s += '<text x="5" y="12" font-size="7" font-weight="700" fill="'+colors.text+'" font-family="Segoe UI,Arial">'+(o.tag||(pe?'XPE':'XN'))+'</text>';
+  s += '<text x="'+(w-5)+'" y="'+(h-7)+'" text-anchor="end" font-size="9" font-weight="700" fill="'+colors.text+'" font-family="Segoe UI,Arial">'+(pe?'PE':'N')+'</text>';
   // защёлка на рейку
-  s += '<rect x="'+(w-11)+'" y="'+(h/2-12)+'" width="8" height="24" rx="2" fill="'+(pe?'#176b2c':'#12507f')+'"/>';
+  s += '<rect x="'+(w-11)+'" y="'+(h/2-12)+'" width="8" height="24" rx="2" fill="'+colors.edge+'"/>';
   return s;
+}
+
+/* Однопотенциальный кросс-модуль: два ряда по четыре зажима общей шины.
+   Синий и зелёный варианты различаются основанием и назначением N/PE. */
+const CROSS_MODULE_GEOMETRY={margin:16.5,inset:32,cellHeight:24};
+function crossModuleTerms(type){
+  const t=TYPES[type],w=t.modules*MODULE,h=t.h,color=type==='crossPE'?WC.PE:WC.N,out=[];
+  const g=CROSS_MODULE_GEOMETRY;
+  // Ключи нижнего ряда k7–k10 сохраняют подключения прежнего варианта 2×7.
+  for(let row=0;row<2;row++)for(let i=0;i<4;i++)out.push({
+    key:'k'+(row*7+i),label:String(row*4+i+1),dx:g.margin+i*(w-2*g.margin)/3,
+    dy:row?h-g.inset:g.inset,color:color,hitR:12,entrySide:row?'bottom':'top',entryInset:g.inset-.25
+  });
+  return out;
+}
+function compactCrossModuleRef(ref){
+  if(!ref)return ref;
+  const dev=devById(+ref.devId),match=String(ref.key).match(/^k(\d+)$/);
+  if(!dev||!TYPES[dev.type].crossModule||!match)return ref;
+  const index=Number(match[1]);if(index>13)return ref;
+  const key='k'+(index<7?Math.min(index,3):7+Math.min(index-7,3));
+  return key===ref.key?ref:Object.assign({},ref,{key:key});
+}
+function crossModuleScrew(x,y){
+  return '<g class="cross-module-screw">'+screw(x,y,8.5)+'</g>';
+}
+function crossModuleInner(type,o){
+  o=o||{};
+  const t=TYPES[type],w=t.modules*MODULE,h=t.h,pe=type==='crossPE';
+  const g=CROSS_MODULE_GEOMETRY,colors=TERMINAL_COLORS[pe?'PE':'N'],pitch=(w-2*g.margin)/3;
+  let s='<g class="cross-module-body" data-cross-potential="'+(pe?'PE':'N')+'">';
+  // Те же пластик, внутренняя обводка и медная шина, что у колодок N/PE.
+  s+='<rect class="cross-module-back" x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="5" fill="'+colors.body+'" stroke="'+colors.edge+'" stroke-width="1.5"/>'
+    +'<rect x="4" y="4" width="'+(w-8)+'" height="'+(h-8)+'" rx="4" fill="none" stroke="rgba(255,255,255,.35)"/>'
+    +'<rect x="'+(w/2-5)+'" y="'+g.inset+'" width="10" height="'+(h-2*g.inset)+'" rx="3" fill="#b87333" stroke="#8a5522"/>'
+    +'<rect x="'+(w/2-3)+'" y="'+(g.inset+2)+'" width="4" height="'+(h-2*g.inset-4)+'" rx="2" fill="#d99a5b" opacity=".7"/>';
+  [g.inset,h-g.inset].forEach(function(y){
+    s+='<rect x="'+g.margin+'" y="'+(y-5)+'" width="'+(w-2*g.margin)+'" height="10" rx="3" fill="#b87333" stroke="#8a5522"/>'
+      +'<rect x="'+(g.margin+2)+'" y="'+(y-3)+'" width="'+(w-2*g.margin-4)+'" height="4" rx="2" fill="#d99a5b" opacity=".7"/>';
+  });
+  crossModuleTerms(type).forEach(function(td,i){
+    const row=i>=4,portY=row?h-12:1;
+    s+='<rect x="'+(td.dx-4)+'" y="'+portY+'" width="8" height="11" rx="3" fill="'+colors.edge+'"/>'
+      +'<path d="M '+td.dx+' '+(row?td.dy+g.cellHeight/2:12)+' V '+(row?h-12:td.dy-g.cellHeight/2)+'" stroke="'+colors.edge+'" stroke-width="3" opacity=".6"/>'
+      +'<rect x="'+(td.dx-pitch/2+1.5)+'" y="'+(td.dy-g.cellHeight/2)+'" width="'+(pitch-3)+'" height="'+g.cellHeight+'" rx="3" fill="'+colors.cell+'"/>';
+    s+=crossModuleScrew(td.dx,td.dy);
+    s+='<text x="'+td.dx+'" y="'+(td.dy+(row?-16:22))+'" text-anchor="middle" font-size="8" font-weight="700" fill="'+colors.text+'" font-family="Segoe UI,Arial">'+(i+1)+'</text>';
+  });
+  s+='<rect x="9" y="'+(h/2-12)+'" width="'+(w-18)+'" height="24" rx="3" fill="'+colors.cell+'"/>'
+    +'<text x="13" y="'+(h/2+4)+'" font-size="10" font-weight="700" fill="'+colors.text+'" font-family="Segoe UI,Arial">'+escapeHtml(o.tag||(pe?'XPE':'XN'))+'</text>'
+    +'<text x="'+(w-13)+'" y="'+(h/2+4)+'" text-anchor="end" font-size="12" font-weight="700" fill="'+colors.text+'" font-family="Segoe UI,Arial">'+(pe?'PE':'N')+'</text>'
+    +'<rect x="'+(w/2-14)+'" y="'+(h-6)+'" width="28" height="5" rx="1" fill="'+colors.edge+'"/>';
+  return s+'</g>';
 }
 
 /* Зажим пускателя/реле: тёмное гнездо с латунным винтом под крестовую отвёртку */
@@ -608,7 +680,7 @@ function kmInner(o){
 /* Тепловое реле KEA3-25: три щупа сверху вставляются прямо в зажимы 2 T1 / 4 T2 / 6 T3
    магнитного пускателя — своя DIN-рейка реле не нужна. Контакты: 95-96 NC, 97-98 NO. */
 function relayInner(o){
-  const w = TYPES.kk1.modules*MODULE, h = TYPES.kk1.h;      // 157,5 × 174
+  const w = TYPES.kk1.modules*MODULE, h = TYPES.kk1.h;      // компактный корпус под ширину пускателя
   const tripped = !!o.tripped, range=thermalRange(o), set=Math.max(range.min,Math.min(range.max,Number(o.set)||25));
   /* шаг щупов — точно такой же, как шаг зажимов трёхфазного пускателя
      (ширина пускателя / 4 зажима): щупы встают строго под зажимы 2 T1 / 4 T2 / 6 T3 */
@@ -629,49 +701,47 @@ function relayInner(o){
   // корпус
   s += '<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="6" fill="#1f5f9e" stroke="#12406e" stroke-width="1.5"/>';
   s += '<rect x="4" y="4" width="'+(w-8)+'" height="'+(h-8)+'" rx="4" fill="none" stroke="rgba(255,255,255,.25)"/>';
-  pinX.forEach(function(cx){
-    s += '<rect x="'+(cx-8)+'" y="4" width="16" height="15" rx="3" fill="#2b3036"/>';
-  });
 
-  // Лимб выбранного диапазона; длинные дробные подписи только на пяти отметках.
-  s += '<circle cx="42" cy="62" r="31" fill="#123c66" stroke="#0d2d4d"/>';
-  s += '<circle cx="42" cy="62" r="24" fill="#1b5a92" stroke="#0d2d4d"/>';
-  for (let i=0;i<9;i++){
-    const a = (-120 + i*30) * Math.PI/180;
-    const nx = 42 + Math.sin(a)*20, ny = 62 - Math.cos(a)*20;
-    const t1x = 42 + Math.sin(a)*25, t1y = 62 - Math.cos(a)*25;
-    const t2x = 42 + Math.sin(a)*29.5, t2y = 62 - Math.cos(a)*29.5;
-    s += '<line x1="'+t1x+'" y1="'+t1y+'" x2="'+t2x+'" y2="'+t2y+'" stroke="#8fc0e6" stroke-width="1.2"/>';
-    if(i%2===0)s += '<text x="'+nx+'" y="'+(ny+2.6)+'" text-anchor="middle" font-size="5.6" fill="#cfe4f5" font-family="Segoe UI,Arial">'+thermalNumber(range.min+(range.max-range.min)*i/8)+'</text>';
+  // Поворотный регулятор тока в выбранном диапазоне.
+  s += '<circle cx="34" cy="34" r="26" fill="#123c66" stroke="#0d2d4d"/>';
+  s += '<circle cx="34" cy="34" r="20" fill="#1b5a92" stroke="#0d2d4d"/>';
+  const wholeAmpDial=range.id==='7-10',dialSteps=wholeAmpDial?6:8;
+  for(let i=0;i<=dialSteps;i++){
+    const angle=(-120+i*240/dialSteps)*Math.PI/180;
+    const x=34+Math.sin(angle)*16,y=34-Math.cos(angle)*16;
+    const minor=wholeAmpDial&&i%2!==0,innerRadius=minor?22.5:21.5;
+    s += '<line x1="'+(34+Math.sin(angle)*innerRadius)+'" y1="'+(34-Math.cos(angle)*innerRadius)+'" x2="'+(34+Math.sin(angle)*24.5)+'" y2="'+(34-Math.cos(angle)*24.5)+'" stroke="#8fc0e6" stroke-width="'+(minor?0.9:1.2)+'"/>';
+    if(i%2===0)s += '<text x="'+x+'" y="'+(y+2.5)+'" text-anchor="middle" font-size="'+(wholeAmpDial?7:5.3)+'" fill="#cfe4f5" font-family="Segoe UI,Arial">'+thermalNumber(range.min+(range.max-range.min)*i/dialSteps)+'</text>';
   }
-  const sa = (-120 + 240*(set-range.min)/(range.max-range.min)) * Math.PI/180;
-  s += '<line x1="42" y1="62" x2="'+(42+Math.sin(sa)*21)+'" y2="'+(62-Math.cos(sa)*21)+'" stroke="#ffd230" stroke-width="2.6" stroke-linecap="round"/>';
-  s += '<circle cx="42" cy="62" r="5" fill="#0d2d4d" stroke="#8fc0e6"/>';
-  s += '<text x="42" y="'+(62+45)+'" text-anchor="middle" font-size="7.5" fill="#9dc6e8" font-family="Segoe UI,Arial">уставка '+thermalNumber(set)+' А</text>';
+  const angle=(-120+240*(set-range.min)/(range.max-range.min))*Math.PI/180;
+  s += '<line x1="34" y1="34" x2="'+(34+Math.sin(angle)*18)+'" y2="'+(34-Math.cos(angle)*18)+'" stroke="#ffd230" stroke-width="2.6" stroke-linecap="round"/>';
+  s += '<circle cx="34" cy="34" r="4.2" fill="#0d2d4d" stroke="#8fc0e6"/>';
+
+  s += '<text x="42" y="70" text-anchor="middle" font-size="7.5" fill="#9dc6e8" font-family="Segoe UI,Arial">уставка '+thermalNumber(set)+' А</text>';
 
   // индикатор срабатывания
-  s += '<circle cx="146" cy="20" r="6" fill="'+(tripped ? '#ff3b30' : '#1f8f52')+'" stroke="#0d2d4d"/>';
-  s += '<text x="'+(w-10)+'" y="106" text-anchor="end" font-size="8" font-weight="700" fill="#cfe4f5" font-family="Segoe UI,Arial">'+(o.tag||'KK')+'</text>';
+  s += '<circle cx="70" cy="12" r="6" fill="'+(tripped ? '#ff3b30' : '#1f8f52')+'" stroke="#0d2d4d"/>';
+  s += '<text x="'+(w-10)+'" y="70" text-anchor="end" font-size="8" font-weight="700" fill="#cfe4f5" font-family="Segoe UI,Arial">'+(o.tag||'KK')+'</text>';
 
-  // кнопки TEST (красная) и RESET (синяя)
-  s += '<text x="100" y="47" text-anchor="middle" font-size="9" font-weight="700" fill="#cfe4f5" font-family="Segoe UI,Arial">TEST</text>';
-  s += '<text x="131" y="47" text-anchor="middle" font-size="9" font-weight="700" fill="#cfe4f5" font-family="Segoe UI,Arial">RESET</text>';
-  s += '<ellipse cx="100" cy="72" rx="15" ry="13" fill="rgba(5,20,34,.5)"/>';
+  // кнопки TEST и RESET подняты к верхней части компактного корпуса.
+  s += '<text x="91" y="21" text-anchor="middle" font-size="9" font-weight="700" fill="#cfe4f5" font-family="Segoe UI,Arial">TEST</text>';
+  s += '<text x="128" y="21" text-anchor="middle" font-size="9" font-weight="700" fill="#cfe4f5" font-family="Segoe UI,Arial">RESET</text>';
+  s += '<ellipse cx="91" cy="46" rx="15" ry="13" fill="rgba(5,20,34,.5)"/>';
   s += '<g class="relay-btn relay-test">'
-     + '<circle cx="100" cy="68" r="14" fill="#e0242b" stroke="#9c1418" stroke-width="1.2"/>'
-     + '<circle cx="100" cy="64" r="9" fill="#ff8a8e" opacity=".62"/>'
+     + '<circle cx="91" cy="42" r="14" fill="#e0242b" stroke="#9c1418" stroke-width="1.2"/>'
+     + '<circle cx="91" cy="38" r="9" fill="#ff8a8e" opacity=".62"/>'
      + '</g>';
-  s += '<rect x="117" y="56" width="29" height="31" rx="6" fill="rgba(5,20,34,.5)"/>';
+  s += '<rect x="114" y="30" width="29" height="31" rx="6" fill="rgba(5,20,34,.5)"/>';
   s += '<g class="relay-btn relay-reset">'
-     + '<rect x="118" y="52" width="27" height="32" rx="5" fill="#2a80cc" stroke="#12406e"/>'
-     + '<rect x="120" y="54" width="23" height="9" rx="4" fill="#71b8ef" opacity=".52"/>'
-     + '<path d="M131.5 58 v20 M121.5 68 h20" stroke="#dbeaff" stroke-width="3" stroke-linecap="round"/>'
+     + '<rect x="115" y="26" width="27" height="32" rx="5" fill="#2a80cc" stroke="#12406e"/>'
+     + '<rect x="117" y="28" width="23" height="9" rx="4" fill="#71b8ef" opacity=".52"/>'
+     + '<path d="M128.5 32 v20 M118.5 42 h20" stroke="#dbeaff" stroke-width="3" stroke-linecap="round"/>'
      + '</g>';
 
-  // зоны нажатия
-  s += '<rect class="zone" data-zone="dial"  x="8"   y="30" width="68" height="66" fill="transparent" pointer-events="all"/>';
-  s += '<rect class="zone" data-zone="test"  x="84"  y="50" width="32" height="38" fill="transparent" pointer-events="all"/>';
-  s += '<rect class="zone" data-zone="reset" x="116" y="50" width="32" height="38" fill="transparent" pointer-events="all"/>';
+  // Зоны нажатия совпадают с положением регулятора и кнопок.
+  s += '<rect class="zone" data-zone="dial" x="7" y="7" width="54" height="54" fill="transparent" pointer-events="all"/>';
+  s += '<rect class="zone" data-zone="test" x="75" y="24" width="32" height="38" fill="transparent" pointer-events="all"/>';
+  s += '<rect class="zone" data-zone="reset" x="113" y="24" width="32" height="38" fill="transparent" pointer-events="all"/>';
 
   // колодка вспомогательных контактов: 98 NO, 97 — 96 NC, 95
   s += '<rect x="3" y="'+THERMAL_AUX.top+'" width="'+(w-6)+'" height="'+THERMAL_AUX.height+'" rx="4" fill="#1a558c" stroke="#12406e"/>';
@@ -685,12 +755,12 @@ function relayInner(o){
   s += '<text x="'+(3*cell)+'" y="'+THERMAL_AUX.pairLabelY+'" text-anchor="middle" font-size="8" fill="#9dc6e8" font-family="Segoe UI,Arial">NC</text>';
 
   // три силовых вывода к двигателю: 2 T1, 4 T2, 6 T3
-  s += '<rect x="3" y="176" width="'+(w-6)+'" height="'+(h-180)+'" rx="4" fill="#1b5e9e" stroke="#12406e"/>';
+  s += '<rect x="3" y="'+THERMAL_POWER.top+'" width="'+(w-6)+'" height="'+(h-THERMAL_POWER.top-4)+'" rx="4" fill="#1b5e9e" stroke="#12406e"/>';
   const pLab = ['2 T1','4 T2','6 T3'];
   for (let i=0;i<3;i++){
     const cx = (i+0.5)*cell;
-    s += contactHole(cx, 196, 10);
-    s += '<text x="'+cx+'" y="216" text-anchor="middle" font-size="9" fill="#dbeaff" font-family="Segoe UI,Arial">'+pLab[i]+'</text>';
+    s += contactHole(cx, THERMAL_POWER.terminalY, 10);
+    s += '<text x="'+cx+'" y="'+THERMAL_POWER.labelY+'" text-anchor="middle" font-size="9" fill="#dbeaff" font-family="Segoe UI,Arial">'+pLab[i]+'</text>';
   }
   return s;
 }
@@ -736,7 +806,9 @@ function bulbInner(o){
   let s='';
   s+='<rect x="1" y="1" width="'+(w-2)+'" height="'+(h-2)+'" rx="10" fill="#eef0f2" stroke="#9da3a9" stroke-width="1.5"/>';
   s+='<rect x="4" y="4" width="'+(w-8)+'" height="'+(h-8)+'" rx="8" fill="none" stroke="#ffffff" opacity=".85"/>';
-  s+='<text x="'+(w-10)+'" y="18" text-anchor="end" font-size="8" font-weight="700" fill="#5b6470" font-family="Segoe UI,Arial">'+(o.tag||'EL')+'</text>';
+  s+='<text x="'+(w-10)+'" y="'+(h-6)+'" text-anchor="end" font-size="8" font-weight="700" fill="#5b6470" font-family="Segoe UI,Arial">'+(o.tag||'EL')+'</text>';
+  // Колба направлена вниз, верхняя колодка остаётся над ней. Надписи не отражаем.
+  s+='<g transform="translate(0,'+h+') scale(1,-1)">';
   // Стеклянная колба и нить накала.
   s+='<ellipse class="bulb-glass'+(lit?' lit':'')+'" cx="'+(w/2)+'" cy="62" rx="38" ry="42" fill="'+(burned?'#62676b':(lit?'#ffd861':'#dbe7ec'))+'" fill-opacity="'+(lit?(0.30+0.62*brightness).toFixed(2):'.58')+'" stroke="'+(burned?'#3d4246':(lit?'#fff2a4':'#94a6af'))+'" stroke-width="2"/>';
   s+='<path d="M'+(w/2-27)+' 43 Q '+(w/2)+' 24 '+(w/2+27)+' 43" fill="none" stroke="#fff" stroke-width="4" opacity="'+(lit?(0.16+0.32*brightness).toFixed(2):'.72')+'"/>';
@@ -747,7 +819,8 @@ function bulbInner(o){
   for(let y=99;y<=114;y+=5)s+='<line x1="'+(w/2-20)+'" y1="'+y+'" x2="'+(w/2+20)+'" y2="'+y+'" stroke="#747b82"/>';
   s+='<rect x="10" y="124" width="'+(w-20)+'" height="46" rx="6" fill="#e2e5e9" stroke="#b3b8be"/>';
   s+=screw(w*.28,147,10)+screw(w*.72,147,10);
-  s+='<text x="'+(w/2)+'" y="166" text-anchor="middle" font-size="8.5" font-weight="700" fill="'+(burned?'#c62828':'#606870')+'" font-family="Segoe UI,Arial">'+(Number(o.ratedPower)||100)+' Вт</text>';
+  s+='</g>';
+  s+='<text x="'+(w/2)+'" y="20" text-anchor="middle" font-size="8.5" font-weight="700" fill="'+(burned?'#c62828':'#606870')+'" font-family="Segoe UI,Arial">'+(Number(o.ratedPower)||100)+' Вт</text>';
   return s;
 }
 
@@ -1321,6 +1394,7 @@ function combInner(o){
 function deviceInner(type, o){
   o = o || {};
   const kind = TYPES[type].kind;
+  if (TYPES[type].crossModule) return crossModuleInner(type,o);
   if (kind === 'comb') return combInner(o);
   if (kind === 'mcb') return mcbInner(type, o);
   if (kind === 'rcd') return rcdInner(o);
@@ -1354,6 +1428,7 @@ const MOTOR_TERMS = [
   { key:'V2', label:'V2', dx:148, dy:28, color:WC.L2 },
   { key:'PE', label:'PE', dx:208, dy:206, color:WC.PE, caseGround:true }
 ];
+const AC_WINDING_PAIRS=[['U1','U2'],['V1','V2'],['W1','W2']];
 /* nс = 60·f/p — скорость вращения магнитного поля;
    n = nс·(1-s) — скорость ротора асинхронного двигателя. */
 function motorSpeedByFormula(motor,frequency,load){
@@ -1363,10 +1438,9 @@ function motorSpeedByFormula(motor,frequency,load){
   const loadPercent=Math.max(0,Math.min(100,Number(load)||0));
   const configuredSlip=Number(motor.ratedSlipPercent);
   const baseSlip=Math.max(0,Math.min(.95,(isFinite(configuredSlip)?configuredSlip:10)/100));
-  const loadFactor=Math.pow(loadPercent/100,1.7);
-  // Под нагрузкой скольжение возрастает; прежняя характеристика нагрузки
-  // сохранена, но теперь обороты всегда получаются через формулу скольжения.
-  const slip=Math.min(.98,1-(1-baseSlip)*(1-.92*loadFactor));
+  // Паспортное скольжение относится к номинальной нагрузке (100 %).
+  // На холостом ходу остаётся малая составляющая механических потерь.
+  const slip=baseSlip*(.1+.9*loadPercent/100);
   const synchronousRpm=60*f/p;
   const rpm=Math.max(0,Math.round(synchronousRpm*(1-slip)));
   return {polePairs:p,frequencyHz:f,synchronousRpm:synchronousRpm,slip:slip,slipPercent:slip*100,rpm:rpm};
@@ -1374,13 +1448,12 @@ function motorSpeedByFormula(motor,frequency,load){
 function motorOperatingPoint(motor,direction){
   motor=motor||MOTOR;
   const load = Math.max(0, Math.min(100, Number(motor.load) || 0));
-  const supplyFrequency=direction?motorSupplyFrequency(motor):0;
-  if (!direction||supplyFrequency<=0) return {load:load,rpm:0,current:0,frequencyHz:0,synchronousRpm:0,slipPercent:0,visualDur:1};
-  const k = Math.pow(load/100, 1.7);
-  const nominalCurrent=Math.max(.1,Number(motor.ratedCurrent)||9);
+  const map=potentialMap(),phaseCurrents=acMotorWindingBranches(map.pot,motor).map(function(e){return branchCurrent(e,map.pot);});
+  const current=Math.max.apply(null,phaseCurrents.map(function(v){return Math.hypot(v.r,v.i);}).concat([0]));
+  const supplyFrequency=direction?motorSupplyFrequency(motor,map):0;
+  if (!direction||supplyFrequency<=0) return {load:load,rpm:0,current:current,phaseCurrents:phaseCurrents,frequencyHz:0,synchronousRpm:0,slipPercent:0,visualDur:1};
   const speed=motorSpeedByFormula(motor,supplyFrequency,load);
-  const current = nominalCurrent*(1+5.67*k);
-  return {load:load,rpm:speed.rpm,current:current,frequencyHz:supplyFrequency,
+  return {load:load,rpm:speed.rpm,current:current,phaseCurrents:phaseCurrents,frequencyHz:supplyFrequency,
     synchronousRpm:speed.synchronousRpm,slipPercent:speed.slipPercent,polePairs:speed.polePairs,
     visualDur:Math.max(0.12,240/Math.max(1,speed.rpm))};
 }
@@ -1446,7 +1519,7 @@ function dcMotorOperatingPoint(motor,map){
   const omega=(Number(motor.rpmActual)||0)*Math.PI/30;
   const cPhiFlux=d.cPhi*flux;
   const emf=cPhiFlux*omega;
-  const armatureCurrent=(armature.volts-emf)/d.Ra;
+  const armatureCurrent=armature.present&&armature.dc?(armature.volts-emf)/d.Ra:0;
   const torque=cPhiFlux*armatureCurrent;
   const loadTorque=d.torqueNom*(load/100);
   return {data:d,load:load,
@@ -1468,7 +1541,7 @@ function dcMotorInertiaStep(motor,dt){
   const steps=10,h=Math.max(0,dt)/steps;
   for(let i=0;i<steps;i++){
     const emf=point.cPhiFlux*omega;
-    const armatureCurrent=(point.armatureVoltage-emf)/d.Ra;
+    const armatureCurrent=point.armaturePresent&&point.armatureDc?(point.armatureVoltage-emf)/d.Ra:0;
     const torque=point.cPhiFlux*armatureCurrent;
     const resisting=point.loadTorque*Math.tanh(omega/4);
     omega+=(torque-resisting)/d.inertia*h;
@@ -1565,11 +1638,9 @@ function dcMotorInner(direction, operating, motor){
   s += '<rect x="112" y="84" width="8" height="7" rx="1.5" fill="#747d86" stroke="#525b64" stroke-width="1"/>';
   s += '<circle cx="116" cy="99" r="4" fill="#7b848d" stroke="#e7eaed" stroke-width="1.2"/>';
   s += '</g>';
-  s += '<text x="116" y="68" text-anchor="middle" font-size="7.5" font-weight="800" fill="'+C.plate+'" font-family="Segoe UI,Arial">ДПТ</text>';
   s += '</g>';
   s += contactHole(208,206,6);
   s += '<text x="208" y="226" text-anchor="middle" font-size="9" font-weight="800" fill="#e8d800" stroke="#176b2c" stroke-width=".3" font-family="Segoe UI,Arial">PE</text>';
-  s += '<text x="116" y="270" text-anchor="middle" font-size="9.5" font-weight="800" fill="'+C.plateName+'" font-family="Segoe UI,Arial">ДПТ НВ · независимое возбуждение</text>';
   // Клеммная коробка: якорь в верхнем ряду, обмотка возбуждения — в нижнем.
   // Разделитель только вертикальный: горизонтальный перечёркивал бы подписи.
   s += '<rect x="61" y="-8" width="110" height="60" rx="6" fill="'+C.box+'" stroke="'+C.edge+'" stroke-width="1.5"/>';
@@ -1698,9 +1769,14 @@ function normalizeWorkbench(value){
     const n=Number(value[key]);return isFinite(n)?Math.max(min,Math.min(max,n)):fallback;
   }
   return {x:number('x',60,0,WORKSPACE_W),y:number('y',1350,0,WORKSPACE_H),
-    width:number('width',1900,800,WORKSPACE_W),height:number('height',520,320,800),
+    width:number('width',1900,800,WORKSPACE_W*2),height:number('height',520,320,800),
     panelId:typeof value.panelId==='string'?value.panelId:'PN1',
-    motorId:typeof value.motorId==='string'?value.motorId:'M1'};
+    motorId:typeof value.motorId==='string'?value.motorId:'M1',
+    ...(typeof value.dcMotorId==='string'?{dcMotorId:value.dcMotorId}:{})};
+}
+function workbenchMotors(b){
+  return b?[b.motorId,b.dcMotorId].filter(function(id,index,ids){return id&&ids.indexOf(id)===index;})
+    .map(motorById).filter(Boolean):[];
 }
 /* Окружение учебного стенда. Гофра является оболочкой, а не электрическим соединением. */
 let workbenchVisualKey='';
@@ -1726,7 +1802,7 @@ function workshopBackdrop(b){
   });
   return s+'</g>';
 }
-function workbenchInner(b,motor){
+function workbenchInner(b,motors){
   const x=b.x,y=b.y,w=b.width,h=b.height;
   let s='<g class="workbench" pointer-events="none">'+workshopBackdrop(b);
   s+='<rect x="'+(x+36)+'" y="'+(y+38)+'" width="48" height="'+(h-38)+'" rx="3" fill="#9da7b0" stroke="#66727e" stroke-width="3"/>';
@@ -1753,18 +1829,19 @@ function workbenchInner(b,motor){
     s+='<circle cx="'+bx+'" cy="'+(y+64)+'" r="10" fill="#cbd4dc" stroke="#697781" stroke-width="2"/>';
     s+='<path d="M'+(bx-5)+' '+(y+64)+' H'+(bx+5)+' M'+bx+' '+(y+59)+' V'+(y+69)+'" stroke="#65737e" stroke-width="2"/>';
   });
-  if(motor){
+  motors.forEach(function(motor){
     const scale=motor.scale||1.5,px=motor.x-24*scale,py=motor.y+252*scale-12,pw=280*scale;
     s+='<rect class="motor-mounting-plate" x="'+px+'" y="'+py+'" width="'+pw+'" height="24" rx="3" fill="#aab7c1" stroke="#617381" stroke-width="2"/>';
     s+='<path d="M'+(px+3)+' '+(py+3)+' H'+(px+pw-3)+'" stroke="#e4ebf0" stroke-width="3"/>';
-  }
+  });
   return s+'</g>';
 }
 function motorInstrumentConduitInner(motor){
-  if(!motor||motorIsDc(motor))return '';
+  if(!motor)return '';
   const panel=motorInstrumentPosition(motor);
-  const sx=motor.x+222*motor.scale,sy=motor.y+152*motor.scale;
-  const ex=panel.x+640,ey=panel.y+704;
+  const dc=motorIsDc(motor);
+  const sx=motor.x+(dc?10:222)*motor.scale,sy=motor.y+152*motor.scale;
+  const ex=panel.x+(dc?100:640),ey=panel.y+704;
   const turn=ey<sy?-1:1,horizontal=ex<sx?-1:1;
   const r=Math.min(24,Math.abs(ex-sx)/2,Math.abs(ey-sy)/2);
   const path='M'+sx+' '+sy+' H'+(ex-horizontal*r)+' Q'+ex+' '+sy+' '+ex+' '+(sy+turn*r)+' V'+ey;
@@ -1788,21 +1865,24 @@ function motorInstrumentConduitInner(motor){
 }
 function workbenchConduitInner(panel,motor,b){
   if(!panel||!motor)return '';
-  const sx=panel.x+PANEL.width*.4,sy=panel.y+panelHeight(panel);
+  const dc=motorIsDc(motor),sign=dc?-1:1;
+  const outletFraction=dc ? .4 : b.dcMotorId ? .6 : .4;
+  const sx=panel.x+PANEL.width*outletFraction,sy=panel.y+panelHeight(panel);
   const ex=motor.x+116*motor.scale,ey=motor.y-12*motor.scale;
   const bottom=Math.max(sy+64,ey+80,b.y-150);
-  const path='M'+sx+' '+sy+' V'+(bottom-40)+' Q'+sx+' '+bottom+' '+(sx+40)+' '+bottom+' H'+(ex-60)+' Q'+ex+' '+bottom+' '+ex+' '+(bottom-60)+' V'+ey;
+  const path='M'+sx+' '+sy+' V'+(bottom-40)+' Q'+sx+' '+bottom+' '+(sx+sign*40)+' '+bottom+' H'+(ex-sign*60)+' Q'+ex+' '+bottom+' '+ex+' '+(bottom-60)+' V'+ey;
   let s='<g class="motor-conduit" pointer-events="none"><title>Гофра для проводов к двигателю — электрические соединения собираются отдельно</title>';
   s+='<path d="'+path+'" fill="none" stroke="#202a32" stroke-width="32" stroke-linejoin="round" stroke-linecap="round"/>';
   s+='<path d="'+path+'" fill="none" stroke="#596671" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/>';
   s+='<path d="'+path+'" fill="none" stroke="#29343e" stroke-width="29" stroke-dasharray="2 5" stroke-linecap="butt"/>';
   s+='<path d="'+path+'" fill="none" stroke="#aab7c0" stroke-width="5" stroke-opacity=".35"/>';
-  [sx+80,ex-90].forEach(function(cx){
+  [sx+sign*80,ex-sign*90].forEach(function(cx){
     s+='<rect x="'+(cx-9)+'" y="'+(bottom-19)+'" width="18" height="38" rx="2" fill="#bcc7ce" stroke="#657581" stroke-width="2"/>';
     s+='<path d="M'+(cx-4)+' '+(bottom-14)+' V'+(bottom+14)+'" stroke="#f1f4f6" stroke-width="2"/>';
   });
   // Такой же хомут, как остальные крепления гофры.
-  const holderX=Math.max(sx+120,Math.min(ex-120,motor.x-55*motor.scale));
+  const holderX=dc?Math.min(sx-120,Math.max(ex+120,motor.x+287*motor.scale))
+    :Math.max(sx+120,Math.min(ex-120,motor.x-55*motor.scale));
   s+='<g class="motor-conduit-holder" pointer-events="none"><title>Держатель гофры рядом с двигателем</title>';
   s+='<rect x="'+(holderX-9)+'" y="'+(bottom-19)+'" width="18" height="38" rx="2" fill="#bcc7ce" stroke="#657581" stroke-width="2"/>';
   s+='<path d="M'+(holderX-4)+' '+(bottom-14)+' V'+(bottom+14)+'" stroke="#f1f4f6" stroke-width="2"/>';
@@ -1817,14 +1897,14 @@ function renderWorkbench(){
   const layer=document.getElementById('workbenchLayer'),conduit=document.getElementById('conduitLayer');
   if(!layer||!conduit)return;
   const b=state.workbench;
-  const motor=b&&motorById(b.motorId),panel=b&&panelById(b.panelId);
-  const key=JSON.stringify([state.roomScene,b,motor&&[motor.x,motor.y,motor.scale,motor.kind],motor&&!motorIsDc(motor)&&motorInstrumentPosition(motor),panel&&[panel.x,panel.y,panel.railCount]]);
+  const motors=workbenchMotors(b),panel=b&&panelById(b.panelId);
+  const key=JSON.stringify([state.roomScene,b,motors.map(function(m){return [m.id,m.x,m.y,m.scale,m.kind,motorInstrumentPosition(m)];}),panel&&[panel.x,panel.y,panel.railCount]]);
   if(key===workbenchVisualKey)return;
   workbenchVisualKey=key;
   layer.innerHTML=state.roomScene==='household'
     ? '<g class="household-room" pointer-events="none"><rect x="-100000" y="-100000" width="200000" height="200000" fill="#e7ebee"/><image href="assets/household-rooms.svg" x="0" y="-200" width="'+HOUSEHOLD_W+'" height="'+HOUSEHOLD_H+'" preserveAspectRatio="xMidYMid meet"><title>Бытовой монтаж: коридор, спальня, кухня, ванная и хозяйственное помещение</title></image></g>'
-    : b?workbenchInner(b,motor):'';
-  conduit.innerHTML=b?workbenchConduitInner(panel,motor,b):'';
+    : b?workbenchInner(b,motors):'';
+  conduit.innerHTML=b?motors.map(function(m){return workbenchConduitInner(panel,m,b);}).join(''):'';
 }
 
 function renderPanels(){
@@ -1987,18 +2067,21 @@ function motorSupplyFrequency(motor,map){
   motor=motor||state.motors[0];if(!motor)return 0;
   map=map||potentialMap();
   const phases=['U1','V1','W1'].map(function(key){return map.pot[nodeKey({devId:motor.id,key:key})];});
-  if(phases.some(function(v){return !v;}))return 0;
-  const frequencies=phases.map(function(v){return Number(v.frequencyHz)||networkFrequencyHz();});
+  if(phases.some(function(v){return !v||v.dc||!(Number(v.frequencyHz)>0);} ))return 0;
+  const frequencies=phases.map(function(v){return Number(v.frequencyHz);});
   return Math.max.apply(null,frequencies)-Math.min.apply(null,frequencies)<=.05
     ?frequencies.reduce(function(sum,v){return sum+v;},0)/frequencies.length:0;
 }
-function motorPhaseDirection(motor){
+function motorPhaseDirection(motor,map){
   motor=motor||state.motors[0];
   if(!motor)return 0;
   if(motorIsDc(motor))return 0;            // у машины постоянного тока нет порядка фаз
-  const map = potentialMap();
+  map=map||potentialMap();
   if (map.conflict) return 0;
-  const phases = ['U1','V1','W1'].map(function(key){ return map.pot[nodeKey({devId:motor.id,key:key})]; });
+  const phases = AC_WINDING_PAIRS.map(function(pair){
+    const a=map.pot[nodeKey({devId:motor.id,key:pair[0]})],b=map.pot[nodeKey({devId:motor.id,key:pair[1]})];
+    return a&&b?phasorDifference(a,b):null;
+  });
   if (phases.some(function(v){ return !v; })) return 0;
   const supplyFrequency=motorSupplyFrequency(motor,map);
   if(supplyFrequency<=0)return 0;
@@ -2035,7 +2118,7 @@ function motorInstrumentValues(motor,operating){
   const direction=Math.abs(motor.rpmActual||0)>1?Math.sign(motor.rpmActual):0;
   const slip=ns>0?(1-direction*operating.rpm/(motorPhaseDirection(motor)||1)/ns)*100:null;
   // Нагрузка задаёт долю номинального момента, одинаковую в обоих направлениях.
-  const nominalSpeed=motorSpeedByFormula(motor,Number(motor.ratedFrequency)||50,0).rpm;
+  const nominalSpeed=motorSpeedByFormula(motor,Number(motor.ratedFrequency)||50,100).rpm;
   const nominalPower=Math.max(0,Number(motor.ratedPower)||4)*1000;
   const nominalTorque=nominalSpeed>0?nominalPower/(2*Math.PI*nominalSpeed/60):0;
   const torque=direction?nominalTorque*operating.load/100:0;
@@ -2043,31 +2126,57 @@ function motorInstrumentValues(motor,operating){
     slip:slip===null?'—':slip.toFixed(1)+' %',torque:torque.toFixed(1)+' Н·м'};
 }
 function motorInstrumentPosition(motor){
+  if(motorIsDc(motor)&&!(state.workbench&&state.workbench.dcMotorId===motor.id)){
+    return {x:motor.x+116*motor.scale-370,y:motor.y-840};
+  }
   const panel=state.workbench&&panelById(state.workbench.panelId)||state.panels[0];
   if(panel){
-    const index=state.motors.filter(function(m){return !motorIsDc(m);}).indexOf(motor);
-    return {x:panel.x+PANEL.width+70,y:panel.y+Math.max(0,index)*740};
+    const dc=motorIsDc(motor);
+    const index=state.motors.filter(function(m){return motorIsDc(m)===dc;}).indexOf(motor);
+    return {x:dc?panel.x-810:panel.x+PANEL.width+70,y:panel.y+Math.max(0,index)*740};
   }
   return {x:motor.x+232*motor.scale+30,y:motor.y-520};
 }
+function dcMotorInstrumentValues(motor,operating){
+  // Момент внешней нагрузки на валу, как на стенде АД; ЭДС видна и при выбеге.
+  const rpm=Math.abs(Number(motor.rpmActual)||0);
+  const torque=rpm>1?operating.loadTorque:0;
+  const power=torque*rpm*Math.PI/30/1000;
+  return {armatureVoltage:operating.armatureVoltage.toFixed(0)+' В',
+    armatureCurrent:operating.armatureCurrent.toFixed(1)+' А',
+    fieldVoltage:operating.fieldVoltage.toFixed(0)+' В',
+    fieldCurrent:operating.fieldCurrent.toFixed(2)+' А',
+    rpm:Math.round(rpm)+' об/мин',torque:torque.toFixed(1)+' Н·м',
+    emf:operating.emf.toFixed(0)+' В',power:power.toFixed(2)+' кВт'};
+}
 function motorInstrumentInner(motor,operating){
-  const values=motorInstrumentValues(motor,operating);
+  const dc=motorIsDc(motor);
+  const values=dc?dcMotorInstrumentValues(motor,operating):motorInstrumentValues(motor,operating);
   function meter(label,cls,value,symbol){
     return '<div class="motor-instrument-meter"><div class="motor-instrument-label">'+label+'<span>'+symbol+'</span></div><b class="'+cls+'">'+value+'</b></div>';
   }
-  return '<div xmlns="http://www.w3.org/1999/xhtml" class="motor-load-control motor-instrument-panel">'
+  const meters=dc
+    ?meter('Напряжение якоря','motor-armature-voltage',values.armatureVoltage,'Uя')
+      +meter('Скорость якоря','motor-rpm-value',values.rpm,'n')
+      +meter('Ток якоря','motor-armature-current',values.armatureCurrent,'Iя')
+      +meter('Напряжение возбуждения','motor-field-voltage',values.fieldVoltage,'Uв')
+      +meter('Ток возбуждения','motor-field-current',values.fieldCurrent,'Iв')
+      +meter('Момент на валу','motor-shaft-torque-value',values.torque,'M')
+    :meter('Частота питания','motor-frequency-value',operating.frequencyHz.toFixed(1)+' Гц','f')
+      +meter('Скорость ротора','motor-rpm-value',operating.rpm+' об/мин','n')
+      +meter('Ток двигателя','motor-current-value',operating.current.toFixed(1)+' А','I')
+      +meter('Синхронная скорость','motor-sync-value',values.sync,'n₀')
+      +meter('Скольжение','motor-slip-value',values.slip,'s')
+      +meter('Момент на валу','motor-shaft-torque-value',values.torque,'M');
+  return '<div xmlns="http://www.w3.org/1999/xhtml" class="motor-load-control motor-instrument-panel'+(dc?' dc-motor-instrument':'')+'">'
     +'<i class="instrument-screw tl"></i><i class="instrument-screw tr"></i><i class="instrument-screw bl"></i><i class="instrument-screw br"></i>'
-    +'<div class="motor-instrument-heading">СТЕНД ИСПЫТАНИЙ</div><div class="motor-tag">АСИНХРОННЫЙ ДВИГАТЕЛЬ · '+escapeHtml(motor.tag||motor.id)+'</div>'
-    +'<div class="motor-instrument-grid">'
-    +meter('Частота питания','motor-frequency-value',operating.frequencyHz.toFixed(1)+' Гц','f')
-    +meter('Скорость ротора','motor-rpm-value',operating.rpm+' об/мин','n')
-    +meter('Ток двигателя','motor-current-value',operating.current.toFixed(1)+' А','I')
-    +meter('Синхронная скорость','motor-sync-value',values.sync,'n₀')
-    +meter('Скольжение','motor-slip-value',values.slip,'s')
-    +meter('Момент на валу','motor-shaft-torque-value',values.torque,'M')
-    +'</div><div class="motor-instrument-load"><div class="motor-load-title">Нагрузка на валу</div>'
+    +'<div class="motor-instrument-heading">СТЕНД ИСПЫТАНИЙ</div><div class="motor-tag">'+(dc?'ДВИГАТЕЛЬ ПОСТОЯННОГО ТОКА':'АСИНХРОННЫЙ ДВИГАТЕЛЬ')+' · '+escapeHtml(motor.tag||motor.id)+'</div>'
+    +'<div class="motor-instrument-grid">'+meters+'</div>'
+    +(dc?'<div class="motor-instrument-extra"><span>ЭДС якоря <b class="motor-emf-value">'+values.emf+'</b></span><span>Мощность на валу <b class="motor-power-value">'+values.power+'</b></span></div>':'')
+    +'<div class="motor-instrument-load"><div class="motor-load-title">Нагрузка на валу</div>'
     +'<input aria-label="Нагрузка на валу '+escapeHtml(motor.tag||motor.id)+'" class="motor-load" data-mid="'+motor.id+'" type="range" min="0" max="100" step="1" value="'+operating.load+'" />'
     +'<div class="motor-load-value">'+operating.load.toFixed(0)+' %</div></div>'
+    +(dc?'<div class="motor-alert"'+(operating.acSupply?'':' hidden')+'>На зажимы машины подано переменное напряжение.</div>':'')
     +'</div>';
 }
 function renderMotor(){
@@ -2082,21 +2191,9 @@ function renderMotor(){
         const rpm=Math.round(Math.abs(motor.rpmActual||0));
         if(rpm>soundRpm){soundRpm=rpm;soundDir=visualDirection;}
         s += '<g class="motor-draggable" data-dev="'+motor.id+'" transform="translate('+motor.x+','+motor.y+') scale('+motor.scale+')" style="cursor:grab;touch-action:none">' + dcMotorInner(visualDirection, operating, motor) + '</g>';
-        const dpx = motor.x + 232*motor.scale + 18, dpy = motor.y + 78;
-        s += '<foreignObject x="'+dpx+'" y="'+dpy+'" width="270" height="252">'
-         + '<div xmlns="http://www.w3.org/1999/xhtml" class="motor-load-control dc-motor-control">'
-         + '<div class="motor-tag">'+escapeHtml(motor.tag||motor.id)+'</div>'
-         + '<div class="motor-load-title">Нагрузка на валу</div>'
-         + '<input class="motor-load" data-mid="'+motor.id+'" type="range" min="0" max="100" step="1" value="'+operating.load+'" />'
-         + '<div class="motor-load-value">'+operating.load.toFixed(0)+' %</div>'
-         + '<div class="motor-readout"><span>Напряжение якоря</span><b class="motor-armature-voltage">'+(operating.armaturePresent?operating.armatureVoltage.toFixed(0):'—')+' В</b></div>'
-         + '<div class="motor-readout"><span>Ток якоря</span><b class="motor-armature-current">'+(operating.armaturePresent?operating.armatureCurrent.toFixed(1):'—')+' А</b></div>'
-         + '<div class="motor-readout"><span>ЭДС якоря</span><b class="motor-emf-value">'+(operating.armaturePresent?operating.emf.toFixed(0):'—')+' В</b></div>'
-         + '<div class="motor-readout"><span>Ток возбуждения</span><b class="motor-field-current">'+operating.fieldCurrent.toFixed(2)+' А</b></div>'
-         + '<div class="motor-readout"><span>Момент</span><b class="motor-torque-value">'+(operating.armaturePresent?operating.torque.toFixed(1):'—')+' Н·м</b></div>'
-         + '<div class="motor-readout"><span>Скорость</span><b class="motor-rpm-value">'+rpm+' об/мин</b></div>'
-         + (operating.acSupply?'<div class="motor-alert">На зажимы машины подано переменное напряжение.</div>':'')
-         + '</div></foreignObject>';
+        const position=motorInstrumentPosition(motor);
+        s += '<foreignObject class="motor-instrument" data-motor="'+motor.id+'" x="'+position.x+'" y="'+position.y+'" width="740" height="710">'
+          +motorInstrumentInner(motor,operating)+'</foreignObject>';
         return;
       }
       const electricalDirection = motorPhaseDirection(motor);
@@ -2233,9 +2330,9 @@ function restoreActionHistory(entry,redo){
   const target=redo?entry.after:entry.before,other=redo?entry.before:entry.after;
   const clone=function(v){return v===undefined?undefined:JSON.parse(JSON.stringify(v));};
   const same=function(a,b){return JSON.stringify(a)===JSON.stringify(b);};
-  cancelWire();hideWireMenu();hideObjectMenu();hideTouchLoupe();touchPlacement=null;
+  cancelWire();cancelConduit();cancelAlignmentGuide();hideWireMenu();hideObjectMenu();hideTouchLoupe();touchPlacement=null;
   const next=clone(target.state);
-  ['devices','relays','motors','pushbuttons','panels','clamps','wires'].forEach(function(list){
+  ['devices','relays','motors','pushbuttons','panels','clamps','wires','conduits','alignmentGuides'].forEach(function(list){
     (next[list]||[]).forEach(function(obj){
       const live=(state[list]||[]).find(function(o){return o.id===obj.id;});
       const previous=(other.state[list]||[]).find(function(o){return o.id===obj.id;});
@@ -2354,7 +2451,7 @@ function touchStatus(text){
   const status=document.getElementById('touchStatus');
   if(status)status.textContent=text||'';
   const cancel=document.getElementById('touchCancel');
-  if(cancel)cancel.disabled=!pending&&!touchPlacement;
+  if(cancel)cancel.disabled=!pending&&!touchPlacement&&!conduitDraft;
 }
 function touchObjectTarget(el){
   let g=el.closest('[data-clamp-id]');if(g)return {kind:'special',key:'clamp',id:g.dataset.clampId};
@@ -2404,7 +2501,11 @@ function touchLayoutSnapshot(session){
     const restore=session.restore,a=state.mm.a,b=state.mm.b;
     session.restore=function(){if(restore)restore();state.mm.a=a;state.mm.b=b;};
   }
-  if(wire){const w=state.wires.find(function(w){return w.id===+wire.dataset.wid;});if(w){const pts=JSON.parse(JSON.stringify(w.pts||[]));session.restore=function(){w.pts=pts;};}}
+  const tube=session.target.closest('[data-conduit-id]');
+  if(tube){const c=conduitById(tube.dataset.conduitId);if(c){const pts=c.pts.map(function(p){return {x:p.x,y:p.y};});session.restore=function(){c.pts=pts;};}}
+  const guide=session.target.closest('[data-alignment-guide]');
+  if(guide){const g=alignmentGuideById(guide.dataset.alignmentGuide);if(g){const position=g.position;session.restore=function(){g.position=position;};}}
+  if(wire){const w=state.wires.find(function(w){return w.id===+wire.dataset.wid;});if(w){const pts=JSON.parse(JSON.stringify(w.pts||[])),id=w.conduitId,entry=w.conduitEntry,entryEnd=w.conduitEntryEnd,exit=w.conduitExit;session.restore=function(){w.pts=pts;w.conduitId=id;w.conduitEntry=entry;w.conduitEntryEnd=entryEnd;w.conduitExit=exit;delete w.previewConduitId;delete w.previewConduitEntry;delete w.previewConduitEntryEnd;};}}
 }
 function startTouchAction(session,point){
   clearTimeout(session.timer);session.timer=null;
@@ -2493,7 +2594,7 @@ function onTouchStart(evt){
   touchUI();stopTouchEvent(evt);
   const s={id:evt.pointerId,target:target,tray:!!tray,sx:evt.clientX,sy:evt.clientY,
     clientX:evt.clientX,clientY:evt.clientY,mode:'waiting',timer:null};
-  if(!tray&&!target.closest('.mm-probe,.hdl,[data-rcd-test],[data-pb],[data-zone],[data-vfd-control],[data-tp-control],[data-timer-control],.mm-mode,[data-switch-key],[data-two-way-switch],[data-appliance-toggle]')){
+  if(!tray&&!alignmentDraft&&!target.closest('.mm-probe,.hdl,[data-rcd-test],[data-pb],[data-zone],[data-vfd-control],[data-tp-control],[data-timer-control],.mm-mode,[data-switch-key],[data-two-way-switch],[data-appliance-toggle],[data-alignment-guide]')){
     const term=nearestTouchTerminal(evt);if(term)s.target=term;
   }
   touchPointers.set(s.id,s);
@@ -2524,8 +2625,8 @@ function onTouchMove(evt){
     clearTimeout(s.timer);
     const object=touchObjectTarget(s.target);
     const background=!object||(object.key==='panel'&&panelIsFixed(panelById(object.id)));
-    if(!s.tray&&!pending&&!s.target.closest('.term')&&background&&!s.target.closest('[data-wid]')){startTouchView(false,s);queueTouchView();return;}
-    if(pending&&!s.target.closest('.term'))s.mode='route';
+    if(!s.tray&&!pending&&!s.target.closest('.term')&&background&&!conduitDraft&&!alignmentDraft&&!s.target.closest('[data-wid],[data-conduit-id],[data-alignment-guide]')){startTouchView(false,s);queueTouchView();return;}
+    if((pending||conduitDraft||alignmentDraft)&&!s.target.closest('.term'))s.mode='route';
     else startTouchAction(s,evt);
   }
   if(s.mode==='action'||s.mode==='route'){
@@ -2554,7 +2655,7 @@ function onTouchEnd(evt){
       if(s.tray){const item=s.target.closest('.tray-item');chooseTouchPlacement(item);}
       else{startTouchAction(s,s);replayTouch('pointerup',s,s);}
     }else{
-      if(s.mode==='route'&&!nearestTouchTerminal(s))replayTouch('pointerdown',s,s,scene);
+      if(s.mode==='route'&&(alignmentDraft||!nearestTouchTerminal(s)))replayTouch('pointerdown',s,s,scene);
       replayTouch('pointerup',s,s);
     }
   }
@@ -2570,6 +2671,8 @@ function onTouchEnd(evt){
   touchStatus(touchPlacement?'Коснитесь места установки.':(pending?'Коснитесь клеммы или добавьте точку маршрута.':''));
 }
 function chooseTouchPlacement(item){
+  if(item.dataset.special==='conduit'){startConduit();return;}
+  cancelConduit();
   touchPlacement=item.dataset.special?{special:item.dataset.special}:{type:item.dataset.type};
   cancelWire();sideMenuItems.forEach(function(menu){menu.open=false;});
   touchStatus('Коснитесь места установки.');
@@ -2584,7 +2687,7 @@ function initTouchControls(){
   document.addEventListener('pointercancel',onTouchEnd,{capture:true,passive:false});
   scene.addEventListener('contextmenu',function(e){if(e.pointerType==='touch'||touchPointers.size){e.preventDefault();e.stopImmediatePropagation();}},true);
   const cancel=document.getElementById('touchCancel');
-  if(cancel)cancel.addEventListener('click',function(){touchPlacement=null;cancelWire();hideWireMenu();hideObjectMenu();touchStatus('');});
+  if(cancel)cancel.addEventListener('click',function(){touchPlacement=null;cancelWire();cancelConduit();hideWireMenu();hideObjectMenu();touchStatus('');});
   document.getElementById('tray').addEventListener('click',function(e){const button=e.target.closest('.tray-add');if(button)chooseTouchPlacement(button.closest('.tray-item'));});
   if(typeof window.addEventListener==='function')window.addEventListener('blur',function(){
     hideTouchLoupe();
@@ -2622,13 +2725,15 @@ function buildGhost(type,object){
 }
 function placeGhost(evt){
   const k = sceneScale();
-  drag.ghost.style.left = (evt.clientX - drag.offX*k) + 'px';
-  drag.ghost.style.top  = (evt.clientY - drag.offY*k) + 'px';
+  const c=drag.candidate,m=ctmNode().getScreenCTM();
+  const pos=c&&c.free&&m?new DOMPoint(c.x,c.y).matrixTransform(m):null;
+  drag.ghost.style.left = (pos?pos.x:evt.clientX - drag.offX*k) + 'px';
+  drag.ghost.style.top  = (pos?pos.y:evt.clientY - drag.offY*k) + 'px';
 }
 function computeCandidate(evt){
   const p = svgPoint(evt), t = TYPES[drag.type];
   if (!isFinite(p.x) || !isFinite(p.y)) return null;
-  const left = p.x - drag.offX, top = p.y - drag.offY;
+  const box=snapAlignmentBox(p.x-drag.offX,p.y-drag.offY,t.modules*MODULE,t.h,evt),left=box.x,top=box.y;
 
   // Светильники и другие монтажные объекты размещаются свободно на поле.
   if(drag.type==='comb')return drag.id?combPlacement(left,top,drag):newCombPlacement(left,top);
@@ -2664,6 +2769,7 @@ function canToggleDeviceByClick(dev,target){
 
 function startDrag(evt, spec){
   evt.preventDefault();
+  cancelAlignmentGuide();
   cancelWire();
   const t = TYPES[spec.type];
   if(spec.type==='comb')spec=Object.assign({},combTraySettings,spec);
@@ -2822,10 +2928,15 @@ function specialGhostSize(key){
   return {w:180,h:120};
 }
 function placeSpecialGhost(evt,d){
-  d.ghost.style.left=(evt.clientX-d.screenW/2)+'px';
-  d.ghost.style.top=(evt.clientY-d.screenH/2)+'px';
+  const m=ctmNode().getScreenCTM(),p=snapAlignmentPoint(svgPoint(evt),evt);
+  const center=m&&Number.isFinite(p.x)?new DOMPoint(p.x,p.y).matrixTransform(m):{x:evt.clientX,y:evt.clientY};
+  d.ghost.style.left=(center.x-d.screenW/2)+'px';
+  d.ghost.style.top=(center.y-d.screenH/2)+'px';
 }
 function startSpecialTrayDrag(evt,key){
+  cancelAlignmentGuide();
+  if(key==='conduit'){evt.preventDefault();startConduit();conduitDraft.trayPointer=evt.pointerId;return;}
+  cancelConduit();
   evt.preventDefault();cancelWire();
   const ghost=document.createElement('div');
   ghost.className='ghost special-ghost';ghost.innerHTML=specialTrayPreview(key);
@@ -2849,7 +2960,7 @@ function finishSpecialTrayDrag(evt){
   const overScene=evt.clientX>=rect.left&&evt.clientX<=rect.right&&evt.clientY>=rect.top&&evt.clientY<=rect.bottom;
   if(d.moved&&!overScene){renderTray();return;}
   if(d.key==='panel'){
-    const p=d.moved?svgPoint(evt):svgPoint({clientX:rect.left+rect.width*.5,clientY:rect.top+rect.height*.5});
+    const p=snapAlignmentPoint(d.moved?svgPoint(evt):svgPoint({clientX:rect.left+rect.width*.5,clientY:rect.top+rect.height*.5}),evt);
     const n=nextSpecialNumber(state.panels,'PN');
     const withInbox=!state.special.inbox;
     state.panels.push({id:'PN'+n,tag:'ЩР'+n,railCount:2,x:p.x-PANEL.width/2,y:p.y-panelHeight({railCount:2})/2,inbox:withInbox,inletVoltage:380,fixed:true});
@@ -2857,14 +2968,14 @@ function finishSpecialTrayDrag(evt){
     renderAll();return;
   }
   if(d.key==='clamp'){
-    const p=d.moved?svgPoint(evt):svgPoint({clientX:rect.left+rect.width*.35,clientY:rect.top+rect.height*.3});
+    const p=snapAlignmentPoint(d.moved?svgPoint(evt):svgPoint({clientX:rect.left+rect.width*.35,clientY:rect.top+rect.height*.3}),evt);
     const clamp=createClamp(p.x-50,p.y);
     const hit=clampNearestWire(clamp);
     if(hit){clamp.wireId=hit.id;clamp.fraction=hit.fraction;clamp.x=hit.x;clamp.y=hit.y;}
     renderClamp();renderTray();return;
   }
   if(d.moved){
-    const p=svgPoint(evt);
+    const p=snapAlignmentPoint(svgPoint(evt),evt);
     if(d.key==='motor'){
       const n=nextSpecialNumber(state.motors,'M');
       state.motors.push({id:'M'+n,tag:'M'+n,x:p.x-MOTOR.w*MOTOR.scale/2,y:p.y-MOTOR.h*MOTOR.scale/2,
@@ -2923,7 +3034,7 @@ function computeFreeRailCandidate(evt, fd){
   if(fd.type==='comb')return combPlacement(p.x-fd.offX,p.y-fd.offY,devById(fd.devId));
   if (!isFinite(p.x) || !isFinite(p.y)) return null;
   if(t.freeOnly)return null;
-  const left = p.x-fd.offX, top = p.y-fd.offY, centerY = top+t.h/2;
+  const box=snapAlignmentBox(p.x-fd.offX,p.y-fd.offY,t.modules*MODULE,t.h,evt),left=box.x,top=box.y,centerY=top+t.h/2;
   return railPlacement(left,centerY,t.modules,fd.devId,fd.type,!!relayFor(fd.devId));
 }
 document.addEventListener('pointermove', function(evt){
@@ -2933,8 +3044,9 @@ document.addEventListener('pointermove', function(evt){
   if (!freeDeviceDrag.moved && Math.hypot(evt.clientX-freeDeviceDrag.sx, evt.clientY-freeDeviceDrag.sy) <= 4) return;
   freeDeviceDrag.moved = true;
   if(d.type==='comb')delete d.combAnchorId;
-  d.x = p.x-freeDeviceDrag.offX;
-  d.y = p.y-freeDeviceDrag.offY;
+  const t=TYPES[d.type],box=snapAlignmentBox(p.x-freeDeviceDrag.offX,p.y-freeDeviceDrag.offY,t.modules*MODULE,t.h,evt);
+  d.x = box.x;
+  d.y = box.y;
   freeDeviceDrag.candidate = computeFreeRailCandidate(evt, freeDeviceDrag);
   renderDevices();
   renderRelays();
@@ -3219,8 +3331,9 @@ document.addEventListener('pointermove', function(evt){
   if (!motorDrag || evt.pointerId !== motorDrag.pointerId) return;
   const p = svgPoint(evt);
   const motor=motorById(motorDrag.id);if(!motor)return;
-  motor.x = p.x-motorDrag.offX;
-  motor.y = p.y-motorDrag.offY;
+  const box=snapAlignmentBox(p.x-motorDrag.offX,p.y-motorDrag.offY,motor.w*motor.scale,motor.h*motor.scale,evt);
+  motor.x = box.x;
+  motor.y = box.y;
   renderMotor();
   renderWires();
   renderTerminals();
@@ -3245,14 +3358,15 @@ function updateMotorReadout(){
         const operating=dcMotorOperatingPoint(motor);
         const rpm=Math.round(Math.abs(motor.rpmActual||0));
         if(box){
+          const values=dcMotorInstrumentValues(motor,operating);
           const set=function(sel,text){const el=box.querySelector(sel);if(el)el.textContent=text;};
           set('.motor-load-value',operating.load.toFixed(0)+' %');
-          set('.motor-rpm-value',rpm+' об/мин');
-          set('.motor-armature-voltage',(operating.armaturePresent?operating.armatureVoltage.toFixed(0):'—')+' В');
-          set('.motor-armature-current',(operating.armaturePresent?operating.armatureCurrent.toFixed(1):'—')+' А');
-          set('.motor-emf-value',(operating.armaturePresent?operating.emf.toFixed(0):'—')+' В');
-          set('.motor-field-current',operating.fieldCurrent.toFixed(2)+' А');
-          set('.motor-torque-value',(operating.armaturePresent?operating.torque.toFixed(1):'—')+' Н·м');
+          set('.motor-rpm-value',values.rpm);
+          set('.motor-armature-voltage',values.armatureVoltage);set('.motor-armature-current',values.armatureCurrent);
+          set('.motor-field-voltage',values.fieldVoltage);set('.motor-field-current',values.fieldCurrent);
+          set('.motor-emf-value',values.emf);set('.motor-power-value',values.power);
+          set('.motor-shaft-torque-value',values.torque);
+          const alert=box.querySelector('.motor-alert');if(alert)alert.hidden=!operating.acSupply;
         }
         if(rpm>soundRpm){soundRpm=rpm;soundDir=visualDir;}
         return;
@@ -3334,8 +3448,9 @@ boxLayer.addEventListener('pointerdown', function(evt){
 document.addEventListener('pointermove', function(evt){
   if (!inboxDrag || evt.pointerId !== inboxDrag.pointerId) return;
   const p = svgPoint(evt);
-  INBOX.x = p.x-inboxDrag.offX;
-  INBOX.y = p.y-inboxDrag.offY;
+  const box=snapAlignmentBox(p.x-inboxDrag.offX,p.y-inboxDrag.offY,inboxWidth(),INBOX.h,evt);
+  INBOX.x = box.x;
+  INBOX.y = box.y;
   renderInbox();
   renderWires();
   renderTerminals();
@@ -3363,8 +3478,9 @@ document.addEventListener('pointermove', function(evt){
   if (!pushStationDrag || evt.pointerId !== pushStationDrag.pointerId) return;
   const p = svgPoint(evt);
   const pb=pushbuttonById(pushStationDrag.id);if(!pb)return;
-  pb.x = p.x-pushStationDrag.offX;
-  pb.y = p.y-pushStationDrag.offY;
+  const box=snapAlignmentBox(p.x-pushStationDrag.offX,p.y-pushStationDrag.offY,pb.w||PB.w,pb.h||PB.h,evt);
+  pb.x = box.x;
+  pb.y = box.y;
   renderDevices();
   renderWires();
   renderTerminals();
@@ -3404,7 +3520,7 @@ document.addEventListener('pointercancel', function(){
   renderAll();
 });
 
-/* тепловое реле: кнопки лимба/RESET/TEST и перетаскивание */
+/* тепловое реле: кнопки RESET/TEST и перетаскивание */
 let relayButtonDown = null;
 relayLayer.addEventListener('pointerdown', function(evt){
   const g = evt.target.closest('.relay');
@@ -3576,6 +3692,10 @@ function characteristicsFor(target){
       {value:'4',label:'4 рейки'},{value:'5',label:'5 реек'}
     ]));
   }else if(target.kind==='device'){
+    if(obj.type==='klemma'||obj.type==='pebus')fields.push(propertyField('wireEntrySide','Сторона подключения','select','right','',undefined,undefined,undefined,false,[
+      {value:'right',label:'Справа'},
+      {value:'left',label:'Слева'}
+    ]));
     if(obj.type==='comb'){
       fields.push(propertyField('combPoles','Исполнение','select',String(combPoles(obj)),'',undefined,undefined,undefined,false,[{value:'1',label:'1P — одна фаза, автоматы 1P'},{value:'2',label:'2P — два полюса, автоматы 2P'},{value:'3',label:'3P — три фазы, автоматы 3P'}]));
       fields.push(propertyField('combCount','Количество автоматов','number',combCount(obj),'шт.',1,Math.floor(SLOTS/combPoles(obj)),1));
@@ -4063,13 +4183,20 @@ function energyMeterTick(){
       const energyEl=g.querySelector('.meter-energy');
       const powerEl=g.querySelector('.meter-power');
       const pulseEl=g.querySelector('.meter-pulse');
+      const supplyEl=g.querySelector('.meter-supply-led');
       if(energyEl)energyEl.textContent=meterEnergyText(d.energyKwh);
       if(powerEl)powerEl.textContent=meterPowerText(power);
       if(pulseEl)pulseEl.setAttribute('fill',d.meterPulse?'#ff3b30':'#657079');
+      if(supplyEl){
+        const powered=meterVoltage(d)>=50;
+        supplyEl.setAttribute('fill',powered?'#35e47d':'#245d39');
+        supplyEl.classList.toggle('lit',powered);
+      }
     });
     state.devices.filter(function(d){return d.type==='sensor';}).forEach(function(d){
-      const voltage=meterVoltage(d),power=meterPowerW(d);
-      const current=voltage>0?power/voltage:0;
+      const voltage=meterVoltage(d),currents=clampWireCurrents();
+      const value=internalLinkCurrent(currents,{devId:d.id,key:'L_in'},{devId:d.id,key:'L_out'});
+      const current=voltage>0?Math.hypot(value.r,value.i):0;
       d.sensorVoltage=voltage;
       d.sensorCurrentA=current;
       const g=deviceLayer.querySelector('.dev[data-id="'+d.id+'"]');
@@ -4379,6 +4506,21 @@ function updateRcdLeakage(){
   let changed=false;
 
   rcds.forEach(function(rcd){
+    const map=potentialMap();
+    if(!map.conflict){
+      const currents=clampWireCurrents();
+      const phase=internalLinkCurrent(currents,{devId:rcd.id,key:'tL'},{devId:rcd.id,key:'bL'});
+      const neutral=internalLinkCurrent(currents,{devId:rcd.id,key:'tN'},{devId:rcd.id,key:'bN'});
+      const leakageMa=Math.hypot(phase.r+neutral.r,phase.i+neutral.i)*1000;
+      rcd.rcdLeakageMa=leakageMa;
+      if(leakageMa+1e-7<Math.max(1,Number(rcd.ratedLeakageMa)||30))return;
+      rcd.tripped=true;rcd.on=false;changed=true;playBreakerSound(false,true);
+      log('АВАРИЯ: '+tagOf(rcd.id)+' обнаружило дифференциальный ток '+leakageMa.toFixed(1)+' мА. УЗО отключило фазу и нейтраль.','err');
+      showPhaseFault('УТЕЧКА ТОКА! '+tagOf(rcd.id)+' · IΔ '+leakageMa.toFixed(1)+' мА · УЗО СРАБОТАЛО');
+      return;
+    }
+    // У прямого КЗ идеальная модель не задаёт конечного тока. Сохраняем
+    // отдельно согласованный учебный сценарий прямого контакта с PE/N.
     const adj={};
     function add(a,b){
       const ka=nodeKey(a),kb=nodeKey(b);
@@ -4452,10 +4594,20 @@ function electricalShortFault(map){
     showPhaseFault('АВАРИЯ ПЧ! '+tagOf(outputDrive.id)+' · КОРОТКОЕ ЗАМЫКАНИЕ НА ВЫХОДЕ · НАЖМИТЕ STOP ДЛЯ СБРОСА.');
     return true;
   }
+  // Связность с общей фазной шиной не означает прохождения тока КЗ через
+  // контакт. Конечные вспомогательные сопротивления позволяют исключить
+  // исправные тупиковые ветви, не задавая физический ток короткого замыкания.
+  const faultBranches=internalLinks().map(function(pair){return {a:pair[0],b:pair[1],resistance:.001};})
+    .concat(state.wires.map(function(w){return {a:w.a,b:w.b,resistance:.01};}));
+  const faultPot=solveAdmittanceNetwork(faultBranches,map.sources||{});
+  function contactCarriesFault(d,a,b){
+    const value=branchCurrent({a:{devId:d.id,key:a},b:{devId:d.id,key:b},resistance:.001},faultPot);
+    return Math.hypot(value.r,value.i)>.001;
+  }
   function protectsFault(d){
     if(!d||!d.on||d.tripped)return false;
-    if(TYPES[d.type].kind==='mcb')return Array.from({length:TYPES[d.type].poles},function(_,i){return 'b'+i;}).some(function(k){return !!component[nodeKey({devId:d.id,key:k})];});
-    if(d.type==='rcd')return !!component[nodeKey({devId:d.id,key:'bL'})];
+    if(TYPES[d.type].kind==='mcb')return Array.from({length:TYPES[d.type].poles},function(_,i){return i;}).some(function(i){return !!component[nodeKey({devId:d.id,key:'b'+i})]&&contactCarriesFault(d,'t'+i,'b'+i);});
+    if(d.type==='rcd')return !!component[nodeKey({devId:d.id,key:'bL'})]&&contactCarriesFault(d,'tL','bL');
     return false;
   }
   const candidates=state.devices.filter(protectsFault);
@@ -4526,6 +4678,9 @@ function thermalTripSeconds(ratio,heat){
 }
 function thermalPhaseCurrents(rel,wireCurrents){
   const id='kk'+rel.id,result=[0,0,0];
+  if(wireCurrents.internalPhasors)return result.map(function(_,i){
+    const value=internalLinkCurrent(wireCurrents,{devId:rel.kmId,key:'b'+i},{devId:id,key:'p'+i});return Math.hypot(value.r,value.i);
+  });
   state.wires.forEach(function(w){
     const current=Math.max(0,Number(wireCurrents[w.id])||0);
     ['a','b'].forEach(function(end){
@@ -4575,7 +4730,9 @@ function relayLive(rel){
 function cycleSetpoint(rel){
   syncThermalSettings(rel);
   const range=thermalRange(rel),step=(range.max-range.min)/8;
-  rel.set=rel.set>=range.max-0.00001?range.min:Math.min(range.max,Number((rel.set+step).toFixed(3)));
+  if(range.id==='7-10'){
+    rel.set=[7,8,9,10].find(function(value){return value>rel.set+0.00001;})||7;
+  }else rel.set=rel.set>=range.max-0.00001?range.min:Math.min(range.max,Number((rel.set+step).toFixed(3)));
   log(tagOf('kk'+rel.id)+': уставка теплового реле — ' + rel.set + ' А (по номинальному току двигателя).', 'info');
   renderAll();
 }
@@ -4605,6 +4762,7 @@ const termLayer = document.getElementById('termLayer');
 /* зажимы аппарата в его локальных координатах */
 function termDefs(type,obj){
   const t = TYPES[type], w = t.modules*MODULE, h = t.h, out = [];
+  if(t.crossModule)return crossModuleTerms(type);
   if(type==='comb')return [];
   if(type==='junction')return junctionTerms();
   if(t.kind==='mcb'){
@@ -4641,8 +4799,8 @@ function termDefs(type,obj){
     return out;
   }
   if (type === 'bulb'){
-    out.push({key:'L',label:'L',dx:w*.28,dy:147,color:WC.L1});
-    out.push({key:'N',label:'N',dx:w*.72,dy:147,color:WC.N});
+    out.push({key:'L',label:'L',dx:w*.28,dy:h-147,color:WC.L1});
+    out.push({key:'N',label:'N',dx:w*.72,dy:h-147,color:WC.N});
     return out;
   }
   if (type === 'outlet'){
@@ -4728,7 +4886,7 @@ function termDefs(type,obj){
   if (type === 'kk1'){
     const cell = TYPES.km1.modules*MODULE/4;
     ['98','97','96','95'].forEach(function(l,i){ out.push({key:'r'+i, label:l, dx:(i+0.5)*cell, dy:THERMAL_AUX.terminalY, color:i<2?WC.C:WC.C2}); });
-    ['2 T1','4 T2','6 T3'].forEach(function(l,i){ out.push({key:'p'+i, label:l, dx:(i+0.5)*cell, dy:196, color:[WC.L1,WC.L2,WC.L3][i]}); });
+    ['2 T1','4 T2','6 T3'].forEach(function(l,i){ out.push({key:'p'+i, label:l, dx:(i+0.5)*cell, dy:THERMAL_POWER.terminalY, color:[WC.L1,WC.L2,WC.L3][i]}); });
     return out;
   }
   return out;
@@ -4759,8 +4917,8 @@ function terminalWireEntry(t,type,td,obj){
     inset*=obj.scale;
   }
   else if(type==='klemma'||type==='pebus'){
-    side='right';inset=w-.25-td.dx;
-    t.entryAutoSide=true;t.entryLeftInset=td.dx-.25;t.entryRightInset=inset;
+    side=obj&&obj.wireEntrySide==='left'?'left':'right';
+    inset=side==='left'?td.dx-.25:w-.25-td.dx;
   }
   else if(type==='junction'){
     side=td.side;inset=13.65;t.entryAutoSide=true;
@@ -4771,7 +4929,10 @@ function terminalWireEntry(t,type,td,obj){
     if(td.key==='A1'||td.key==='A2'){side=td.key==='A1'?'top':'bottom';inset=18.5;}
     else{side=td.dy<124?'top':'bottom';inset=22.75;}
   }
-  else if(type==='kk1'){side='bottom';inset=td.key[0]==='r'?THERMAL_AUX.top+THERMAL_AUX.height+.5-td.dy:h-.25-td.dy;}
+  else if(type==='kk1'){
+    side='bottom';inset=td.key[0]==='r'?THERMAL_AUX.top+THERMAL_AUX.height+.5-td.dy:h-.25-td.dy;
+    t.wireBendRadius=THERMAL_WIRE_BEND_RADIUS;
+  }
   else if(type==='outlet'&&td.key[0]==='s'){
     // Контактные отверстия розетки: край самого гнезда, а не всей рамки.
     side=/PEt$/.test(td.key)?'top':'bottom';inset=/PE/.test(td.key)?7.5:7.75;
@@ -4856,9 +5017,8 @@ function wirePointList(a, b, wr){
   if (shape === 'arc') return [arcShapeGeometry(a,b,wr).handle];
   if (shape === 's') return [sShapeGeometry(a,b,wr).handle];
   if (shape === 'orthogonal'){
-    const g=roundedOrthogonalGeometry(orthogonalRoute(wireNodes(a,b,wr)),12);
-    if(pts.length)return pts.map(function(p){return nearestOnPolyline(p,g.samples);});
-    return [pointHalfwayOnPolyline(g.samples)];
+    if(pts.length)return pts.map(function(p){return nearestOnPolyline(p,result.samples);});
+    return [pointHalfwayOnPolyline(result.samples)];
   }
   if (pts.length) return pts;
   return [{ x:(a.x+b.x)/2, y:(a.y+b.y)/2 }];       // пока изгибов нет — одна точка посередине
@@ -4995,7 +5155,8 @@ function wireEntryLeadLength(wr){
 }
 /* Скругляем также стык прямого ввода с кривой, а не только углы ломаной.
    Разбиение Безье сохраняет форму трассы за пределами короткого скругления. */
-function roundedWirePath(d,radius){
+function wireTerminalBendRadius(t){return Number(t&&t.wireBendRadius)||WIRE_BEND_RADIUS;}
+function roundedWirePath(d,radius,endRadii){
   const commands=d.match(/[MLQC][^MLQC]*/g)||[],segments=[];
   let cursor;
   commands.forEach(function(command){
@@ -5008,6 +5169,18 @@ function roundedWirePath(d,radius){
     cursor=points[points.length-1];
   });
   if(!segments.length)return d;
+  const firstLead=segments[0].length===2?segments[0][1]:null;
+  const lastLead=segments.at(-1).length===2?segments.at(-1)[0]:null;
+  // Короткое продолжение прямой у клеммы не должно ограничивать радиус.
+  for(let i=1;i<segments.length;i++){
+    const prev=segments[i-1],next=segments[i];
+    if(prev.length!==2||next.length!==2)continue;
+    const ax=prev[1].x-prev[0].x,ay=prev[1].y-prev[0].y;
+    const bx=next[1].x-next[0].x,by=next[1].y-next[0].y;
+    if(ax*bx+ay*by>0&&Math.abs(ax*by-ay*bx)<=1e-7*Math.hypot(ax,ay)*Math.hypot(bx,by)){
+      segments.splice(i-1,2,[prev[0],next[1]]);i=Math.max(0,i-2);
+    }
+  }
   function split(points,t){
     let row=points,left=[row[0]],right=[row[row.length-1]];
     while(row.length>1){
@@ -5045,7 +5218,10 @@ function roundedWirePath(d,radius){
   for(let i=0;i<segments.length-1;i++){
     const a=tangent(segments[i],true),b=tangent(segments[i+1],false);
     if(a.x*b.x+a.y*b.y>1-1e-6)continue;
-    const cut=Math.min(radius,lengths[i]*.4,lengths[i+1]*.4);
+    let localRadius=radius;
+    if(endRadii&&i===0)localRadius=Math.min(localRadius,endRadii.start);
+    if(endRadii&&i===segments.length-2)localRadius=Math.min(localRadius,endRadii.end);
+    const cut=Math.min(localRadius,lengths[i]*.4,lengths[i+1]*.4);
     tails[i]=1-parameterAtLength(metrics[i],lengths[i]-cut);
     heads[i+1]=parameterAtLength(metrics[i+1],cut);
   }
@@ -5055,7 +5231,17 @@ function roundedWirePath(d,radius){
   });
   function pair(p){return p.x+','+p.y;}
   let result='M '+pair(trimmed[0][0]);
+  function interior(p,a,b){
+    if(!p)return false;
+    const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy),along=(p.x-a.x)*dx+(p.y-a.y)*dy;
+    return len>.00001&&along>.00001&&along<len*len-.00001&&Math.abs((p.x-a.x)*dy-(p.y-a.y)*dx)<len*.00001;
+  }
   trimmed.forEach(function(points,i){
+    // Сохраняем границы прямых вводов даже после объединения продолжений.
+    if(points.length===2){
+      if(i===0&&interior(firstLead,points[0],points[1]))result+=' L '+pair(firstLead);
+      if(i===trimmed.length-1&&interior(lastLead,points[0],points[1]))result+=' L '+pair(lastLead);
+    }
     result+=' '+({2:'L',3:'Q',4:'C'}[points.length])+' '+points.slice(1).map(pair).join(' ');
     if(tails[i]){
       const next=trimmed[i+1],a=points[points.length-1],b=next[0];
@@ -5067,7 +5253,7 @@ function roundedWirePath(d,radius){
   return result;
 }
 function wireRoutingEndpoint(t,wr){
-  const end=wireVisualEndpoint(t,wr),lead=wireEntryLeadLength(wr)+WIRE_BEND_RADIUS;
+  const end=wireVisualEndpoint(t,wr),lead=wireEntryLeadLength(wr)+wireTerminalBendRadius(t);
   if(t.entrySide==='top')return {x:end.x,y:end.y-lead};
   if(t.entrySide==='bottom')return {x:end.x,y:end.y+lead};
   if(t.entrySide==='left')return {x:end.x-lead,y:end.y};
@@ -5076,7 +5262,7 @@ function wireRoutingEndpoint(t,wr){
 }
 /* При обратном подходе отводим трассу вбок: для разворота нужны
    две дуги с расстоянием между ними, а не совпадающие точки на одной оси. */
-/* У шин N/PE и колодок XR сторону выбирает каждый провод отдельно: по ближайшему
+/* У колодок XR сторону выбирает каждый провод отдельно: по ближайшему
    участку трассы, включая ручную точку и управляющие точки дуг. */
 function wireTerminalSide(t,other,wr,atEnd){
   if(!t.entryAutoSide)return t;
@@ -5093,9 +5279,60 @@ function wireTerminalSide(t,other,wr,atEnd){
   const insets={left:t.entryLeftInset,right:t.entryRightInset,top:t.entryTopInset,bottom:t.entryBottomInset};
   return Object.assign({},t,{entryAutoSide:false,entrySide:side,entryInset:insets[side]});
 }
+/* Параллельные перемычки получают отдельную дорожку целиком, до скругления.
+   Отступ хранится относительно клемм, поэтому трасса следует за аппаратами. */
+function wireJumperLane(a,b,wr){
+  if(wr&&(wr.conduitId||wr.previewConduitId))return null;
+  const shape=wr&&(wr.previewShape||wr.shape)||'smooth';
+  if(!wr||(wr.pts&&wr.pts.length)||!['smooth','straight','orthogonal'].includes(shape))return null;
+  const originalA=a;a=wireTerminalSide(a,b,wr,false);b=wireTerminalSide(b,originalA,wr,true);
+  const side=a.entrySide;
+  if(!side||side!==b.entrySide)return null;
+  const normal=side==='top'||side==='bottom'?'y':'x',along=normal==='y'?'x':'y';
+  const sign=side==='top'||side==='left'?-1:1;
+  const p=wireRoutingEndpoint(a,wr),q=wireRoutingEndpoint(b,wr);
+  if(Math.abs(p[normal]-q[normal])>.5||Math.abs(p[along]-q[along])<2*WIRE_BEND_RADIUS+1)return null;
+  return {side:side,normal:normal,sign:sign,base:Math.max(sign*p[normal],sign*q[normal]),
+    min:Math.min(p[along],q[along])+WIRE_BEND_RADIUS,
+    max:Math.max(p[along],q[along])-WIRE_BEND_RADIUS,width:wireVisualWidth(wr)};
+}
+function chooseWireJumperLane(lane,saved,occupied){
+  const offset=saved&&saved.side===lane.side&&Number.isFinite(saved.offset)?Math.max(0,saved.offset):0;
+  let coordinate=lane.base+offset;
+  // После каждого сдвига повторно учитываем уже занятые дорожки.
+  for(let pass=0;pass<=occupied.length;pass++){
+    let next=coordinate;
+    occupied.forEach(function(other){
+      if(other.side!==lane.side||Math.min(lane.max,other.max)<=Math.max(lane.min,other.min))return;
+      const distance=(lane.width+other.width)/2;
+      if(Math.abs(coordinate-other.coordinate)<distance-.0001)next=Math.max(next,other.coordinate+distance);
+    });
+    if(next===coordinate)break;
+    coordinate=next;
+  }
+  return {side:lane.side,offset:coordinate-lane.base};
+}
+function prepareWireJumperLanes(){
+  const occupied=[];
+  state.wires.forEach(function(wr){
+    const a=terminal(wr.a.devId,wr.a.key),b=terminal(wr.b.devId,wr.b.key);
+    if(!a||!b)return;
+    // Временный просмотр другой формы не меняет сохранённую дорожку.
+    const lane=wireJumperLane(a,b,Object.assign({},wr,{previewShape:null}));
+    if(!lane)return;
+    const chosen=chooseWireJumperLane(lane,wr.autoLane,occupied);
+    if(!wr.autoLane||wr.autoLane.side!==chosen.side||wr.autoLane.offset!==chosen.offset)wr.autoLane=chosen;
+    occupied.push(Object.assign({},lane,{coordinate:lane.base+chosen.offset}));
+  });
+  return occupied;
+}
 function wireRoutingGeometry(a,b,wr){
   const originalA=a;a=wireTerminalSide(a,b,wr,false);b=wireTerminalSide(b,originalA,wr,true);
   const leadA=wireRoutingEndpoint(a,wr),leadB=wireRoutingEndpoint(b,wr);
+  const lane=wireJumperLane(a,b,wr),saved=wr&&wr.autoLane;
+  if(lane&&saved&&saved.side===lane.side&&Number.isFinite(saved.offset)&&saved.offset>0){
+    leadA[lane.normal]+=lane.sign*saved.offset;leadB[lane.normal]+=lane.sign*saved.offset;
+  }
   const initial=wireBodyPathD(leadA,leadB,wr);
   const coords=(initial.match(/-?\d*\.?\d+(?:e[+-]?\d+)?/gi)||[]).map(Number);
   function displaced(t,lead,other,atEnd){
@@ -5110,7 +5347,7 @@ function wireRoutingGeometry(a,b,wr){
     const normal={x:-v.y,y:v.x};
     const pts=wr&&wr.pts||[],toward=pts.length?pts[atEnd?pts.length-1:0]:other;
     const sign=(toward.x-lead.x)*normal.x+(toward.y-lead.y)*normal.y<0?-1:1;
-    const gap=2*(WIRE_BEND_RADIUS+1)+wireVisualWidth(wr);
+    const gap=2*(wireTerminalBendRadius(t)+1)+wireVisualWidth(wr);
     return {x:lead.x+normal.x*sign*gap,y:lead.y+normal.y*sign*gap};
   }
   const start=displaced(a,leadA,leadB,false),end=displaced(b,leadB,leadA,true);
@@ -5149,6 +5386,7 @@ function wireWithoutLoops(d){
   return {d:changed?roundedOrthogonalGeometry(samples,WIRE_BEND_RADIUS).d:d,samples:samples,changed:changed};
 }
 function wirePathResult(a,b,wr){
+  const contained=wireConduitParts(a,b,wr);if(contained)return contained;
   const originalA=a;a=wireTerminalSide(a,b,wr,false);b=wireTerminalSide(b,originalA,wr,true);
   const g=wireRoutingGeometry(a,b,wr),body=g.body;
   const va=wireVisualEndpoint(a,wr),vb=wireVisualEndpoint(b,wr);
@@ -5158,7 +5396,7 @@ function wirePathResult(a,b,wr){
   path+=body.replace(/^M\s*[^CLQZ]+/,'');
   if(g.end!==g.leadB)path+=' L '+g.leadB.x+','+g.leadB.y;
   if(g.leadB!==b)path+=' L '+vb.x+','+vb.y;
-  const checked=wireWithoutLoops(roundedWirePath(path,WIRE_BEND_RADIUS));
+  const checked=wireWithoutLoops(roundedWirePath(path,WIRE_BEND_RADIUS,{start:wireTerminalBendRadius(a),end:wireTerminalBendRadius(b)}));
   if(checked.changed&&wr&&wr.pts&&wr.pts.length){
     // Конфликтующая точка не должна сокращать защищённый ввод у манжеты.
     const safe=wirePathResult(a,b,Object.assign({},wr,{pts:[]}));safe.repaired=true;return safe;
@@ -5166,6 +5404,155 @@ function wirePathResult(a,b,wr){
   return {d:checked.d,samples:checked.samples,repaired:checked.changed};
 }
 function wirePathD(a,b,wr){return wirePathResult(a,b,wr).d;}
+/* Для прямоугольной трассы захватываем сторону, оставляя вводы в клеммы на месте. */
+function compactWireCorners(points){
+  const out=[];
+  points.forEach(function(p){
+    const q={x:p.x,y:p.y},last=out.at(-1);
+    if(last&&Math.hypot(last.x-q.x,last.y-q.y)<.00001)return;
+    while(out.length>1){
+      const a=out.at(-2),b=out.at(-1),ax=b.x-a.x,ay=b.y-a.y,bx=q.x-b.x,by=q.y-b.y;
+      if(ax*bx+ay*by<=0||Math.abs(ax*by-ay*bx)>.00001)break;
+      out.pop();
+    }
+    out.push(q);
+  });
+  return out;
+}
+function wireOrthogonalSegments(a,b,wr){
+  const originalA=a;a=wireTerminalSide(a,b,wr,false);b=wireTerminalSide(b,originalA,wr,true);
+  const g=wireRoutingGeometry(a,b,wr);
+  const route=orthogonalRoute(wireNodes(g.start,g.end,wr));
+  const points=compactWireCorners([wireVisualEndpoint(a,wr),g.leadA,g.start].concat(route,[g.end,g.leadB,wireVisualEndpoint(b,wr)]));
+  const leadA=wireRoutingEndpoint(a,wr),leadB=wireRoutingEndpoint(b,wr);
+  // Наконечник и минимальная длина прямого ввода не являются подвижной стороной.
+  if(points.length>1){points[0]=leadA;points[points.length-1]=leadB;}
+  return {points:compactWireCorners(points),leadA:leadA,leadB:leadB,sideA:a.entrySide,sideB:b.entrySide};
+}
+function wireSegmentHitSvg(a,b,wr){
+  const points=wireOrthogonalSegments(a,b,wr).points;
+  let svg='';
+  for(let i=0;i<points.length-1;i++){
+    const a=points[i],b=points[i+1],dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);
+    if(len<1)continue;
+    const trim=Math.min(WIRE_BEND_RADIUS,len*.25),ux=dx/len,uy=dy/len;
+    const d='M '+(a.x+ux*trim)+','+(a.y+uy*trim)+' L '+(b.x-ux*trim)+','+(b.y-uy*trim);
+    svg+='<path class="wire-segment-hit" data-wire-segment="'+i+'" d="'+d+'" fill="none" stroke="transparent" stroke-width="'+Math.max(16,wireVisualWidth(wr)+6)+'" pointer-events="stroke" style="cursor:'+(Math.abs(dx)>Math.abs(dy)?'ns-resize':'ew-resize')+'"/>';
+  }
+  return svg;
+}
+function beginWireSegmentGrab(a,b,wr,p,preferred){
+  const geometry=wireOrthogonalSegments(a,b,wr),points=geometry.points;
+  let index=-1,best=Infinity;
+  for(let i=0;i<points.length-1;i++){
+    if(Math.hypot(points[i+1].x-points[i].x,points[i+1].y-points[i].y)<1)continue;
+    const distance=distToSeg(p,points[i],points[i+1]);
+    if(distance<best){best=distance;index=i;}
+  }
+  if(Number.isInteger(preferred)&&preferred>=0&&preferred<points.length-1)index=preferred;
+  if(index<0||distToSeg(p,points[index],points[index+1])>Math.max(12,wireVisualWidth(wr)+6))return null;
+  const start=points[index],end=points[index+1],axis=Math.abs(end.x-start.x)>Math.abs(end.y-start.y)?'y':'x';
+  return {id:wr.id,mode:'segment',index:index,axis:axis,pointer:p,points:points,geometry:geometry,visualA:wireVisualEndpoint(wireTerminalSide(a,b,wr,false),wr),visualB:wireVisualEndpoint(wireTerminalSide(b,a,wr,true),wr),
+    distance:distToSeg(p,points[index],points[index+1]),
+    originalPts:(wr.pts||[]).map(function(p){return {x:p.x,y:p.y};})};
+}
+function wireRouteCrossing(a,b,c,d){
+  const epsilon=.00001,h=Math.abs(a.y-b.y)<epsilon,k=Math.abs(c.y-d.y)<epsilon;
+  if(h===k){
+    const fixed=h?'y':'x',along=h?'x':'y';
+    if(Math.abs(a[fixed]-c[fixed])>epsilon)return null;
+    const low=Math.max(Math.min(a[along],b[along]),Math.min(c[along],d[along]));
+    const high=Math.min(Math.max(a[along],b[along]),Math.max(c[along],d[along]));
+    if(low>high+epsilon)return null;
+    const p={x:a.x,y:a.y};p[along]=low;return {point:p,overlap:high-low>epsilon};
+  }
+  const p={x:h?c.x:a.x,y:h?a.y:c.y};
+  if(p.x<Math.min(a.x,b.x)-epsilon||p.x>Math.max(a.x,b.x)+epsilon||p.y<Math.min(a.y,b.y)-epsilon||p.y>Math.max(a.y,b.y)+epsilon||p.x<Math.min(c.x,d.x)-epsilon||p.x>Math.max(c.x,d.x)+epsilon||p.y<Math.min(c.y,d.y)-epsilon||p.y>Math.max(c.y,d.y)+epsilon)return null;
+  return {point:p,overlap:false};
+}
+function wireRouteIsSimple(points){
+  const p=compactWireCorners(points);
+  for(let i=1;i<p.length;i++){
+    if(Math.abs(p[i].x-p[i-1].x)>.00001&&Math.abs(p[i].y-p[i-1].y)>.00001)return false;
+    if(i>1){const a=p[i-2],b=p[i-1],c=p[i];if((b.x-a.x)*(c.x-b.x)+(b.y-a.y)*(c.y-b.y)<-.00001)return false;}
+    for(let j=0;j<i-2;j++)if(wireRouteCrossing(p[i-1],p[i],p[j],p[j+1]))return false;
+  }
+  return true;
+}
+function wireRouteEdges(points){return points.slice(1).map(function(p,i){return [points[i],p];});}
+function wireRouteDirection(a,b){return Math.abs(b.x-a.x)>Math.abs(b.y-a.y)?(b.x>a.x?0:2):(b.y>a.y?1:3);}
+function wireLeadDirection(side){return {right:0,bottom:1,left:2,top:3}[side];}
+/* Локальный поиск прямоугольного обхода закреплённых вводов и уже выбранной стороны.
+   Вызывается только когда свободное перемещение меняет порядок углов трассы. */
+function wireOrthogonalConnector(start,end,obstacles,forbiddenStart,forbiddenEnd){
+  if(Math.hypot(start.x-end.x,start.y-end.y)<.00001)return [start];
+  const gap=2*WIRE_BEND_RADIUS+4,all=[start,end].concat(obstacles.flat());
+  const xs=Array.from(new Set(all.flatMap(function(p){return [p.x-gap,p.x,p.x+gap];}))).sort(function(a,b){return a-b;});
+  const ys=Array.from(new Set(all.flatMap(function(p){return [p.y-gap,p.y,p.y+gap];}))).sort(function(a,b){return a-b;});
+  const directions=[[1,0],[0,1],[-1,0],[0,-1]],heap=[],costs=new Map();
+  function push(node){heap.push(node);let i=heap.length-1;while(i){const parent=(i-1)>>1;if(heap[parent].score<=node.score)break;heap[i]=heap[parent];i=parent;}heap[i]=node;}
+  function pop(){const first=heap[0],last=heap.pop();if(heap.length){let i=0;while(i*2+1<heap.length){let child=i*2+1;if(child+1<heap.length&&heap[child+1].score<heap[child].score)child++;if(heap[child].score>=last.score)break;heap[i]=heap[child];i=child;}heap[i]=last;}return first;}
+  function equal(a,b){return Math.hypot(a.x-b.x,a.y-b.y)<.00001;}
+  function blocked(a,b){
+    return obstacles.some(function(edge){const hit=wireRouteCrossing(a,b,edge[0],edge[1]);if(!hit)return false;
+      return hit.overlap||!((equal(hit.point,start)||equal(hit.point,end))&&(equal(hit.point,edge[0])||equal(hit.point,edge[1])));
+    });
+  }
+  const first={x:xs.indexOf(start.x),y:ys.indexOf(start.y),direction:4,cost:0,parent:null};first.score=Math.abs(start.x-end.x)+Math.abs(start.y-end.y);push(first);
+  let steps=0;
+  while(heap.length&&steps++<30000){
+    const node=pop(),point={x:xs[node.x],y:ys[node.y]},key=node.x+','+node.y+','+node.direction;
+    if(costs.has(key)&&costs.get(key)<node.cost-.00001)continue;
+    if(equal(point,end)&&node.direction!==forbiddenEnd){const result=[];for(let p=node;p;p=p.parent)result.push({x:xs[p.x],y:ys[p.y]});return compactWireCorners(result.reverse());}
+    for(let direction=0;direction<4;direction++){
+      if((node.direction===4&&direction===forbiddenStart)||(node.direction<4&&direction===(node.direction+2)%4))continue;
+      const x=node.x+directions[direction][0],y=node.y+directions[direction][1];if(x<0||x>=xs.length||y<0||y>=ys.length)continue;
+      const next={x:xs[x],y:ys[y]};if((equal(next,end)&&direction===forbiddenEnd)||blocked(point,next))continue;
+      const cost=node.cost+Math.abs(next.x-point.x)+Math.abs(next.y-point.y)+(node.direction<4&&node.direction!==direction?2*WIRE_BEND_RADIUS:0),nextKey=x+','+y+','+direction;
+      if(costs.has(nextKey)&&costs.get(nextKey)<=cost+.00001)continue;
+      costs.set(nextKey,cost);push({x:x,y:y,direction:direction,cost:cost,score:cost+Math.abs(next.x-end.x)+Math.abs(next.y-end.y),parent:node});
+    }
+  }
+  return null;
+}
+function freeWireSegmentRoute(grab,points){
+  const leadA=grab.geometry.leadA,leadB=grab.geometry.leadB,visualA=grab.visualA,visualB=grab.visualB;
+  const body=compactWireCorners([leadA].concat(points,[leadB]));
+  if(wireRouteIsSimple([visualA].concat(body,[visualB])))return body;
+  const a=points[grab.index],b=points[grab.index+1],along=grab.axis==='y'?'x':'y',normal=grab.axis,gap=2*WIRE_BEND_RADIUS+4;
+  const direction=wireRouteDirection(a,b),positive=b[along]>a[along],middle=(a[along]+b[along])/2;
+  const stubs=[[visualA,leadA],[leadB,visualB]],variants=[[a,b]];
+  let low=Math.min(a[along],b[along]),high=Math.max(a[along],b[along]);
+  stubs.forEach(function(edge){
+    const p=edge[0],q=edge[1];
+    if(Math.abs(p[along]-q[along])<.00001&&a[normal]>=Math.min(p[normal],q[normal])-.00001&&a[normal]<=Math.max(p[normal],q[normal])+.00001){
+      if(p[along]<middle)low=Math.max(low,p[along]+gap);else high=Math.min(high,p[along]-gap);
+    }
+  });
+  function variant(left,right){if(right-left<1)return;const p={x:a.x,y:a.y},q={x:b.x,y:b.y};p[along]=positive?left:right;q[along]=positive?right:left;variants.push([p,q]);}
+  variant(low,high);const half=Math.min(Math.abs(b[along]-a[along])/2,WIRE_BEND_RADIUS);
+  variant(middle-half,middle+half);variant(middle-gap-half,middle-gap+half);variant(middle+gap-half,middle+gap+half);
+  for(const pair of variants){
+    const obstacles=stubs.concat([pair]);
+    const outwardA=wireLeadDirection(grab.geometry.sideA),outwardB=wireLeadDirection(grab.geometry.sideB);
+    const prefix=wireOrthogonalConnector(leadA,pair[0],obstacles,outwardA===undefined?null:(outwardA+2)%4,(direction+2)%4);
+    if(!prefix)continue;
+    const suffix=wireOrthogonalConnector(pair[1],leadB,obstacles.concat(wireRouteEdges(prefix)),(direction+2)%4,outwardB);
+    if(!suffix)continue;
+    const route=compactWireCorners(prefix.concat([pair[1]],suffix));
+    if(wireRouteIsSimple([visualA].concat(route,[visualB])))return route;
+  }
+  return body;
+}
+function moveWireSegment(wr,grab,p,evt){
+  const axis=grab.axis,original=grab.points[grab.index][axis];
+  const coordinate=snapAlignmentAxis(original+p[axis]-grab.pointer[axis],axis,evt);
+  if(Math.abs(coordinate-original)<.00001){wr.pts=grab.originalPts.map(function(p){return {x:p.x,y:p.y};});return;}
+  const points=grab.points.map(function(p){return {x:p.x,y:p.y};});
+  points[grab.index][axis]=coordinate;points[grab.index+1][axis]=coordinate;
+  const route=freeWireSegmentRoute(grab,points);
+  wr.pts=route.slice(1,-1);
+}
 function wireBodyPathD(a, b, wr){
   const pts = (wr && wr.pts) ? wr.pts : [];
   const shape = (wr && (wr.previewShape || wr.shape)) || 'smooth';
@@ -5174,7 +5561,8 @@ function wireBodyPathD(a, b, wr){
     return nodes.map(function(p,i){ return (i?' L ':'M ')+p.x+','+p.y; }).join('');
   }
   if (shape === 'orthogonal'){
-    return roundedOrthogonalGeometry(orthogonalRoute(nodes),12).d;
+    // Скругляем один раз после добавления прямых вводов с обоих концов.
+    return orthogonalRoute(nodes).map(function(p,i){return (i?' L ':'M ')+p.x+','+p.y;}).join('');
   }
   if (shape === 'arc'){
     const g=arcShapeGeometry(a,b,wr);
@@ -5218,26 +5606,271 @@ function wireFerruleSvg(t,wr,d,atEnd){
     +'<path d="M '+(offset+10)+','+(-half+1)+' v '+(half*2-2)+'" stroke="#d2a610" stroke-width=".8"/>'
     +'</g>';
 }
+
+/* Гофра задаёт только геометрию: электрические концы проводов остаются на клеммах. */
+function normalizeConduits(items){
+  const seen=new Set();
+  return (Array.isArray(items)?items:[]).filter(function(c){
+    if(!c||typeof c.id!=='string'||seen.has(c.id)||!Array.isArray(c.pts))return false;
+    seen.add(c.id);return c.pts.length>=2&&c.pts.every(function(p){return p&&Number.isFinite(p.x)&&Number.isFinite(p.y);});
+  }).map(function(c){return {id:c.id,pts:c.pts.map(function(p){return {x:p.x,y:p.y};})};});
+}
+function conduitById(id){return (state.conduits||[]).find(function(c){return c.id===id;})||null;}
+function conduitGeometry(c){
+  const key=JSON.stringify(c.pts),cached=conduitGeometryCache.get(c.id);
+  if(cached&&cached.key===key)return cached;
+  const route=compactWireCorners(orthogonalRoute(c.pts)),rounded=roundedOrthogonalGeometry(route,24);
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',rounded.d);
+  const length=path.getTotalLength(),points=[];
+  const steps=Math.max(1,Math.ceil(length/4));
+  for(let i=0;i<=steps;i++){const p=path.getPointAtLength(length*i/steps);points.push({x:p.x,y:p.y,at:length*i/steps});}
+  const result={key:key,d:rounded.d,points:points,length:length,path:path};conduitGeometryCache.set(c.id,result);return result;
+}
+function conduitProjection(c,p){
+  const g=conduitGeometry(c);let best=null;
+  for(let i=1;i<g.points.length;i++){
+    const a=g.points[i-1],b=g.points[i],dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
+    const t=len?Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/len)):0;
+    const q={x:a.x+dx*t,y:a.y+dy*t,at:a.at+(b.at-a.at)*t};q.distance=Math.hypot(q.x-p.x,q.y-p.y);
+    if(!best||q.distance<best.distance)best=q;
+  }
+  return best;
+}
+function nearestConduit(p){
+  let best=null;
+  (state.conduits||[]).forEach(function(c){const q=conduitProjection(c,p);if(q&&q.distance<=28&&(!best||q.distance<best.distance))best=Object.assign({id:c.id},q);});
+  return best;
+}
+function conduitFraction(c,at){const length=conduitGeometry(c).length;return length?Math.max(0,Math.min(1,at/length)):0;}
+function conduitExitFor(c,entry,destination){
+  const g=conduitGeometry(c),first=g.points[0],last=g.points.at(-1);
+  if(entry<.001)return 1;if(entry>.999)return 0;
+  return Math.hypot(destination.x-first.x,destination.y-first.y)<=Math.hypot(destination.x-last.x,destination.y-last.y)?0:1;
+}
+function conduitSpan(c,a,b,wr){
+  const g=conduitGeometry(c),entryEnd=wr.previewConduitEntryEnd||wr.conduitEntryEnd||'a';
+  const saved=wr.previewConduitId?wr.previewConduitEntry:wr.conduitEntry;
+  const projection=conduitProjection(c,entryEnd==='b'?b:a);if(!projection)return null;
+  const entry=Number.isFinite(saved)?Math.max(0,Math.min(1,saved)):conduitFraction(c,projection.at);
+  const savedExit=wr.previewConduitId?undefined:wr.conduitExit;
+  let exit=savedExit===0||savedExit===1?savedExit:conduitExitFor(c,entry,entryEnd==='b'?a:b);
+  if(Math.abs(entry-exit)<.001)exit=1-exit;
+  const startAt=(entryEnd==='b'?exit:entry)*g.length,endAt=(entryEnd==='b'?entry:exit)*g.length;
+  const p=g.path.getPointAtLength(startAt),q=g.path.getPointAtLength(endAt),lo=Math.min(startAt,endAt),hi=Math.max(startAt,endAt);
+  let inner=g.points.filter(function(p){return p.at>lo+.0001&&p.at<hi-.0001;});if(startAt>endAt)inner=inner.slice().reverse();
+  return {points:[{x:p.x,y:p.y}].concat(inner,[{x:q.x,y:q.y}]),startAt:startAt,endAt:endAt};
+}
+function wireConduitParts(a,b,wr){
+  const c=wr&&conduitById(wr.previewConduitId||wr.conduitId);if(!c)return null;
+  const originalA=a;a=wireTerminalSide(a,b,wr,false);b=wireTerminalSide(b,originalA,wr,true);
+  const va=wireVisualEndpoint(a,wr),vb=wireVisualEndpoint(b,wr),la=wireRoutingEndpoint(a,wr),lb=wireRoutingEndpoint(b,wr);
+  const span=conduitSpan(c,la,lb,wr);if(!span||span.points.length<2)return null;
+  const inside=span.points,g=conduitGeometry(c);
+  function unit(dx,dy){const len=Math.hypot(dx,dy)||1;return {x:dx/len,y:dy/len};}
+  function outward(at,lead){
+    const p=g.path.getPointAtLength(at);
+    if(at<.01){const q=g.path.getPointAtLength(Math.min(4,g.length));return unit(p.x-q.x,p.y-q.y);}
+    if(at>g.length-.01){const q=g.path.getPointAtLength(Math.max(0,g.length-4));return unit(p.x-q.x,p.y-q.y);}
+    // Боковой ввод остаётся в выбранной точке, подходя с той стороны, где находится провод.
+    const prev=g.path.getPointAtLength(Math.max(0,at-2)),next=g.path.getPointAtLength(Math.min(g.length,at+2));
+    const n=unit(-(next.y-prev.y),next.x-prev.x),sign=(lead.x-p.x)*n.x+(lead.y-p.y)*n.y>=0?1:-1;
+    return {x:n.x*sign,y:n.y*sign};
+  }
+  function connector(v,lead,portal,at,endTerm){
+    const normal=outward(at,lead),throat={x:portal.x+normal.x*36,y:portal.y+normal.y*36},radius=wireTerminalBendRadius(endTerm);
+    const key=JSON.stringify([v.x,v.y,lead.x,lead.y,portal.x,portal.y,at,radius]);
+    if(!g.connectors)g.connectors=new Map();if(g.connectors.has(key))return g.connectors.get(key);
+    const pipeEdges=wireRouteEdges(compactWireCorners(orthogonalRoute(c.pts)));
+    const obstacles=pipeEdges.concat([[v,lead],[portal,throat]]);
+    const initial=Math.hypot(v.x-lead.x,v.y-lead.y)>.01?wireRouteDirection(v,lead):null;
+    const outwardDirection=wireRouteDirection(portal,throat);
+    // Обход не пересекает оболочку и не разворачивается обратно у торца.
+    let route=wireOrthogonalConnector(lead,throat,obstacles,initial===null?null:(initial+2)%4,outwardDirection);
+    if(!route){
+      const side={x:-normal.y,y:normal.x},detour={x:throat.x+normal.x*48+side.x*48,y:throat.y+normal.y*48+side.y*48};
+      route=orthogonalRoute([lead,detour,throat]);
+    }
+    const points=compactWireCorners([v,lead].concat(route,[portal]));
+    const forward=roundedOrthogonalGeometry(points,radius).d,reverse=roundedOrthogonalGeometry(points.slice().reverse(),radius).d.replace(/^M[^LQ]+/,'');
+    const result={forward:forward,reverse:reverse};if(g.connectors.size>120)g.connectors.clear();g.connectors.set(key,result);return result;
+  }
+  const before=connector(va,la,inside[0],span.startAt,a);
+  const middle='M '+inside.map(function(p){return p.x+','+p.y;}).join(' L ');
+  const prefix=before.forward+middle.replace(/^M[^L]+/,'');
+  if(wr.conduitPreviewInside)return {d:prefix,outside:before.forward,inside:middle,samples:[va,la].concat(inside)};
+  const after=connector(vb,lb,inside.at(-1),span.endAt,b);
+  const d=prefix+after.reverse;
+  return {d:d,outside:before.forward+' '+after.forward,inside:middle,samples:[va,la].concat(inside,[lb,vb])};
+}
+function attachWireConduit(wr,id,entry,entryEnd){
+  const c=conduitById(id);if(!c)return;
+  if(!wr.conduitId)wr.conduitFreePts=(wr.pts||[]).map(function(p){return {x:p.x,y:p.y};});
+  wr.conduitId=id;wr.conduitEntry=Math.max(0,Math.min(1,Number(entry)||0));wr.conduitEntryEnd=entryEnd==='b'?'b':'a';
+  const destination=wr.conduitEntryEnd==='b'?terminal(wr.a.devId,wr.a.key):terminal(wr.b.devId,wr.b.key);
+  wr.conduitExit=conduitExitFor(c,wr.conduitEntry,destination);delete wr.autoLane;
+}
+function detachWireConduit(wr){
+  if(!wr)return;delete wr.conduitId;delete wr.conduitEntry;delete wr.conduitEntryEnd;delete wr.conduitExit;
+  wr.pts=wr.conduitFreePts||[];delete wr.conduitFreePts;
+}
+function pendingConduitEntry(tube,replace){
+  if(!pending)return;
+  if(replace||pending.conduitId!==tube.id||!Number.isFinite(pending.conduitEntry)){
+    pending.conduitId=tube.id;pending.conduitEntry=conduitFraction(conduitById(tube.id),tube.at);
+  }
+}
+function conduitShell(d,extra){
+  return '<g pointer-events="none"'+(extra||'')+'><path d="'+d+'" fill="none" stroke="#202a32" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>'
+    +'<path d="'+d+'" fill="none" stroke="#596671" stroke-width="26" stroke-linecap="round"/>'
+    +'<path d="'+d+'" fill="none" stroke="#29343e" stroke-width="29" stroke-dasharray="2 5"/>'
+    +'<path d="'+d+'" fill="none" stroke="#aab7c0" stroke-width="5" stroke-opacity=".35"/></g>';
+}
+function renderConduits(){
+  const layer=document.getElementById('routingConduitLayer');if(!layer)return;
+  let s='';
+  (state.conduits||[]).forEach(function(c){
+    const g=conduitGeometry(c),selected=conduitEdit===c.id,magnet=conduitMagnet===c.id;
+    s+='<g class="routing-conduit" data-conduit-id="'+escapeHtml(c.id)+'"><title>Гофра · перетаскивайте участок; Alt — переместить целиком; двойной щелчок — добавить поворот</title>';
+    if(selected||magnet)s+='<path d="'+g.d+'" fill="none" stroke="'+(magnet?'#63e6b0':'#f5c85c')+'" stroke-width="39" stroke-linecap="round" pointer-events="none"/>';
+    s+=conduitShell(g.d)+'<path d="'+g.d+'" fill="none" stroke="transparent" stroke-width="34" pointer-events="stroke"/>';
+    const grabbed=wireGrab&&state.wires.find(function(w){return w.id===wireGrab.id;});
+    const entryFraction=grabbed&&grabbed.previewConduitId===c.id?grabbed.previewConduitEntry:pending&&pending.conduitId===c.id?pending.conduitEntry:null;
+    if(Number.isFinite(entryFraction)){const entry=g.path.getPointAtLength(Math.max(0,Math.min(1,entryFraction))*g.length);s+='<circle class="conduit-entry-marker" cx="'+entry.x+'" cy="'+entry.y+'" r="9" fill="#63e6b0" stroke="#173b35" stroke-width="2" pointer-events="none"><title>Точка входа провода</title></circle>';}
+    if(selected)c.pts.forEach(function(p,i){s+='<circle class="conduit-handle" data-conduit-point="'+i+'" cx="'+p.x+'" cy="'+p.y+'" r="7" fill="#ffe29b" stroke="#526575" stroke-width="2"/>';});
+    s+='</g>';
+  });
+  if(conduitDraft&&conduitDraft.pts.length){
+    const pts=conduitDraft.pts.concat(conduitDraft.cursor?[conduitDraft.cursor]:[]),g=roundedOrthogonalGeometry(orthogonalRoute(pts),24);
+    s+=conduitShell(g.d,' opacity=".65"');
+  }
+  layer.innerHTML=s;
+  const active=new Set((state.conduits||[]).map(function(c){return c.id;}));conduitGeometryCache.forEach(function(v,k){if(!active.has(k))conduitGeometryCache.delete(k);});
+  const bar=document.getElementById('conduitControls'),tool=document.getElementById('conduitTool');
+  if(tool)tool.setAttribute('aria-pressed',String(!!conduitDraft));scene.classList.toggle('drawing-conduit',!!conduitDraft);
+  if(!bar)return;bar.hidden=!conduitDraft&&!conduitById(conduitEdit);
+  document.getElementById('conduitHint').textContent=conduitDraft?'Гофра: щелчки — повороты, двойной щелчок или Enter — конец.':'Гофра: тяните участок или жёлтую точку. Alt — перенос целиком.';
+  bar.querySelector('[data-conduit-act="finish"]').hidden=!conduitDraft;
+  bar.querySelector('[data-conduit-act="undo"]').hidden=!conduitDraft;
+  bar.querySelector('[data-conduit-act="remove"]').hidden=!!conduitDraft;
+  bar.querySelector('[data-conduit-act="cancel"]').textContent=conduitDraft?'Отмена':'Готово';
+}
+function startConduit(){
+  cancelAlignmentGuide();
+  cancelWire();hideWireMenu();hideObjectMenu();conduitEdit=null;conduitMagnet=null;
+  conduitDraft={pts:[],cursor:null};renderConduits();touchStatus('Укажите начало гофры.');
+  sideMenuItems.forEach(function(item){item.open=false;});
+}
+function cancelConduit(){
+  if(conduitGrab){const c=conduitById(conduitGrab.id);if(c)c.pts=conduitGrab.pts;}
+  conduitDraft=null;conduitEdit=null;conduitGrab=null;conduitMagnet=null;renderConduits();touchStatus('');
+}
+function finishConduit(){
+  if(!conduitDraft)return;
+  const pts=compactWireCorners(orthogonalRoute(conduitDraft.pts));
+  if(pts.length<2){touchStatus('Укажите хотя бы начало и конец гофры.');return;}
+  beginActionHistory();let id;do{id='CF'+state.nextId++;}while(conduitById(id));
+  (state.conduits||(state.conduits=[])).push({id:id,pts:pts});conduitDraft=null;conduitEdit=id;
+  renderAll();queueActionHistory();touchStatus('Гофра проложена. Подведите к ней провод.');
+}
+function removeConduit(){
+  if(!conduitEdit)return;beginActionHistory();const id=conduitEdit;
+  state.wires.forEach(function(w){if(w.conduitId===id)detachWireConduit(w);});
+  state.conduits=(state.conduits||[]).filter(function(c){return c.id!==id;});cancelConduit();renderAll();queueActionHistory();
+}
+function initConduits(){
+  document.getElementById('conduitTool').addEventListener('click',function(){if(conduitDraft)cancelConduit();else startConduit();});
+  document.getElementById('conduitControls').addEventListener('click',function(evt){
+    const b=evt.target.closest('[data-conduit-act]');if(!b)return;
+    if(b.dataset.conduitAct==='finish')finishConduit();
+    else if(b.dataset.conduitAct==='remove')removeConduit();
+    else if(b.dataset.conduitAct==='undo'&&conduitDraft){conduitDraft.pts.pop();renderConduits();}
+    else cancelConduit();
+  });
+  // Захват в фазе capture исключает одновременное создание провода и перенос аппарата.
+  scene.addEventListener('pointerdown',function(evt){
+    if(evt.button===1)return;
+    if(conduitDraft){
+      evt.preventDefault();evt.stopImmediatePropagation();if(evt.button===2){cancelConduit();return;}
+      if(evt.button!==0)return;const p=snapAlignmentPoint(svgPoint(evt),evt),last=conduitDraft.pts.at(-1);
+      if(!last||Math.hypot(p.x-last.x,p.y-last.y)>3)conduitDraft.pts.push(p);
+      conduitDraft.cursor=null;renderConduits();return;
+    }
+    const body=evt.target.closest('[data-conduit-id]');if(!body||pending||evt.button!==0)return;
+    evt.preventDefault();evt.stopImmediatePropagation();hideWireMenu();
+    const c=conduitById(body.dataset.conduitId),p=svgPoint(evt);if(!c)return;
+    conduitEdit=c.id;const handle=evt.target.closest('[data-conduit-point]');
+    let seg=0,best=Infinity;c.pts.slice(1).forEach(function(q,i){const d=distToSeg(p,c.pts[i],q);if(d<best){best=d;seg=i;}});
+    conduitGrab={id:c.id,pointerId:evt.pointerId,start:p,pts:c.pts.map(function(q){return {x:q.x,y:q.y};}),point:handle?+handle.dataset.conduitPoint:null,segment:seg,whole:evt.altKey};renderConduits();
+  },true);
+  scene.addEventListener('dblclick',function(evt){
+    if(conduitDraft){evt.preventDefault();evt.stopImmediatePropagation();finishConduit();return;}
+    const body=evt.target.closest('[data-conduit-id]');if(!body||pending)return;
+    const c=conduitById(body.dataset.conduitId),p=snapAlignmentPoint(svgPoint(evt),evt);let seg=0,best=Infinity;
+    c.pts.slice(1).forEach(function(q,i){const d=distToSeg(p,c.pts[i],q);if(d<best){best=d;seg=i;}});
+    beginActionHistory();c.pts.splice(seg+1,0,p);conduitEdit=c.id;renderAll();queueActionHistory();
+  },true);
+  scene.addEventListener('contextmenu',function(evt){if(conduitDraft||evt.target.closest('[data-conduit-id]'))evt.preventDefault();},true);
+  document.addEventListener('pointermove',function(evt){
+    if(conduitDraft){conduitDraft.cursor=snapAlignmentPoint(svgPoint(evt),evt);renderConduits();return;}
+    if(!conduitGrab||evt.pointerId!==conduitGrab.pointerId)return;
+    const c=conduitById(conduitGrab.id);if(!c)return;const p=svgPoint(evt),d=conduitGrab;let dx=p.x-d.start.x,dy=p.y-d.start.y;
+    c.pts=d.pts.map(function(q){return {x:q.x,y:q.y};});
+    if(d.whole){
+      const xs=d.pts.map(function(q){return q.x;}),ys=d.pts.map(function(q){return q.y;});
+      const cx=(Math.min.apply(null,xs)+Math.max.apply(null,xs))/2,cy=(Math.min.apply(null,ys)+Math.max.apply(null,ys))/2;
+      dx=snapAlignmentAxis(cx+dx,'x',evt)-cx;dy=snapAlignmentAxis(cy+dy,'y',evt)-cy;
+      c.pts.forEach(function(q){q.x+=dx;q.y+=dy;});
+    }
+    else if(d.point!==null){
+      const i=d.point;c.pts[i]=snapAlignmentPoint({x:d.pts[i].x+dx,y:d.pts[i].y+dy},evt);
+      const prev=d.pts[i-1],next=d.pts[i+1],q=d.pts[i];
+      const straight=prev&&next&&((Math.abs(prev.x-q.x)<.01&&Math.abs(next.x-q.x)<.01)||(Math.abs(prev.y-q.y)<.01&&Math.abs(next.y-q.y)<.01));
+      if(!straight)[i-1,i+1].forEach(function(j){if(j<0||j>=c.pts.length)return;if(Math.abs(d.pts[j].x-d.pts[i].x)<.01)c.pts[j].x=c.pts[i].x;else c.pts[j].y=c.pts[i].y;});
+    }else{
+      const i=d.segment,axis=Math.abs(d.pts[i+1].x-d.pts[i].x)>Math.abs(d.pts[i+1].y-d.pts[i].y)?'y':'x';
+      const coordinate=snapAlignmentAxis(d.pts[i][axis]+(axis==='x'?dx:dy),axis,evt);
+      c.pts[i][axis]=coordinate;c.pts[i+1][axis]=coordinate;
+    }
+    renderConduits();renderWires();renderClamp();
+  });
+  document.addEventListener('pointerup',function(evt){
+    if(conduitDraft&&conduitDraft.trayPointer===evt.pointerId){delete conduitDraft.trayPointer;const r=scene.getBoundingClientRect();if(evt.clientX>=r.left&&evt.clientX<=r.right&&evt.clientY>=r.top&&evt.clientY<=r.bottom){conduitDraft.pts.push(snapAlignmentPoint(svgPoint(evt),evt));renderConduits();}}
+    if(conduitGrab&&evt.pointerId===conduitGrab.pointerId){const c=conduitById(conduitGrab.id);if(c){const pts=compactWireCorners(orthogonalRoute(c.pts));c.pts=pts.length>1?pts:conduitGrab.pts;}conduitGrab=null;renderAll();}
+  });
+  document.addEventListener('pointercancel',function(){if(wireGrab){const w=state.wires.find(function(w){return w.id===wireGrab.id;});if(w){delete w.previewConduitId;delete w.previewConduitEntry;delete w.previewConduitEntryEnd;if(wireGrab.freePts)w.pts=wireGrab.freePts;}wireGrab=null;renderWires();}if(conduitGrab){const c=conduitById(conduitGrab.id);if(c)c.pts=conduitGrab.pts;conduitGrab=null;renderAll();}conduitMagnet=null;renderConduits();});
+  document.addEventListener('keydown',function(evt){
+    if(evt.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+    if(evt.key==='Escape')cancelConduit();
+    else if(conduitDraft&&evt.key==='Enter'){evt.preventDefault();finishConduit();}
+    else if(conduitDraft&&evt.key==='Backspace'){evt.preventDefault();conduitDraft.pts.pop();renderConduits();}
+    else if(conduitEdit&&evt.key==='Delete'){evt.preventDefault();removeConduit();}
+  });
+}
+
 function renderWires(){
+  const occupiedLanes=prepareWireJumperLanes();
   let s = '';
   state.wires.forEach(function(wr){
     const a = terminal(wr.a.devId, wr.a.key), b = terminal(wr.b.devId, wr.b.key);
     if (!a || !b) return;
     const wireColor = wr.color || a.color;
     const width=wireVisualWidth(wr);
-    const d = wirePathD(a, b, wr);
+    const contained=wireConduitParts(a,b,wr);
+    const d = contained?contained.d:wirePathD(a,b,wr);
     const grabbing = (wireGrab && wireGrab.id === wr.id) ? ' grabbing' : '';
     let dots = '';
-    wirePointList(a, b, wr).forEach(function(p){
+    if(!contained&&(wr.previewShape||wr.shape)!=='orthogonal')wirePointList(a, b, wr).forEach(function(p){
       dots += '<circle class="wire-dot" cx="'+p.x+'" cy="'+p.y+'" r="4.5" fill="'+wireColor+'" stroke="#ffffff" stroke-width="1.2" pointer-events="none"/>';
     });
     s += '<g class="wireG'+grabbing+'" data-wid="'+wr.id+'">'
-       +   '<title>Провод №'+wr.id+' · медь · '+wireSectionLabel(wireSectionOf(wr))+'</title>'
-       +   '<path class="wire" d="'+d+'" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="'+(width+2.5)+'" stroke-linecap="round"/>'
-       +   wireStrokeGeom(d, wireColor, 'wire',false,width)
+       +   '<title>Провод №'+wr.id+' · медь · '+wireSectionLabel(wireSectionOf(wr))+(contained?' · в гофре':'')+'</title>'
+       +   '<path class="wire" d="'+(contained?contained.outside:d)+'" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="'+(width+2.5)+'" stroke-linecap="round"/>'
+       +   wireStrokeGeom(contained?contained.outside:d, wireColor, 'wire',false,width)
+       +   (contained?'<g opacity=".28" pointer-events="none">'+wireStrokeGeom(contained.inside,wireColor,'wire',false,width)+'</g>':'')
        +   wireFerruleSvg(a,wr,d,false)+wireFerruleSvg(b,wr,d,true)
        +   dots
-       +   '<path class="wire-hit" d="'+d+'" fill="none" stroke="transparent" stroke-width="'+Math.max(16,width+6)+'" stroke-linecap="round" pointer-events="stroke"/>'
+       +   '<path class="wire-hit" d="'+(contained?contained.outside:d)+'" fill="none" stroke="transparent" stroke-width="'+Math.max(16,width+6)+'" stroke-linecap="round" pointer-events="stroke"/>'
+       +   (!contained&&(wr.previewShape||wr.shape)==='orthogonal'?wireSegmentHitSvg(a,b,wr):'')
        + '</g>';
   });
   if (pending && pending.pt){
@@ -5247,14 +5880,17 @@ function renderWires(){
     if(a){
       // Те же параметры и конечная клемма, которые получит готовый провод.
       const preview={pts:pending.pts||[],shape:pending.shape||wireDefaults.shape,
-        sectionMm2:normalizeWireSection(pending.sectionMm2)};
+        sectionMm2:normalizeWireSection(pending.sectionMm2),conduitId:pending.conduitId,conduitEntry:pending.conduitEntry,
+        conduitPreviewInside:!!(pending.conduitId&&!target&&nearestConduit(pending.pt))};
+      const lane=target&&wireJumperLane(a,b,preview);
+      if(lane)preview.autoLane=chooseWireJumperLane(lane,null,occupiedLanes);
       const d=wirePathD(a,b,preview),color=pending.color||wireDefaults.color,width=wireVisualWidth(preview);
       s+='<g class="wire-preview" pointer-events="none">';
       s+='<path d="'+d+'" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="'+(width+2.5)+'" stroke-linecap="round"/>';
       s+=wireStrokeGeom(d,color,null,true,width);
       s+=wireFerruleSvg(a,preview,d,false);
       if(target)s+=wireFerruleSvg(target,preview,d,true);
-      (target?wirePointList(a,b,preview):(pending.pts||[])).forEach(function(p){
+      (preview.conduitId?[]:(target?wirePointList(a,b,preview):(pending.pts||[]))).forEach(function(p){
         s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4.5" fill="'+color+'" stroke="#fff" stroke-width="1.2" pointer-events="none"/>';
       });
       s+='</g>';
@@ -5313,6 +5949,128 @@ function renderTerminals(){
   renderMM();
 }
 
+/* Пользовательские линии в координатах схемы. Радиус привязки — 10 экранных
+   пикселей при любом масштабе; электрические концы проводов не перемещаем. */
+function normalizeAlignmentGuides(items){
+  const seen=new Set();
+  return (Array.isArray(items)?items:[]).slice(0,500).filter(function(g){
+    if(!g||typeof g.id!=='string'||!g.id||seen.has(g.id)||!['x','y'].includes(g.axis)||typeof g.position!=='number'||!Number.isFinite(g.position))return false;
+    seen.add(g.id);return true;
+  }).map(function(g){return {id:g.id,axis:g.axis,position:g.position};});
+}
+function alignmentGuideById(id){return (state.alignmentGuides||[]).find(function(g){return g.id===id;})||null;}
+function alignmentScale(){const m=ctmNode().getScreenCTM();return m?Math.max(.0001,Math.hypot(m.a,m.b||0)):1;}
+function snapAlignmentAxis(value,axis,evt){
+  if(state.alignmentSnapEnabled===false||(evt&&evt.shiftKey)||!Number.isFinite(value))return value;
+  let nearest=value,distance=10/alignmentScale();
+  (state.alignmentGuides||[]).forEach(function(g){
+    const gap=Math.abs(g.position-value);
+    if(g.axis===axis&&gap<=distance){nearest=g.position;distance=gap;}
+  });
+  return nearest;
+}
+function snapAlignmentPoint(p,evt){return {x:snapAlignmentAxis(p.x,'x',evt),y:snapAlignmentAxis(p.y,'y',evt)};}
+function snapAlignmentBox(x,y,w,h,evt){
+  const center=snapAlignmentPoint({x:x+w/2,y:y+h/2},evt);
+  return {x:center.x-w/2,y:center.y-h/2};
+}
+function renderAlignmentGuides(){
+  const layer=document.getElementById('alignmentGuideLayer');if(!layer)return;
+  const selected=alignmentGuideById(alignmentSelected),bar=document.getElementById('alignmentControls');
+  if(bar)bar.hidden=!alignmentDraft&&!selected;
+  const hint=document.getElementById('alignmentHint');
+  if(hint)hint.textContent=alignmentDraft?(alignmentDraft.axis==='x'?'Вертикальная':'Горизонтальная')+' направляющая: укажите место на поле.':selected?'Передвигайте линию за метку у края экрана.':'';
+  const remove=document.getElementById('removeAlignmentGuide');if(remove)remove.hidden=!selected;
+  const done=document.getElementById('finishAlignmentGuide');if(done)done.textContent=alignmentDraft?'Отмена':'Готово';
+  const k=alignmentScale(),rect=scene.getBoundingClientRect();
+  let a=svgPoint({clientX:rect.left,clientY:rect.top}),b=svgPoint({clientX:rect.left+rect.width,clientY:rect.top+rect.height});
+  if(!Number.isFinite(a.x)||!Number.isFinite(b.x)){a={x:0,y:-200};b={x:WORKSPACE_W,y:WORKSPACE_H};}
+  const guides=(state.alignmentGuides||[]).slice();
+  const overlays=Array.from(document.querySelectorAll('.wire-defaults,.history-controls,.side-menu-item > summary,.side-menu-item[open] .side-flyout,.conduit-controls:not([hidden])')).map(function(el){return el.getBoundingClientRect();});
+  const matrix=ctmNode().getScreenCTM();
+  function handlePosition(g){
+    const vertical=g.axis==='x';
+    const candidates=vertical?[b.y-22/k,b.y-84/k,a.y+22/k,(a.y+b.y)/2]:[b.x-24/k,a.x+24/k,(a.x+b.x)/2];
+    for(const at of candidates){
+      const p={x:vertical?g.position:at,y:vertical?at:g.position};
+      const screen=matrix?new DOMPoint(p.x,p.y).matrixTransform(matrix):p;
+      if(!overlays.some(function(r){return screen.x+18>r.left&&screen.x-18<r.right&&screen.y+14>r.top&&screen.y-14<r.bottom;}))return p;
+    }
+    return {x:vertical?g.position:b.x-24/k,y:vertical?b.y-22/k:g.position};
+  }
+  if(alignmentDraft&&Number.isFinite(alignmentDraft.position))guides.push({axis:alignmentDraft.axis,position:alignmentDraft.position,preview:true});
+  layer.innerHTML=guides.map(function(g){
+    const vertical=g.axis==='x',active=g.id===alignmentSelected,color=active?'#f3b94f':'#17abc5';
+    const line='<line x1="'+(vertical?g.position:a.x)+'" y1="'+(vertical?a.y:g.position)+'" x2="'+(vertical?g.position:b.x)+'" y2="'+(vertical?b.y:g.position)+'" stroke="'+color+'" stroke-width="'+(active?1.6:1.1)+'" stroke-dasharray="7 5" vector-effect="non-scaling-stroke" opacity="'+(state.alignmentSnapEnabled===false?.45:.85)+'"/>';
+    if(g.preview)return line;
+    const p=handlePosition(g);
+    return line+'<g class="alignment-handle" data-alignment-guide="'+escapeHtml(g.id)+'" transform="translate('+p.x+' '+p.y+') scale('+(1/k)+')" pointer-events="all" role="button" tabindex="0" aria-label="'+(vertical?'Вертикальная':'Горизонтальная')+' направляющая"><title>Перетащите метку, чтобы передвинуть линию. Delete — удалить.</title><rect x="-16" y="-12" width="32" height="24" rx="6" fill="'+(active?'#725018':'#174e60')+'" stroke="'+color+'"/><text x="0" y="5" text-anchor="middle" font-size="18" font-family="Segoe UI,Arial" fill="#fff">'+(vertical?'↔':'↕')+'</text></g>';
+  }).join('');
+  scene.classList.toggle('placing-alignment-guide',!!alignmentDraft);
+  const clear=document.getElementById('clearAlignmentGuides');if(clear)clear.disabled=!(state.alignmentGuides||[]).length;
+  const toggle=document.getElementById('alignmentSnapToggle');
+  if(toggle){toggle.setAttribute('aria-pressed',String(state.alignmentSnapEnabled!==false));toggle.textContent=state.alignmentSnapEnabled===false?'Привязка выключена':'Привязка включена';}
+}
+function cancelAlignmentGuide(){
+  if(alignmentGrab){const g=alignmentGuideById(alignmentGrab.id);if(g)g.position=alignmentGrab.position;}
+  alignmentDraft=null;alignmentSelected=null;alignmentGrab=null;renderAlignmentGuides();
+}
+function startAlignmentGuide(axis){
+  cancelWire();cancelConduit();cancelAlignmentGuide();hideWireMenu();hideObjectMenu();touchPlacement=null;
+  alignmentDraft={axis:axis,position:null};document.getElementById('alignmentTools').open=false;renderAlignmentGuides();
+}
+function removeAlignmentGuide(){
+  if(!alignmentSelected)return;beginActionHistory();
+  state.alignmentGuides=state.alignmentGuides.filter(function(g){return g.id!==alignmentSelected;});
+  cancelAlignmentGuide();queueActionHistory();
+}
+function initAlignmentGuides(){
+  document.getElementById('alignmentTools').addEventListener('toggle',renderAlignmentGuides);
+  document.getElementById('wireToolsToggle').addEventListener('click',renderAlignmentGuides);
+  document.getElementById('addVerticalGuide').addEventListener('click',function(){startAlignmentGuide('x');});
+  document.getElementById('addHorizontalGuide').addEventListener('click',function(){startAlignmentGuide('y');});
+  document.getElementById('alignmentSnapToggle').addEventListener('click',function(){beginActionHistory();state.alignmentSnapEnabled=state.alignmentSnapEnabled===false;renderAlignmentGuides();queueActionHistory();});
+  document.getElementById('clearAlignmentGuides').addEventListener('click',function(){beginActionHistory();state.alignmentGuides=[];cancelAlignmentGuide();queueActionHistory();});
+  document.getElementById('removeAlignmentGuide').addEventListener('click',removeAlignmentGuide);
+  document.getElementById('finishAlignmentGuide').addEventListener('click',cancelAlignmentGuide);
+  document.addEventListener('pointerdown',function(evt){
+    if(!alignmentDraft&&!alignmentGrab&&alignmentSelected&&!evt.target.closest('[data-alignment-guide],#alignmentControls,#alignmentTools')){alignmentSelected=null;renderAlignmentGuides();}
+  },true);
+  scene.addEventListener('pointerdown',function(evt){
+    if(evt.button===1)return;
+    const handle=evt.target.closest('[data-alignment-guide]');
+    if(!alignmentDraft&&!handle)return;
+    evt.preventDefault();evt.stopImmediatePropagation();
+    if(evt.button===2){cancelAlignmentGuide();return;}if(evt.button!==0)return;
+    const p=svgPoint(evt);if(!Number.isFinite(p.x)||!Number.isFinite(p.y))return;
+    beginActionHistory();
+    if(alignmentDraft){
+      let id;do{id='G'+state.nextId++;}while(alignmentGuideById(id));
+      state.alignmentGuides.push({id:id,axis:alignmentDraft.axis,position:p[alignmentDraft.axis]});
+      alignmentSelected=id;alignmentDraft=null;queueActionHistory();
+    }else{
+      cancelWire();cancelConduit();hideWireMenu();hideObjectMenu();alignmentSelected=handle.dataset.alignmentGuide;
+      const g=alignmentGuideById(alignmentSelected);if(g)alignmentGrab={id:g.id,pointerId:evt.pointerId,position:g.position,start:p[g.axis]};
+    }
+    renderAlignmentGuides();
+  },true);
+  document.addEventListener('pointermove',function(evt){
+    if(!alignmentDraft&&!alignmentGrab)return;const p=svgPoint(evt);if(!Number.isFinite(p.x)||!Number.isFinite(p.y))return;
+    if(alignmentDraft)alignmentDraft.position=p[alignmentDraft.axis];
+    if(alignmentGrab&&evt.pointerId===alignmentGrab.pointerId){const g=alignmentGuideById(alignmentGrab.id);if(g)g.position=alignmentGrab.position+p[g.axis]-alignmentGrab.start;}
+    renderAlignmentGuides();
+  });
+  document.addEventListener('pointerup',function(evt){if(alignmentGrab&&evt.pointerId===alignmentGrab.pointerId){alignmentGrab=null;renderAlignmentGuides();queueActionHistory();}});
+  document.addEventListener('pointercancel',function(evt){if(alignmentGrab&&evt.pointerId===alignmentGrab.pointerId)cancelAlignmentGuide();});
+  scene.addEventListener('contextmenu',function(evt){if(alignmentDraft||evt.target.closest('[data-alignment-guide]'))evt.preventDefault();});
+  document.addEventListener('keydown',function(evt){
+    if(evt.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+    const handle=evt.target.closest('[data-alignment-guide]');if(handle)alignmentSelected=handle.dataset.alignmentGuide;
+    if(evt.key==='Escape'&&(alignmentDraft||alignmentSelected)){cancelAlignmentGuide();return;}
+    if(alignmentSelected&&evt.key==='Delete'){evt.preventDefault();removeAlignmentGuide();}
+  });
+}
+
 /* Координаты всех доступных клемм для магнитных направляющих. */
 function terminalGuidePoints(){
   const points=[],seen={};
@@ -5330,9 +6088,12 @@ function terminalGuidePoints(){
   state.pushbuttons.forEach(function(pb){PB_TERMS.forEach(function(td){const p=terminal(pb.id,td.key);if(p){const k=Math.round(p.x*10)+'/'+Math.round(p.y*10);if(!seen[k]){seen[k]=true;points.push(p);}}});});
   return points;
 }
-function snapPendingPoint(raw){
+function snapPendingPoint(raw,evt){
   const p={x:raw.x,y:raw.y};
-  if(!terminalGuidesEnabled||!pending)return p;
+  if(!terminalGuidesEnabled||!pending||(evt&&evt.shiftKey)){
+    if(pending){pending.guideX=null;pending.guideY=null;}
+    return snapAlignmentPoint(p,evt);
+  }
   const points=terminalGuidePoints(),showDistance=28,snapDistance=13;
   let nx=null,ny=null,dx=Infinity,dy=Infinity;
   points.forEach(function(t){
@@ -5344,6 +6105,9 @@ function snapPendingPoint(raw){
   pending.guideY=dy<=showDistance?ny:null;
   if(dx<=snapDistance)p.x=nx;
   if(dy<=snapDistance)p.y=ny;
+  const manual=snapAlignmentPoint(raw,evt);
+  if(manual.x!==raw.x)p.x=manual.x;
+  if(manual.y!==raw.y)p.y=manual.y;
   return p;
 }
 /* Направляющие видны только при прокладке и только рядом с курсором. */
@@ -5379,6 +6143,7 @@ function cancelWire(){
   hideTouchLoupe();
   if (!pending) return;
   pending = null;
+  conduitMagnet=null;renderConduits();
   renderTerminalGuides();
   renderWires();
 }
@@ -5396,7 +6161,10 @@ function updatePendingPointer(evt){
   const id=hit?toDevId(hit.dataset.dev):null,key=hit&&hit.dataset.key;
   const target=hit&&!sameTerm(pending.from,id,key)?terminal(id,key):null;
   pending.target=target?{devId:target.devId,key:target.key}:null;
-  pending.pt=target?{x:target.x,y:target.y}:snapPendingPoint(raw);
+  const tube=!target&&nearestConduit(raw);
+  if(tube)pendingConduitEntry(tube,false);
+  conduitMagnet=tube?tube.id:null;renderConduits();
+  pending.pt=target?{x:target.x,y:target.y}:tube?{x:tube.x,y:tube.y}:snapPendingPoint(raw,evt);
 }
 function connectTerminals(devId, key){
   if (!pending) return;
@@ -5410,10 +6178,11 @@ function connectTerminals(devId, key){
   }
   state.wires.push({ id: wireSeq++, a:{ devId:a.devId, key:a.key }, b:{ devId:b.devId, key:b.key },
                      color:pending.color || wireDefaults.color, shape:pending.shape || wireDefaults.shape,
-                     sectionMm2:normalizeWireSection(pending.sectionMm2),
+                     sectionMm2:normalizeWireSection(pending.sectionMm2),conduitId:pending.conduitId||undefined,conduitEntry:pending.conduitEntry,
                      pts:(pending.pts || []).map(function(p){ return {x:p.x,y:p.y}; }) });
+  if(pending.conduitId){const wr=state.wires.at(-1);wr.conduitFreePts=wr.pts.map(function(p){return {x:p.x,y:p.y};});attachWireConduit(wr,pending.conduitId,pending.conduitEntry,'a');}
   log('Провод проложен: ' + tagOf(a.devId)+' : '+a.label + ' — ' + tagOf(b.devId)+' : '+b.label + ' · '+wireSectionLabel(pending.sectionMm2)+'.', 'ok');
-  pending = null;
+  pending = null;conduitMagnet=null;
   renderAll();
 }
 /* Цвет нового провода определяется назначением начальной клеммы.
@@ -5445,13 +6214,20 @@ termLayer.addEventListener('pointerdown', function(evt){
   renderWires();
 });
 document.addEventListener('pointermove', function(evt){
-  if (wireGrab){                                   // тянем точку изгиба — форма меняется
+  if (wireGrab){                                   // перемещаем сторону или точку изгиба
     const wr = state.wires.find(function(x){ return x.id === wireGrab.id; });
     if (wr){
       const p = svgPoint(evt);
       if (isFinite(p.x) && isFinite(p.y)){
-        if (!wr.pts) wr.pts = [];
-        wr.pts[wireGrab.idx] = { x:p.x, y:p.y };
+        const tube=nearestConduit(p);conduitMagnet=tube?tube.id:null;
+        if(tube){wr.previewConduitId=tube.id;wr.previewConduitEntry=conduitFraction(conduitById(tube.id),tube.at);wr.previewConduitEntryEnd=wireGrab.conduitEntryEnd||'a';}else{delete wr.previewConduitId;delete wr.previewConduitEntry;delete wr.previewConduitEntryEnd;}
+        renderConduits();
+        if(tube||wr.conduitId){renderWires();return;}
+        if(wireGrab.mode==='segment')moveWireSegment(wr,wireGrab,p,evt);
+        else {
+          if (!wr.pts) wr.pts = [];
+          wr.pts[wireGrab.idx] = snapAlignmentPoint(p,evt);
+        }
         renderWires();
       }
     }
@@ -5465,7 +6241,9 @@ document.addEventListener('pointermove', function(evt){
 document.addEventListener('pointerup', function(evt){
   if (wireGrab){
     const wr = state.wires.find(function(x){ return x.id === wireGrab.id; });
-    if (wr) trace('Форма провода изменена перетаскиванием (контакты на клеммах не тронуты).');
+    if(wr){const tube=nearestConduit(svgPoint(evt));if(tube){attachWireConduit(wr,tube.id,conduitFraction(conduitById(tube.id),tube.at),wireGrab.conduitEntryEnd);if(wireGrab.freePts)wr.conduitFreePts=wireGrab.freePts;}delete wr.previewConduitId;delete wr.previewConduitEntry;delete wr.previewConduitEntryEnd;}
+    conduitMagnet=null;
+    if (wr) trace(wireGrab.mode==='segment'?'Участок провода перемещён.':'Форма провода изменена перетаскиванием (контакты на клеммах не тронуты).');
     wireGrab = null;
     renderAll();
     return;
@@ -5487,7 +6265,9 @@ scene.addEventListener('pointerdown', function(evt){
     evt.stopPropagation();
     const raw = svgPoint(evt);
     if (!isFinite(raw.x) || !isFinite(raw.y)) return;
-    const p = snapPendingPoint(raw);
+    const tube=nearestConduit(raw);
+    if(tube){pendingConduitEntry(tube,true);pending.target=null;pending.pt={x:tube.x,y:tube.y};conduitMagnet=tube.id;renderConduits();renderWires();return;}
+    const p = snapPendingPoint(raw,evt);
     pending.pts = pending.pts || [];
     pending.pts.push({ x:p.x, y:p.y });
     pending.target=null;
@@ -5501,7 +6281,7 @@ scene.addEventListener('pointerdown', function(evt){
 }, true);
 document.addEventListener('keydown', function(evt){ if (evt.key === 'Escape'){ cancelWire(); hideWireMenu(); } });
 
-/* ЛКМ по проводу — взяли за ближайшую точку и меняем форму, не отрывая контакты */
+/* ЛКМ: у прямоугольной трассы двигаем сторону, у остальных форм — ближайшую точку. */
 wireLayer.addEventListener('pointerdown', function(evt){
   const g = evt.target.closest ? evt.target.closest('[data-wid]') : null;
   if (!g || evt.button !== 0) return;
@@ -5513,6 +6293,25 @@ wireLayer.addEventListener('pointerdown', function(evt){
   if (!wr) return;
   const a = terminal(wr.a.devId, wr.a.key), b = terminal(wr.b.devId, wr.b.key);
   if (!a || !b) return;
+  const press=svgPoint(evt);
+  if(!isFinite(press.x)||!isFinite(press.y))return;
+  const conduitEntryEnd=Math.hypot(press.x-a.x,press.y-a.y)<=Math.hypot(press.x-b.x,press.y-b.y)?'a':'b';
+  if(wr.conduitId){wireGrab={id:id,mode:'conduit',conduitEntryEnd:conduitEntryEnd};return;}
+  const freePts=(wr.pts||[]).map(function(p){return {x:p.x,y:p.y};});
+  if(wr.shape==='orthogonal'){
+    const segment=evt.target.closest?evt.target.closest('[data-wire-segment]'):null;
+    wireGrab=beginWireSegmentGrab(a,b,wr,press,segment?Number(segment.dataset.wireSegment):null);
+    // Широкие области захвата соседних проводов могут перекрываться.
+    state.wires.forEach(function(other){
+      if(other.id===wr.id||other.conduitId||other.shape!=='orthogonal')return;
+      const a=terminal(other.a.devId,other.a.key),b=terminal(other.b.devId,other.b.key);
+      if(!a||!b)return;
+      const candidate=beginWireSegmentGrab(a,b,other,press,null);
+      if(candidate&&(!wireGrab||candidate.distance<wireGrab.distance-.0001))wireGrab=candidate;
+    });
+    if(wireGrab){const chosen=state.wires.find(function(w){return w.id===wireGrab.id;});const ca=terminal(chosen.a.devId,chosen.a.key),cb=terminal(chosen.b.devId,chosen.b.key);wireGrab.conduitEntryEnd=Math.hypot(press.x-ca.x,press.y-ca.y)<=Math.hypot(press.x-cb.x,press.y-cb.y)?'a':'b';wireGrab.freePts=(chosen.pts||[]).map(function(p){return {x:p.x,y:p.y};});renderWires();}
+    return;
+  }
   if (!wr.pts) wr.pts = [];
   if (!wr.pts.length){
     const handles = wirePointList(a,b,wr);
@@ -5522,8 +6321,8 @@ wireLayer.addEventListener('pointerdown', function(evt){
   if (!isFinite(p.x) || !isFinite(p.y)) return;
   let idx = 0, best = Infinity;
   wr.pts.forEach(function(q,i){ const d = Math.hypot(q.x-p.x, q.y-p.y); if (d < best){ best = d; idx = i; } });
-  wr.pts[idx] = { x:p.x, y:p.y };
-  wireGrab = { id:id, idx:idx };
+  wr.pts[idx] = snapAlignmentPoint(p,evt);
+  wireGrab = { id:id, idx:idx,freePts:freePts,conduitEntryEnd:conduitEntryEnd };
   renderWires();
 });
 
@@ -5533,6 +6332,7 @@ function showWireMenu(wid, clientX, clientY, sp){
   const m = document.getElementById('wireMenu');
   if (!m) return;
   const selected=currentMenuWire(),section=wireSectionOf(selected);
+  m.querySelector('[data-act="unconduit"]').hidden=!(selected&&selected.conduitId);
   document.getElementById('wireSectionMenu').innerHTML=wireSectionButtons('data-wire-section',section);
   document.getElementById('wireSectionCurrent').textContent=wireSectionLabel(section);
   m.style.display = 'block';
@@ -5575,6 +6375,7 @@ function addWirePoint(){
   const p = { x:wireMenu.x, y:wireMenu.y };
   hideWireMenu();
   if (!wr) return;
+  if(wr.conduitId){touchStatus('Сначала выньте провод из гофры через меню.');return;}
   const a = terminal(wr.a.devId, wr.a.key), b = terminal(wr.b.devId, wr.b.key);
   if (!a || !b) return;
   if (!wr.pts) wr.pts = [];
@@ -5664,6 +6465,7 @@ wireLayer.addEventListener('contextmenu', function(evt){
     if (act === 'add') addWirePoint();
     else if (act === 'del') delWirePoint();
     else if (act === 'remove') removeMenuWire();
+    else if (act === 'unconduit'){const wr=currentMenuWire();hideWireMenu();detachWireConduit(wr);renderAll();}
   });
 })();
 document.addEventListener('pointerdown', function(evt){
@@ -5865,8 +6667,9 @@ function internalLinks(){
       if (d.timerActive) link(d.id,'15',d.id,'18');
       else link(d.id,'15',d.id,'16');
     }
-    if (d.type === 'klemma' || d.type === 'pebus'){ // шина N или PE: все зажимы — один узел
-      for (let i=0;i<5;i++) link(d.id,'k'+i,d.id,'k'+(i+1));
+    if (d.type === 'klemma' || d.type === 'pebus' || TYPES[d.type].crossModule){ // N/PE: все зажимы, включая оба ряда, — один узел
+      const terms=termDefs(d.type,d);
+      for (let i=0;i<terms.length-1;i++) link(d.id,terms[i].key,d.id,terms[i+1].key);
     }
   });
   state.devices.filter(function(d){return d.type==='comb';}).forEach(function(d){
@@ -5982,12 +6785,88 @@ function resistiveLoads(){
   });
   return loads;
 }
+/* Упрощённая стационарная модель обмоток АД: I0 = 0,3 In, I(100 %) = In.
+   Комплексная проводимость учитывает оба конца обмотки, звёздную точку,
+   несимметрию и потерю фазы. Паспортная точка согласована с P, In и КПД. */
+function acMotorWindingBranches(pot,onlyMotor){
+  const result=[];
+  (onlyMotor?[onlyMotor]:state.motors).forEach(function(m){
+    if(motorIsDc(m))return;
+    const values=['U1','V1','W1','W2','U2','V2'].map(function(k){return pot[nodeKey({devId:m.id,key:k})];}).filter(Boolean);
+    const ac=values.find(function(v){return !v.dc&&v.frequencyHz>0;});
+    const dc=!ac&&values.some(function(v){return v.dc;});
+    const frequency=ac?ac.frequencyHz:networkFrequencyHz(),base=Math.max(1,Number(m.ratedFrequency)||50);
+    const voltage=ratedVoltageOf(m,380)/Math.sqrt(3)*Math.min(1,frequency/base);
+    const nominal=Math.max(.1,Number(m.ratedCurrent)||9),load=Math.max(0,Math.min(1,(Number(m.load)||0)/100));
+    const current=nominal*Math.sqrt(.09+.91*load*load);
+    const efficiency=Math.max(.1,Math.min(1,Number(m.efficiency)||.9));
+    const ratedPf=Math.max(.2,Math.min(.95,(Math.max(.01,Number(m.ratedPower)||4)*1000)/(Math.sqrt(3)*ratedVoltageOf(m,380)*nominal*efficiency)));
+    const pf=.15+(ratedPf-.15)*load,admittance=current/Math.max(.01,voltage);
+    const g=dc?{r:1/3.2,i:0}:{r:admittance*pf,i:-admittance*Math.sqrt(1-pf*pf)};
+    AC_WINDING_PAIRS.forEach(function(pair){result.push({a:{devId:m.id,key:pair[0]},b:{devId:m.id,key:pair[1]},g:g,motorId:m.id});});
+  });
+  return result;
+}
+function electricalLoads(pot){return resistiveLoads().concat(acMotorWindingBranches(pot));}
+function branchKey(ref){return typeof ref==='string'?ref:nodeKey(ref);}
+function branchAdmittance(e){return e.g||{r:1/e.resistance,i:0};}
+function branchCurrent(e,pot){
+  const a=pot[branchKey(e.a)],b=pot[branchKey(e.b)];
+  if(!a||!b)return {r:0,i:0};
+  const r=a.r-b.r,i=a.i-b.i,g=branchAdmittance(e);
+  return {r:g.r*r-g.i*i,i:g.r*i+g.i*r};
+}
+function internalLinkCurrent(currents,a,b){
+  const values=currents.internalPhasors||{},ka=nodeKey(a),kb=nodeKey(b);
+  if(values[ka+'|'+kb])return values[ka+'|'+kb];
+  const reverse=values[kb+'|'+ka];return reverse?{r:-reverse.r,i:-reverse.i}:{r:0,i:0};
+}
+/* Общий узловой решатель для комплексных проводимостей. Фиксированные
+   потенциалы — граничные условия; плавающие компоненты не получают питания. */
+function solveAdmittanceNetwork(branches,fixed){
+  const adj={},pot=Object.assign({},fixed),seen=new Set();
+  Object.keys(fixed).forEach(function(k){adj[k]=[];});
+  branches.forEach(function(e){
+    const a=branchKey(e.a),b=branchKey(e.b),g=branchAdmittance(e);
+    (adj[a]||(adj[a]=[])).push({to:b,g:g});(adj[b]||(adj[b]=[])).push({to:a,g:g});
+  });
+  Object.keys(adj).forEach(function(start){
+    if(seen.has(start))return;
+    const queue=[start],component=[];seen.add(start);
+    while(queue.length){const k=queue.pop();component.push(k);adj[k].forEach(function(e){if(!seen.has(e.to)){seen.add(e.to);queue.push(e.to);}});}
+    const sources=component.filter(function(k){return fixed[k];}).map(function(k){return fixed[k];});
+    if(!sources.length)return;
+    const free=component.filter(function(k){return !fixed[k];}),size=free.length*2,position={};
+    if(!size)return;
+    free.forEach(function(k,j){position[k]=j*2;});
+    const matrix=Array.from({length:size},function(){return new Float64Array(size+1);});
+    free.forEach(function(k){
+      const j=position[k];
+      adj[k].forEach(function(e){
+        const r=e.g.r,i=e.g.i,p=position[e.to];
+        matrix[j][j]+=r;matrix[j][j+1]-=i;matrix[j+1][j]+=i;matrix[j+1][j+1]+=r;
+        if(p!==undefined){matrix[j][p]-=r;matrix[j][p+1]+=i;matrix[j+1][p]-=i;matrix[j+1][p+1]-=r;}
+        else if(fixed[e.to]){const v=fixed[e.to];matrix[j][size]+=r*v.r-i*v.i;matrix[j+1][size]+=i*v.r+r*v.i;}
+      });
+    });
+    for(let col=0;col<size;col++){
+      let pivot=col;for(let j=col+1;j<size;j++)if(Math.abs(matrix[j][col])>Math.abs(matrix[pivot][col]))pivot=j;
+      const temp=matrix[col];matrix[col]=matrix[pivot];matrix[pivot]=temp;
+      if(Math.abs(matrix[col][col])<1e-14)return;
+      for(let j=col+1;j<size;j++){const ratio=matrix[j][col]/matrix[col][col];if(!ratio)continue;for(let k=col;k<=size;k++)matrix[j][k]-=ratio*matrix[col][k];}
+    }
+    const values=new Float64Array(size),meta=sources.find(function(v){return v.frequencyHz>0||v.dc;})||sources[0];
+    for(let j=size-1;j>=0;j--){let value=matrix[j][size];for(let k=j+1;k<size;k++)value-=matrix[j][k]*values[k];values[j]=value/matrix[j][j];}
+    free.forEach(function(k){const j=position[k];pot[k]={r:values[j],i:values[j+1],frequencyHz:meta.frequencyHz||0,dc:!!meta.dc,source:meta.source};});
+  });
+  return pot;
+}
 /* Идеальные провода объединяются в узлы. Неизвестные потенциалы решаются
    по сумме токов (Va-Vb)/R = 0, отдельно для двух частей фазора.
    Известные потенциалы источников остаются фиксированными; через нагрузки
    они не распространяются как через перемычку и не создают ложного КЗ. */
 function solveLoadPotentials(adj,pot){
-  const loads=resistiveLoads(),groups=[],owner={},keys=new Set(Object.keys(adj));
+  const loads=electricalLoads(pot),groups=[],owner={},keys=new Set(Object.keys(adj));
   loads.forEach(function(e){keys.add(nodeKey(e.a));keys.add(nodeKey(e.b));});
   keys.forEach(function(start){
     if(owner[start]!==undefined)return;
@@ -6001,49 +6880,19 @@ function solveLoadPotentials(adj,pot){
   });
   loads.forEach(function(e){
     const a=owner[nodeKey(e.a)],b=owner[nodeKey(e.b)];if(a===b)return;
-    const g=1/e.resistance;groups[a].edges.push({to:b,g:g});groups[b].edges.push({to:a,g:g});
+    const g=branchAdmittance(e);groups[a].edges.push({to:b,g:g});groups[b].edges.push({to:a,g:g});
   });
-  const seen=new Set();
-  groups.forEach(function(group,start){
-    if(seen.has(start))return;
-    const queue=[start],component=[];seen.add(start);
-    while(queue.length){const j=queue.pop();component.push(j);groups[j].edges.forEach(function(e){if(!seen.has(e.to)){seen.add(e.to);queue.push(e.to);}});}
-    const sources=component.map(function(j){return groups[j].fixed;}).filter(Boolean);
-    if(!sources.length)return; // У полностью плавающей цепи нет опорного напряжения.
-    const meta=sources.find(function(v){return v.frequencyHz>0||v.dc;})||sources[0];
-    const free=component.filter(function(j){return !groups[j].fixed;}),position={};
-    free.forEach(function(j,k){position[j]=k;});
-    const size=free.length;
-    const matrix=free.map(function(j,k){
-      const row=new Float64Array(size+2);
-      groups[j].edges.forEach(function(e){
-        row[k]+=e.g;const p=position[e.to],fixed=groups[e.to].fixed;
-        if(p!==undefined)row[p]-=e.g;
-        else if(fixed){row[size]+=e.g*fixed.r;row[size+1]+=e.g*fixed.i;}
-      });
-      return row;
-    });
-    for(let col=0;col<size;col++){
-      let pivot=col;for(let j=col+1;j<size;j++)if(Math.abs(matrix[j][col])>Math.abs(matrix[pivot][col]))pivot=j;
-      const tmp=matrix[col];matrix[col]=matrix[pivot];matrix[pivot]=tmp;
-      if(!matrix[col][col])return;
-      for(let j=col+1;j<size;j++){
-        const ratio=matrix[j][col]/matrix[col][col];if(!ratio)continue;
-        for(let k=col;k<size+2;k++)matrix[j][k]-=ratio*matrix[col][k];
-      }
-    }
-    const values=[];
-    for(let row=size-1;row>=0;row--){
-      let r=matrix[row][size],i=matrix[row][size+1];
-      for(let k=row+1;k<size;k++){r-=matrix[row][k]*values[k].r;i-=matrix[row][k]*values[k].i;}
-      values[row]={r:r/matrix[row][row],i:i/matrix[row][row],frequencyHz:meta.frequencyHz||0,dc:!!meta.dc,source:meta.source};
-      groups[free[row]].keys.forEach(function(key){pot[key]=values[row];});
-    }
+  const branches=[],fixed={};
+  groups.forEach(function(group,j){
+    if(group.fixed)fixed[String(j)]=group.fixed;
+    group.edges.forEach(function(e){if(j<e.to)branches.push({a:String(j),b:String(e.to),g:e.g});});
   });
+  const solved=solveAdmittanceNetwork(branches,fixed);
+  groups.forEach(function(group,j){if(solved[String(j)])group.keys.forEach(function(k){pot[k]=solved[String(j)];});});
 }
 function potentialMap(){
   if(electricalReadContext&&electricalReadContext.potential)return electricalReadContext.potential;
-  const adj = {}, pot = {}, conflicts = [], seenConflicts = {};
+  const adj = {}, pot = {}, conflicts = [], seenConflicts = {},sources={};
   function add(a,b){
     const ka = nodeKey(a), kb = nodeKey(b);
     (adj[ka] = adj[ka] || []).push(b);
@@ -6068,6 +6917,7 @@ function potentialMap(){
   }
   function src(devId, key, v){
     const k=nodeKey({devId:devId,key:key});
+    sources[k]=v;
     if(k in pot)recordConflict(k,pot[k],v);
     else pot[k]=v;
     queue.push({ devId:devId, key:key, v:v });
@@ -6121,7 +6971,7 @@ function potentialMap(){
     propagate();
   });
   if(!conflict)solveLoadPotentials(adj,pot);
-  const result={pot:pot,conflict:conflict,conflicts:conflicts,adj:adj,
+  const result={pot:pot,conflict:conflict,conflicts:conflicts,adj:adj,sources:sources,
     ac:{frequencyHz:networkFrequencyHz(),lineVoltageRms:networkLineVoltageRms(),phaseVoltageRms:networkPhaseVoltageRms(),kind:networkKind()}};
   if(electricalReadContext)electricalReadContext.potential=result;
   return result;
@@ -6167,22 +7017,30 @@ function breakerNominalCurrent(dev){
 }
 function breakerPoleCurrents(dev,wireCurrents){
   const count=dev&&TYPES[dev.type]&&TYPES[dev.type].poles||1,result=[];
+  const phasors=wireCurrents.phasors;
   for(let pole=0;pole<count;pole++){
     const top='t'+pole,bottom='b'+pole;
-    let topCurrent=0,bottomCurrent=0;
+    if(wireCurrents.internalPhasors){
+      const value=internalLinkCurrent(wireCurrents,{devId:dev.id,key:top},{devId:dev.id,key:bottom});result.push(Math.hypot(value.r,value.i));continue;
+    }
+    const topSum={r:0,i:0,total:0},bottomSum={r:0,i:0,total:0};
+    function add(ref,direction,current,value){
+      if(String(ref.devId)!==String(dev.id))return;
+      const sum=ref.key===top?topSum:ref.key===bottom?bottomSum:null;
+      if(!sum)return;
+      sum.total+=current;
+      if(value){sum.r+=direction*value.r;sum.i+=direction*value.i;}
+    }
     state.wires.forEach(function(w){
-      const current=Math.max(0,Number(wireCurrents[w.id])||0);
-      if(String(w.a.devId)===String(dev.id)){
-        if(w.a.key===top)topCurrent+=current;
-        if(w.a.key===bottom)bottomCurrent+=current;
-      }
-      if(String(w.b.devId)===String(dev.id)){
-        if(w.b.key===top)topCurrent+=current;
-        if(w.b.key===bottom)bottomCurrent+=current;
-      }
+      const current=Math.max(0,Number(wireCurrents[w.id])||0),value=phasors&&phasors[w.id];
+      add(w.a,1,current,value);add(w.b,-1,current,value);
     });
-    // При нескольких отходящих линиях их токи складываются на выходе полюса.
-    // max поддерживает и обычное, и обратное питание автомата.
+    // Суммируем направленные токи по Кирхгофу: транзитная перемычка на клемме
+    // не проходит через контакты автомата. Ветви нагрузки складываются векторно.
+    const topCurrent=phasors?Math.hypot(topSum.r,topSum.i):topSum.total;
+    const bottomCurrent=phasors?Math.hypot(bottomSum.r,bottomSum.i):bottomSum.total;
+    // Оба направления питания; для заданных вручную модулей без фазоров
+    // сохраняется поддержка испытательных токов защиты.
     result.push(Math.max(topCurrent,bottomCurrent));
   }
   return result;
@@ -6264,11 +7122,10 @@ function nominalResistance(dev,defaultPower){
   return voltage*voltage/power;
 }
 function resistanceBetween(a, b){
-  const graph = {};
+  const branches=[];
   function edge(x,y,r){
     const kx=nodeKey(x), ky=nodeKey(y);
-    (graph[kx]=graph[kx]||[]).push({k:ky,r:r});
-    (graph[ky]=graph[ky]||[]).push({k:kx,r:r});
+    branches.push({a:kx,b:ky,resistance:r});
   }
   state.wires.forEach(function(w){ edge(w.a,w.b,0.05); });
   internalLinks().forEach(function(p){ edge(p[0],p[1],0.03); });
@@ -6281,9 +7138,7 @@ function resistanceBetween(a, b){
       edge({devId:motor.id,key:'sh1'},{devId:motor.id,key:'sh2'},d.Rf);
       return;
     }
-    edge({devId:motor.id,key:'U1'},{devId:motor.id,key:'W2'},3.2);
-    edge({devId:motor.id,key:'V1'},{devId:motor.id,key:'U2'},3.2);
-    edge({devId:motor.id,key:'W1'},{devId:motor.id,key:'V2'},3.2);
+    AC_WINDING_PAIRS.forEach(function(pair){edge({devId:motor.id,key:pair[0]},{devId:motor.id,key:pair[1]},3.2);});
   });
   // Исправная катушка пускателя: ориентировочное сопротивление постоянному току.
   state.devices.filter(function(d){ return d.type === 'km1' && !d.coilBurned; }).forEach(function(d){
@@ -6304,20 +7159,13 @@ function resistanceBetween(a, b){
   state.devices.filter(function(d){return TYPES[d.type].kind==='appliance'&&d.applianceOn&&!d.applianceBurned;}).forEach(function(d){
     edge({devId:d.id,key:'L'},{devId:d.id,key:'N'},nominalResistance(d,TYPES[d.type].defaultPower));
   });
-  const start=nodeKey(a), finish=nodeKey(b), dist={};
-  dist[start]=0;
-  const used={};
-  while (true){
-    let cur=null, best=Infinity;
-    Object.keys(dist).forEach(function(k){ if(!used[k] && dist[k]<best){best=dist[k];cur=k;} });
-    if (cur===null || cur===finish) break;
-    used[cur]=true;
-    (graph[cur]||[]).forEach(function(e){
-      const nd=dist[cur]+e.r;
-      if (!(e.k in dist) || nd<dist[e.k]) dist[e.k]=nd;
-    });
-  }
-  return finish in dist ? dist[finish] : Infinity;
+  const start=nodeKey(a),finish=nodeKey(b);if(start===finish)return 0;
+  // Пробное напряжение 1 В. Эквивалентное R = 1 / I учитывает все ветви,
+  // включая параллельные цепи и мосты, без подключения рабочего источника.
+  const fixed={};fixed[start]={r:1,i:0};fixed[finish]={r:0,i:0};
+  const pot=solveAdmittanceNetwork(branches,fixed);let current=0;
+  branches.forEach(function(e){const value=branchCurrent(e,pot);if(e.a===start)current+=value.r;if(e.b===start)current-=value.r;});
+  return current>1e-12?1/current:Infinity;
 }
 function measureNow(){
   const a=state.mm.a, b=state.mm.b, fn=state.mm.fn||'voltage';
@@ -6561,7 +7409,7 @@ mmLayer.addEventListener('pointerdown',function(evt){
 });
 document.addEventListener('pointermove',function(evt){
   if(meterDrag&&evt.pointerId===meterDrag.pointerId){
-    const p=svgPoint(evt),nx=p.x-meterDrag.offX,ny=p.y-meterDrag.offY;
+    const p=svgPoint(evt),box=snapAlignmentBox(p.x-meterDrag.offX,p.y-meterDrag.offY,METER.w,METER.h,evt),nx=box.x,ny=box.y;
     const dx=nx-METER.x,dy=ny-METER.y;
     // Свободный щуп перемещается вместе с прибором; вставленный в гнездо едет за ним сам.
     if(!state.mm.a){
@@ -6617,10 +7465,11 @@ function viewAspect(){
     const rect=scene.getBoundingClientRect();
     if(rect.width>0&&rect.height>0)return rect.height/rect.width;
   }
-  return VH/VW;
+  // Более широкий верстак сохраняет прежнюю высоту обзора и размер двигателей.
+  return VH/VW*2000/workbenchViewWidth();
 }
-
-function sceneWorkspaceWidth(){return state.roomScene==='household'?HOUSEHOLD_W:WORKSPACE_W;}
+function workbenchViewWidth(){return state.workbench?Math.max(2000,state.workbench.x+state.workbench.width+40):2000;}
+function sceneWorkspaceWidth(){return state.roomScene==='household'?HOUSEHOLD_W:Math.max(WORKSPACE_W,state.workbench?state.workbench.x+state.workbench.width:0);}
 function sceneWorkspaceHeight(){return state.roomScene==='household'?HOUSEHOLD_H:WORKSPACE_H;}
 function maxViewWidth(){
   // На широком экране предельный масштаб щита совпадает с предельным масштабом верстака.
@@ -6628,20 +7477,23 @@ function maxViewWidth(){
 }
 function applyView(){
   const household=state.roomScene==='household';
+  const dual=!!(state.workbench&&motorById(state.workbench.dcMotorId));
+  const stand=STAND_OPTIONS.find(function(option){return option.key===state.standId;});
   // Стенд у левого края; место под панель проводов оставляет CSS.
   const leftAligned=!!state.workbench&&!household;
   scene.classList.toggle('workbench-view',leftAligned);
   scene.setAttribute('preserveAspectRatio',leftAligned?'xMinYMax meet':'xMidYMax meet');
-  document.title=household?'Бытовой монтаж — комнаты · Тренажёр-стенд':'Тренажёр-стенд — Пуск и реверс трёхфазного АД';
+  document.title=stand?stand.title+' · Тренажёр-стенд':household?'Бытовой монтаж — комнаты · Тренажёр-стенд':dual?'Тренажёр-стенд — Асинхронный двигатель и ДПТ':'Тренажёр-стенд — Пуск и реверс трёхфазного АД';
   const description=document.getElementById('sceneDescription');
-  if(description)description.textContent=household?'Бытовой монтаж: комнаты и бытовые приборы':'Пуск и реверс трёхфазного асинхронного двигателя';
+  if(description)description.textContent=stand?stand.title:household?'Бытовой монтаж: комнаты и бытовые приборы':dual?'Испытания асинхронного двигателя и двигателя постоянного тока':'Пуск и реверс трёхфазного асинхронного двигателя';
   const hint=document.getElementById('sceneHint');
-  if(hint)hint.textContent=household?'Размещайте приборы из лотка и подключайте L, N и PE':'Ввод, защита и магнитные пускатели';
-  ['sceneWorkbench','sceneHousehold'].forEach(function(id,i){
-    const button=document.getElementById(id);if(!button)return;
-    const active=i===1?household:!household;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
+  if(hint)hint.textContent=stand?stand.hint:household?'Размещайте приборы из лотка и подключайте L, N и PE':dual?'ДПТ слева · асинхронный двигатель справа':'Ввод, защита и магнитные пускатели';
+  STAND_OPTIONS.forEach(function(option){
+    const button=document.getElementById(option.button);if(!button)return;
+    const active=option.key===state.standId;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));
   });
   scene.setAttribute('viewBox', view.x+' '+view.y+' '+view.w+' '+view.h);
+  renderAlignmentGuides();
 }
 function clampView(){
   view.w = Math.max(Z_MIN, Math.min(maxViewWidth(), view.w));
@@ -6673,7 +7525,13 @@ function resetView(){
     const aspect=viewAspect(),w=maxViewWidth(),h=w*aspect;
     view={x:(HOUSEHOLD_W-w)/2,y:(HOUSEHOLD_H-h)/2,w:w,h:h};applyView();return;
   }
-  const w=state.workbench?2000:VW,h=w*VH/VW;
+  let w=state.workbench?workbenchViewWidth():VW,h=w*viewAspect();
+  const panel=state.workbench&&panelById(state.workbench.panelId);
+  if(panel){
+    // Высокий собранный щит должен помещаться вместе со всем верстаком.
+    const fitHeight=state.workbench.y+state.workbench.height+280-(panel.y+200-40);
+    if(fitHeight>h){h=fitHeight;w=h/viewAspect();}
+  }
   // Ножки верстака стоят у нижнего края; 200 учитывает смещение группы world.
   const y=state.workbench?state.workbench.y+state.workbench.height+280-h:0;
   view={x:0,y:y,w:w,h:h};applyView();
@@ -6722,6 +7580,7 @@ document.addEventListener('pointerup', function(evt){
    9. ПАНЕЛЬ: ЛОТОК ДЕТАЛЕЙ
    ============================================================ */
 function specialTrayPreview(key){
+  if(key==='conduit')return '<svg class="mini" viewBox="0 0 180 100">'+conduitShell('M 20,80 V 45 Q 20,20 45,20 H 160')+'</svg>';
   if(key==='panel'){
     const panel={x:0,y:0,railCount:2,tag:'ЩР'};
     let s=panelInner(panel);
@@ -6760,7 +7619,7 @@ function specialTrayPreview(key){
   return '';
 }
 const TRAY_CATEGORIES=[
-  {id:'mounting',title:'Монтаж и соединения',icon:'▦',types:['klemma','pebus','junction','comb'],specials:['panel','inbox']},
+  {id:'mounting',title:'Монтаж и соединения',icon:'▦',types:['klemma','pebus','crossN','crossPE','junction','comb'],specials:['panel','inbox','conduit']},
   {id:'protection',title:'Защита',icon:'◇',types:['mcb1','mcb2','mcb3','rcd','kk1'],specials:[]},
   {id:'control',title:'Управление',icon:'⌘',types:['km1','timer','wallSwitch','twoWaySwitch'],specials:['pushbutton']},
   {id:'drive',title:'Привод',icon:'⚙',types:['vfd','tp'],specials:['motor','dcmotor']},
@@ -6817,8 +7676,8 @@ function renderTray(){
       +'</div>'
       +'<span class="stock" title="Количество не ограничено">∞</span><button type="button" class="tray-add" aria-label="Разместить: '+escapeHtml(t.title)+'">+</button></div>');
   });
-  const specialTitles={inbox:'Клеммная коробка XT1',pushbutton:'Кнопочный пост',motor:'Асинхронный двигатель',dcmotor:'Двигатель постоянного тока',multimeter:'Цифровой мультиметр',clamp:'Токовые клещи',panel:'Монтажный щит'};
-  const unlimitedSpecials={motor:true,dcmotor:true,pushbutton:true,clamp:true,panel:true};
+  const specialTitles={conduit:'Гофра для проводов',inbox:'Клеммная коробка XT1',pushbutton:'Кнопочный пост',motor:'Асинхронный двигатель',dcmotor:'Двигатель постоянного тока',multimeter:'Цифровой мультиметр',clamp:'Токовые клещи',panel:'Монтажный щит'};
+  const unlimitedSpecials={conduit:true,motor:true,dcmotor:true,pushbutton:true,clamp:true,panel:true};
   Object.keys(specialTitles).forEach(function(special){
     if(special==='inbox'&&state.standaloneRails===false)return;
     if(!unlimitedSpecials[special]&&state.special[special])return;
@@ -7015,6 +7874,8 @@ function renderAll(){
     renderDevices();
     renderRelays();
     renderTerminalGuides();
+    renderConduits();
+    renderAlignmentGuides();
     renderWires();
     renderTerminals();
     renderSide();
@@ -7188,7 +8049,7 @@ function schemeSnapshot(name,id){
   const wires=state.wires.map(function(w){
     const copy=JSON.parse(JSON.stringify(w));
     copy.sectionMm2=wireSectionOf(w);
-    delete copy.previewShape;
+    delete copy.previewShape;delete copy.previewConduitId;delete copy.previewConduitEntry;delete copy.previewConduitEntryEnd;
     return copy;
   });
   const devices=JSON.parse(JSON.stringify(state.devices));
@@ -7209,13 +8070,14 @@ function schemeSnapshot(name,id){
   return {
     version:3,id:id||('scheme-'+Date.now().toString(36)),name:name,updated:Date.now(),
     state:{power:state.power,devices:devices,
-      relays:JSON.parse(JSON.stringify(state.relays)),wires:wires,nextId:state.nextId,
+      relays:JSON.parse(JSON.stringify(state.relays)),wires:wires,conduits:JSON.parse(JSON.stringify(state.conduits||[])),nextId:state.nextId,
+      alignmentGuides:JSON.parse(JSON.stringify(state.alignmentGuides||[])),alignmentSnapEnabled:state.alignmentSnapEnabled!==false,
       motors:JSON.parse(JSON.stringify(state.motors)),
       pushbuttons:JSON.parse(JSON.stringify(state.pushbuttons)),
       panels:JSON.parse(JSON.stringify(state.panels)),
       standaloneRails:state.standaloneRails!==false,
       workbench:state.workbench?JSON.parse(JSON.stringify(state.workbench)):null,
-      roomScene:state.roomScene,
+      roomScene:state.roomScene,standId:state.standId||null,
       clamps:state.clamps.map(function(c){return {id:c.id,tag:c.tag,customName:c.customName,x:c.x,y:c.y,wireId:c.wireId,fraction:c.fraction};}),
       specialProps:JSON.parse(JSON.stringify(state.specialProps||{})),
       special:JSON.parse(JSON.stringify(state.special))},
@@ -7282,7 +8144,7 @@ function loadSelectedPreset(){
 function applyPreset(p){
   if(!p||!p.state)return false;
   resetActionHistory();
-  cancelWire(); hideWireMenu();
+  cancelWire(); hideWireMenu();cancelConduit();cancelAlignmentGuide();
   state.power=p.state.power!==false;
   state.devices=JSON.parse(JSON.stringify(p.state.devices||[]));
   state.devices.forEach(function(d){
@@ -7332,12 +8194,20 @@ function applyPreset(p){
   state.relays.forEach(syncThermalSettings);
   thermalLastTick=Date.now();
   ensureInstanceTags();
+  state.conduits=normalizeConduits(p.state.conduits);
+  state.alignmentGuides=normalizeAlignmentGuides(p.state.alignmentGuides);
+  state.alignmentSnapEnabled=p.state.alignmentSnapEnabled!==false;
   state.wires=JSON.parse(JSON.stringify(p.state.wires||[]));
+  state.wires.forEach(function(w){w.a=compactCrossModuleRef(w.a);w.b=compactCrossModuleRef(w.b);});
+  state.wires.forEach(function(w){delete w.previewConduitId;delete w.previewConduitEntry;delete w.previewConduitEntryEnd;if(w.conduitId&&!conduitById(w.conduitId))detachWireConduit(w);});
   state.motors=JSON.parse(JSON.stringify(p.state.motors||[]));
   state.pushbuttons=JSON.parse(JSON.stringify(p.state.pushbuttons||[]));
   state.panels=JSON.parse(JSON.stringify(Array.isArray(p.state.panels)?p.state.panels:[]));
   state.workbench=normalizeWorkbench(p.state.workbench);
   state.roomScene=p.state.roomScene==='household'?'household':null;
+  const stand=STAND_OPTIONS.find(function(option){return option.key===p.state.standId;})
+    ||STAND_OPTIONS.find(function(option){return option.file===p._folderFile||option.sourceName===p.name;});
+  state.standId=stand?stand.key:null;
   // В старых сохранениях две отдельные рейки были частью рабочего поля.
   state.standaloneRails=p.state.standaloneRails!==false;
   state.panels.forEach(function(panel){panel.fixed=panelIsFixed(panel);panel.railCount=panelRailCount(panel);panel.inletVoltage=panelInletVoltage(panel);panel.x=Number(panel.x)||0;panel.y=Number(panel.y)||0;});
@@ -7418,6 +8288,9 @@ function applyPreset(p){
     state.mm={mode:false,power:true,fn:'voltage',a:null,b:null,aDocked:true,bDocked:true};
   }
   if(inboxSinglePhase())pruneInboxConnections();
+  state.mm.a=compactCrossModuleRef(state.mm.a);state.mm.b=compactCrossModuleRef(state.mm.b);
+  // Размер SVG измеряется уже в компоновке выбранного стенда.
+  scene.classList.toggle('workbench-view',!!state.workbench&&state.roomScene!=='household');
   if(p.view&&isFinite(p.view.x)&&isFinite(p.view.y)&&isFinite(p.view.w)){
     view={x:p.view.x,y:p.view.y,w:p.view.w,h:p.view.h||p.view.w*VH/VW};clampView();applyView();
   }else resetView();
@@ -7532,7 +8405,7 @@ function clearSchemeRecovery(){
   schemeDraft=null;updateSchemeRecovery();
 }
 function saveSchemeDraft(){
-  if(schemeCleanSignature===null||drag||panelDrag||meterDrag||meterProbeDrag||pending||touchPlacement)return;
+  if(schemeCleanSignature===null||drag||panelDrag||meterDrag||meterProbeDrag||pending||touchPlacement||conduitDraft||conduitGrab||alignmentDraft||alignmentGrab)return;
   try{
     if(schemeDraft){
       if(!schemeHasChanges())return;
@@ -7592,10 +8465,26 @@ function openWorkspaceScheme(p){
     applyPreset(p);clearSchemeRecovery();markSchemeClean();schemeLastDraftPayload='';saveSchemeDraft();
   });
 }
+const STAND_OPTIONS=[
+  {key:'motor-empty',button:'sceneWorkbench',title:'Испытание электродвигателей',
+    file:'Стенд двигателя — пустой.ad-scheme.json',sourceName:'Стенд двигателя — пустой',
+    hint:'ДПТ и асинхронный двигатель · пустой электрический щит'},
+  {key:'motor-reverse',button:'sceneMotorReverse',title:'Пуск-реверс асинхронного двигателя',
+    file:'Пуск-Реверс АД.ad-scheme.json',sourceName:'Пуск-Реверс АД',
+    hint:'Готовая схема пуска и реверса асинхронного двигателя'},
+  {key:'apartment-empty',button:'sceneHousehold',title:'Квартирный щит. Пустой',
+    file:'Бытовой монтаж — комнаты.ad-scheme.json',sourceName:'Бытовой монтаж — комнаты',
+    hint:'Квартира и пустой щит для самостоятельного монтажа'},
+  {key:'apartment-connected',button:'sceneHouseholdConnected',title:'Квартирный щит. Готовый',
+    file:'Монтаж квартирного щита.ad-scheme.json',sourceName:'Монтаж квартирного щита',
+    hint:'Готовый щит, приборы и подключённая проводка'}
+];
 function openDesignScene(file){
   const preset=folderPresets.find(function(p){return p._folderFile===file;});
-  if(!preset)return;
+  if(!preset){warn('Не найден файл стенда «'+file+'». Обновите каталог схем.');return;}
   const copy=JSON.parse(JSON.stringify(preset));delete copy.view;
+  const stand=STAND_OPTIONS.find(function(option){return option.file===file;});
+  if(stand)copy.state.standId=stand.key;
   openWorkspaceScheme(copy);
 }
 function newWorkspaceScheme(){
@@ -7609,7 +8498,7 @@ function newWorkspaceScheme(){
     clearLog();renderAll();
     document.getElementById('presetName').value='';
     clearSchemeRecovery();markSchemeClean();schemeLastDraftPayload='';saveSchemeDraft();
-    presetStatus(household?'Новая сцена: комнаты для бытового монтажа.':'Новая схема: верстак с двигателем и пустой щит на две DIN-рейки.');
+    presetStatus(household?'Новая сцена: комнаты для бытового монтажа.':'Новая схема: ДПТ слева, асинхронный двигатель справа и пустой щит на две DIN-рейки.');
   });
 }
 function restoreWorkspaceScheme(){
@@ -7650,8 +8539,7 @@ function initSchemeWorkspace(){
   }catch(e){/* Повреждённый черновик не препятствует запуску тренажёра. */}
   updateSchemeRecovery();
   function click(id,fn){const el=document.getElementById(id);if(el)el.addEventListener('click',fn);}
-  click('sceneWorkbench',function(){openDesignScene('Стенд двигателя — пустой.ad-scheme.json');});
-  click('sceneHousehold',function(){openDesignScene('Бытовой монтаж — комнаты.ad-scheme.json');});
+  STAND_OPTIONS.forEach(function(option){click(option.button,function(){openDesignScene(option.file);});});
   click('schemeNew',newWorkspaceScheme);click('schemeRestore',restoreWorkspaceScheme);
   click('schemeDiscard',discardWorkspaceRecovery);
   click('schemeReplaceSave',function(){finishSchemeReplace(true);});
@@ -7817,8 +8705,9 @@ const panelLayer=document.getElementById('panelLayer');
 function updatePanelDrag(){
   if(!panelDrag||!panelDragPointer)return;
   const panel=panelById(panelDrag.id);if(!panel||panelIsFixed(panel))return;
-  const p=svgPoint(panelDragPointer);panelDragPointer=null;
-  panel.x=p.x-panelDrag.offX;panel.y=p.y-panelDrag.offY;
+  const evt=panelDragPointer,p=svgPoint(evt);panelDragPointer=null;
+  const box=snapAlignmentBox(p.x-panelDrag.offX,p.y-panelDrag.offY,PANEL.width,panelHeight(panel),evt);
+  panel.x=box.x;panel.y=box.y;
   renderPanels();renderRail();renderInbox();renderDevices();renderRelays();renderTerminalGuides();renderWires();renderTerminals();renderClamp();
 }
 function startPanelDrag(evt,panel){
@@ -7834,13 +8723,13 @@ panelLayer.addEventListener('pointerdown',function(evt){
 });
 document.addEventListener('pointermove',function(evt){
   if(!panelDrag||evt.pointerId!==panelDrag.pointerId)return;
-  panelDragPointer={clientX:evt.clientX,clientY:evt.clientY};
+  panelDragPointer={clientX:evt.clientX,clientY:evt.clientY,shiftKey:evt.shiftKey};
   if(!panelDragFrame)panelDragFrame=requestAnimationFrame(function(){panelDragFrame=0;updatePanelDrag();});
 });
 function finishPanelDrag(evt){
   if(!panelDrag||evt.pointerId!==panelDrag.pointerId)return;
   if(panelDragFrame){cancelAnimationFrame(panelDragFrame);panelDragFrame=0;}
-  if(evt.type!=='pointercancel'){panelDragPointer={clientX:evt.clientX,clientY:evt.clientY};updatePanelDrag();}
+  if(evt.type!=='pointercancel'){panelDragPointer={clientX:evt.clientX,clientY:evt.clientY,shiftKey:evt.shiftKey};updatePanelDrag();}
   panelDrag=null;panelDragPointer=null;
 }
 document.addEventListener('pointerup',finishPanelDrag);
@@ -7868,12 +8757,12 @@ function clampWireCurrents(){
   internalLinks().forEach(function(p){edge(p[0],p[1],1000,null);});
   state.wires.forEach(function(w){edge(w.a,w.b,100,w.id);});
   function inject(n,r,i){const j=index(n);injections[j].r+=r;injections[j].i+=i;}
-  resistiveLoads().forEach(function(e){
+  electricalLoads(map.pot).forEach(function(e){
     const na=e.a,nb=e.b;
     const va=map.pot[nodeKey(na)],vb=map.pot[nodeKey(nb)];
     if(!va||!vb)return;
-    const r=va.r-vb.r,i=va.i-vb.i,resistance=e.resistance;
-    inject(na,r/resistance,i/resistance);inject(nb,-r/resistance,-i/resistance);
+    const value=branchCurrent(e,map.pot);
+    inject(na,value.r,value.i);inject(nb,-value.r,-value.i);
   });
   state.motors.forEach(function(m){
     if(motorIsDc(m)){
@@ -7882,21 +8771,14 @@ function clampWireCurrents(){
       if(point.fieldDc&&Math.abs(point.fieldVoltage)>1){const current=Math.sign(point.fieldVoltage)*point.fieldCurrent;inject({devId:m.id,key:'sh1'},current,0);inject({devId:m.id,key:'sh2'},-current,0);}
       return;
     }
-    const direction=motorPhaseDirection(m),current=motorOperatingPoint(m,direction).current;
-    if(!current)return;
-    ['U1','V1','W1'].forEach(function(key){
-      const n={devId:m.id,key:key},v=map.pot[nodeKey(n)];
-      if(v){const u=Math.hypot(v.r,v.i);if(u)inject(n,current*v.r/u,current*v.i/u);}
-    });
   });
+  const drives=state.devices.filter(function(d){return (d.type==='vfd'&&d.vfdInputReady)||(d.type==='tp'&&d.tpInputReady);});
+  drives.forEach(function(d){['R','S','T'].forEach(function(k){index({devId:d.id,key:k});});});
   const count=nodes.length,adj=Array.from({length:count},function(){return [];});
   edges.forEach(function(e){adj[e.a].push(e.b);adj[e.b].push(e.a);});
   const pinned={},seen={},components=[],componentIndex=new Int32Array(count);
   nodes.forEach(function(n,j){
-    if(String(n.devId)==='IN')pinned[j]=true;
-    const d=devById(n.devId);
-    if(d&&d.type==='vfd'&&d.vfdOutputActive&&['U','V','W'].includes(n.key))pinned[j]=true;
-    if(d&&d.type==='tp'&&d.tpOn&&d.tpInputReady&&['ya1','ya2','sh1','sh2'].includes(n.key))pinned[j]=true;
+    if(map.sources[nodeKey(n)])pinned[j]=true;
   });
   // Независимые проводящие компоненты решаются отдельными матрицами.
   // Это те же узловые уравнения Кирхгофа без огромных блоков из нулей.
@@ -7911,6 +8793,7 @@ function clampWireCurrents(){
     components.push({nodes:component,edges:[]});
   }
   edges.forEach(function(e){components[componentIndex[e.a]].edges.push(e);});
+  function solveCurrents(){
   const real=new Float64Array(count),imag=new Float64Array(count);
   components.forEach(function(component){
     const free=component.nodes.filter(function(j){return !pinned[j];}),position={};
@@ -7939,12 +8822,40 @@ function clampWireCurrents(){
       if(Math.abs(matrix[row][row])>1e-10){real[free[row]]=r/matrix[row][row];imag[free[row]]=i/matrix[row][row];}
     }
   });
-  const phasors={};
-  edges.forEach(function(e){if(e.id!==null){
+  return {real:real,imag:imag};
+  }
+  const base=injections.map(function(v){return {r:v.r,i:v.i};});let solved;
+  // Выходная мощность идеального преобразователя становится входной нагрузкой.
+  // Повторения переносят мощность также через каскад преобразователей.
+  for(let pass=0;pass<=drives.length;pass++){
+    solved=solveCurrents();if(pass===drives.length)break;
+    const supply=injections.map(function(v){return {r:v.r,i:v.i};});
+    edges.forEach(function(e){
+      const r=-e.g*(solved.real[e.a]-solved.real[e.b]),i=-e.g*(solved.imag[e.a]-solved.imag[e.b]);
+      supply[e.a].r+=r;supply[e.a].i+=i;supply[e.b].r-=r;supply[e.b].i-=i;
+    });
+    const next=base.map(function(v){return {r:v.r,i:v.i};});
+    drives.forEach(function(d){
+      const keys=d.type==='vfd'?['U','V','W']:['ya1','ya2','sh1','sh2'];let power=0;
+      keys.forEach(function(k){const key=nodeKey({devId:d.id,key:k}),j=indices[key],v=map.sources[key];if(j!==undefined&&v)power+=v.r*supply[j].r+v.i*supply[j].i;});
+      const efficiency=Math.max(.1,Math.min(1,Number(d.efficiency)||1));
+      power=power>=0?power/efficiency:power*efficiency;
+      const terms=['R','S','T'].map(function(k){return {key:nodeKey({devId:d.id,key:k}),v:map.pot[nodeKey({devId:d.id,key:k})]};});
+      const center=terms.reduce(function(sum,t){sum.r+=t.v.r/3;sum.i+=t.v.i/3;return sum;},{r:0,i:0});
+      const denominator=terms.reduce(function(sum,t){return sum+Math.pow(t.v.r-center.r,2)+Math.pow(t.v.i-center.i,2);},0);
+      if(denominator<=1e-12)return;
+      terms.forEach(function(t){const j=indices[t.key];next[j].r+=power*(t.v.r-center.r)/denominator;next[j].i+=power*(t.v.i-center.i)/denominator;});
+    });
+    next.forEach(function(v,j){injections[j]=v;});
+  }
+  const real=solved.real,imag=solved.imag,phasors={},internalPhasors={};
+  edges.forEach(function(e){
     const r=-e.g*(real[e.a]-real[e.b]),i=-e.g*(imag[e.a]-imag[e.b]);
-    result[e.id]=Math.hypot(r,i);phasors[e.id]={r:r,i:i};
-  }});
+    if(e.id!==null){result[e.id]=Math.hypot(r,i);phasors[e.id]={r:r,i:i};}
+    else {const key=nodeKey(nodes[e.a])+'|'+nodeKey(nodes[e.b]),value=internalPhasors[key]||(internalPhasors[key]={r:0,i:0});value.r+=r;value.i+=i;}
+  });
   Object.defineProperty(result,'phasors',{value:phasors});
+  Object.defineProperty(result,'internalPhasors',{value:internalPhasors});
   if(electricalReadContext)electricalReadContext.currents=result;
   return result;
 }
@@ -7991,8 +8902,8 @@ let clampDragFrame=0,clampDragPointer=null;
 function updateClampDrag(){
   if(!clampState||!clampState.drag)return;
   if(clampDragPointer){
-    const p=svgPoint(clampDragPointer);clampDragPointer=null;
-    if(isFinite(p.x)&&isFinite(p.y)){clampState.x=p.x-clampState.offX;clampState.y=p.y-clampState.offY;}
+    const evt=clampDragPointer,p=svgPoint(evt);clampDragPointer=null;
+    if(isFinite(p.x)&&isFinite(p.y)){const center=snapAlignmentPoint({x:p.x-clampState.offX+50,y:p.y-clampState.offY},evt);clampState.x=center.x-50;clampState.y=center.y;}
   }
   const body=clampLayer.querySelector('[data-clamp-id="'+clampState.id+'"]');
   if(body)body.setAttribute('transform','translate('+clampState.x+','+clampState.y+')');
@@ -8086,13 +8997,13 @@ clampLayer.addEventListener('pointerdown',function(evt){
 });
 document.addEventListener('pointermove',function(evt){
   if(!clampState||!clampState.drag)return;
-  clampDragPointer={clientX:evt.clientX,clientY:evt.clientY};
+  clampDragPointer={clientX:evt.clientX,clientY:evt.clientY,shiftKey:evt.shiftKey};
   if(!clampDragFrame)clampDragFrame=requestAnimationFrame(function(){clampDragFrame=0;updateClampDrag();});
 },true);
 document.addEventListener('pointerup',function(evt){
   if(!clampState||!clampState.drag)return;
   if(clampDragFrame){cancelAnimationFrame(clampDragFrame);clampDragFrame=0;}
-  clampDragPointer={clientX:evt.clientX,clientY:evt.clientY};updateClampDrag();
+  clampDragPointer={clientX:evt.clientX,clientY:evt.clientY,shiftKey:evt.shiftKey};updateClampDrag();
   clampState.drag=false;
   const hit=clampNearestWire(clampState);
   if(hit){clampState.wireId=hit.id;clampState.fraction=hit.fraction;clampState.x=hit.x;clampState.y=hit.y;}
@@ -8109,6 +9020,8 @@ document.addEventListener('pointercancel',function(){
 setInterval(function(){if(state.clamps.length&&(!clampState||!clampState.drag))renderClamp();},500);
 initWireDefaults();
 initTerminalGuides();
+initAlignmentGuides();
+initConduits();
 initialState();
 resetView();
 renderAll();
@@ -8116,7 +9029,7 @@ renderPresetList();
 initPresetFolder();
 initLogPanel();
 initTrayCategories();
-log('Тренажёр запущен: верстак с двигателем, пустой щит и ввод XT1 — 3×380 В, N и PE.', 'info');
+log('Тренажёр запущен: ДПТ слева, асинхронный двигатель справа, пустой щит и ввод XT1 — 3×380 В, N и PE.', 'info');
 initSchemeWorkspace();
 
 })();
