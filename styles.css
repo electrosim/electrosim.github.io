@@ -11,6 +11,7 @@
   }
   *{box-sizing:border-box}
   html,body{height:100%}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   body{
     margin:0;background:radial-gradient(1200px 800px at 50% -10%,#1b2430,#0c1015 70%);
     color:var(--text);font:14px/1.45 "Segoe UI",Roboto,Arial,sans-serif;
@@ -299,6 +300,8 @@
   }
   .properties-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:17px 18px 13px;border-bottom:1px solid var(--line)}
   .properties-head h2{margin:0;font-size:17px;line-height:1.2;color:#f4f7fa}
+  .properties-head>div{min-width:0}
+  .properties-head h2,.properties-subtitle{overflow-wrap:anywhere}
   .properties-subtitle{margin-top:4px;font-size:11.5px;color:var(--muted)}
   .properties-close{width:32px!important;height:32px;padding:0!important;text-align:center!important;font-size:23px!important;line-height:28px!important;flex:0 0 auto}
   .properties-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;padding:16px 18px}
@@ -458,10 +461,11 @@ button,summary,label.preset-import{touch-action:manipulation;-webkit-tap-highlig
 /* Сдвиг стенда влево с местом для панели проводов. На узких экранах отступ не нужен. */
 @media (min-width: 900px){
   #scene.workbench-view{margin-left:210px;width:calc(100% - 210px);overflow:visible}
+  .touch-ui #scene.workbench-view{margin-left:0;width:100%;overflow:hidden}
 }
 
 /* Приборный корпус справа от монтажного щита. */
-.motor-instrument-panel{position:relative;width:740px;height:704px;padding:42px 34px 32px;border:5px solid #9aa5ad;border-radius:12px;background:linear-gradient(#edf0f2,#dce2e6);box-shadow:inset 0 0 0 5px #f8fafb,0 6px 12px #68798533;font-size:22px}
+.motor-instrument-panel{position:relative;width:740px;min-width:740px;height:704px;padding:42px 34px 32px;border:5px solid #9aa5ad;border-radius:12px;background:linear-gradient(#edf0f2,#dce2e6);box-shadow:inset 0 0 0 5px #f8fafb,0 6px 12px #68798533;font-size:22px;line-height:1.25;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .motor-instrument-heading{margin:0 24px 8px;padding:13px 8px 16px;border-bottom:6px solid #e1bb39;text-align:center;font-size:28px;font-weight:800;letter-spacing:2px;color:#596168}
 .motor-instrument-panel .motor-tag{font-size:19px;color:#626c75;margin:16px 0 28px}
 .motor-instrument-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
@@ -514,3 +518,38 @@ button,summary,label.preset-import{touch-action:manipulation;-webkit-tap-highlig
 .alignment-controls{border-color:#65c7da}
 .touch-ui .wire-defaults:not(.expanded) .alignment-tools{display:none}
 .touch-ui .alignment-tools summary,.touch-ui .alignment-tool-options button{min-height:44px;box-sizing:border-box;font-size:13px}
+
+/* Показания в масштабе экрана телефона, независимо от масштаба всей сцены. */
+.motor-instruments-toggle{display:none;position:absolute;top:74px;left:max(8px,env(safe-area-inset-left));z-index:5;width:112px;min-height:44px;margin:0;font-size:13px;box-shadow:0 6px 18px #0005}
+.touch-ui .motor-instruments-toggle{display:block;top:calc(74px + env(safe-area-inset-top))}
+@media(max-width:900px){.motor-instruments-toggle{display:block}}
+.motor-instruments-toggle[hidden],.touch-ui .wire-defaults.expanded~.motor-instruments-toggle{display:none}
+.motor-instruments-modal{padding:8px;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:max(8px,env(safe-area-inset-bottom))}
+.motor-instruments-dialog{width:min(560px,100%);max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:auto;overscroll-behavior:contain}
+.motor-instruments-dialog .properties-head{position:sticky;top:0;z-index:2;align-items:center;padding:12px;background:#1c2531}
+.motor-instruments-dialog .properties-head h2{font-size:17px}
+.motor-instruments-dialog .properties-close{width:44px!important;height:44px;min-height:44px;line-height:40px!important}
+.motor-instrument-tabs{display:flex;gap:8px;padding:12px 12px 0;flex-wrap:wrap}
+.motor-instrument-tabs button{flex:1;min-width:100px;min-height:44px;margin:0;padding:10px;font-size:14px}
+.motor-instrument-tabs button[aria-pressed="true"]{border-color:#f5a623;background:#354356;color:#ffe0a8}
+.motor-instrument-body{padding:12px}
+.motor-instrument-body .motor-instrument-panel{width:100%;min-width:0;height:auto;min-height:0;padding:14px;border-width:2px;border-radius:10px;box-shadow:inset 0 0 0 2px #f8fafb;font-size:16px;line-height:1.3;touch-action:pan-y}
+.motor-instrument-body .instrument-screw{display:none}
+.motor-instrument-body .motor-instrument-heading{margin:0;padding:4px 0 10px;border-bottom-width:3px;font-size:17px;letter-spacing:1px}
+.motor-instrument-body .motor-tag{margin:12px 0;font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.motor-instrument-body .motor-instrument-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.motor-instrument-body .motor-instrument-meter{height:auto;min-width:0;min-height:100px;padding:10px 8px;border-width:1px}
+.motor-instrument-body .motor-instrument-label{gap:4px;min-height:36px;font-size:12px;line-height:1.25}
+.motor-instrument-body .motor-instrument-label span{font-size:17px;flex:none}
+.motor-instrument-body .motor-instrument-meter b{margin-top:8px;padding:8px 4px;font-size:clamp(15px,4.7vw,22px)}
+.motor-instrument-body .motor-instrument-meter .motor-rpm-value,.motor-instrument-body .motor-instrument-meter .motor-sync-value{font-size:clamp(12px,3.7vw,20px)}
+.motor-instrument-body .motor-instrument-extra{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0 0;font-size:13px}
+.motor-instrument-body .motor-instrument-extra span{display:flex;justify-content:space-between;gap:8px}
+.motor-instrument-body .motor-instrument-load{margin-top:14px;padding:12px 10px 6px;border-width:1px}
+.motor-instrument-body .motor-load-title{margin:0 0 6px;font-size:16px}
+.motor-instrument-body input[type="range"]{display:block;height:44px;min-height:44px;margin:0;touch-action:pan-y}
+.motor-instrument-body .motor-load-value{margin:4px 0;font-size:22px}
+.motor-instrument-body .motor-alert{position:static;margin-top:12px;padding:8px;font-size:12px}
+.touch-ui .conduit-controls{left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));transform:none;width:auto;max-width:none;max-height:calc(100dvh - 80px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:auto;padding:10px}
+.touch-ui .conduit-controls span{flex-basis:100%}
+.touch-ui .conduit-controls button{min-height:44px;flex:1;font-size:13px}

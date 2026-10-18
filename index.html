@@ -81,6 +81,7 @@
       <button type="button" id="conduitTool" class="guide-toggle" aria-pressed="false">▥ Проложить гофру</button>
       <button id="touchCancel" class="touch-cancel" type="button" disabled>Отменить действие</button>
     </div>
+    <button id="motorInstrumentsToggle" class="motor-instruments-toggle" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="motorInstrumentsModal" hidden>Приборы</button>
 <div id="touchLoupe" class="touch-loupe" hidden aria-hidden="true"><div class="touch-loupe-window"><svg id="touchLoupeScene" aria-hidden="true"><use href="#world"></use></svg><span class="touch-loupe-reticle"></span></div><div id="touchLoupeLabel" class="touch-loupe-label"></div></div>
     <div id="touchStatus" class="touch-status" role="status" aria-live="polite"></div>
   </section>
@@ -234,6 +235,17 @@
 <div id="objectMenu" class="ctxmenu object-menu">
   <button data-object-act="properties">Характеристики</button>
   <button data-object-act="remove" class="danger">Удалить объект</button>
+</div>
+
+<div id="motorInstrumentsModal" class="properties-modal motor-instruments-modal" aria-hidden="true">
+  <section class="properties-dialog motor-instruments-dialog" role="dialog" aria-modal="true" aria-labelledby="motorInstrumentsTitle">
+    <div class="properties-head">
+      <h2 id="motorInstrumentsTitle">Приборы двигателей</h2>
+      <button id="motorInstrumentsClose" class="properties-close" type="button" aria-label="Закрыть приборы">×</button>
+    </div>
+    <div id="motorInstrumentTabs" class="motor-instrument-tabs" role="group" aria-label="Выбор двигателя"></div>
+    <div id="motorInstrumentBody" class="motor-instrument-body"></div>
+  </section>
 </div>
 
 <div id="propertiesModal" class="properties-modal" aria-hidden="true">

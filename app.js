@@ -1663,6 +1663,12 @@ const scene       = document.getElementById('scene');
 const railLayer   = document.getElementById('railLayer');
 const guideLayer  = document.getElementById('guideLayer');
 const motorLayer  = document.getElementById('motorLayer');
+const motorInstrumentsToggle=document.getElementById('motorInstrumentsToggle');
+const motorInstrumentsModal=document.getElementById('motorInstrumentsModal');
+const motorInstrumentsClose=document.getElementById('motorInstrumentsClose');
+const motorInstrumentTabs=document.getElementById('motorInstrumentTabs');
+const motorInstrumentBody=document.getElementById('motorInstrumentBody');
+let motorInstrumentReaderId=null;
 const boxLayer    = document.getElementById('boxLayer');
 const relayLayer  = document.getElementById('relayLayer');
 const deviceLayer = document.getElementById('deviceLayer');
@@ -2179,10 +2185,66 @@ function motorInstrumentInner(motor,operating){
     +(dc?'<div class="motor-alert"'+(operating.acSupply?'':' hidden')+'>На зажимы машины подано переменное напряжение.</div>':'')
     +'</div>';
 }
+function closeMotorInstruments(){
+  const wasOpen=motorInstrumentsModal.classList.contains('open');
+  motorInstrumentsModal.classList.remove('open');
+  motorInstrumentsModal.setAttribute('aria-hidden','true');
+  motorInstrumentsToggle.setAttribute('aria-expanded','false');
+  if(wasOpen&&!motorInstrumentsToggle.hidden)motorInstrumentsToggle.focus();
+}
+function renderMotorInstrumentReader(){
+  motorInstrumentsToggle.hidden=!state.motors.length;
+  if(!state.motors.length){closeMotorInstruments();motorInstrumentBody.innerHTML='';motorInstrumentBody.dataset.motorSet='';return;}
+  if(!motorInstrumentsModal.classList.contains('open'))return;
+  const motor=motorById(motorInstrumentReaderId)||state.motors[0];
+  motorInstrumentReaderId=motor.id;
+  const signature=JSON.stringify([motor.id,state.motors.map(function(m){return [m.id,m.kind,m.tag];})]);
+  // Показания обновляются без пересоздания регулятора под пальцем.
+  if(motorInstrumentBody.dataset.motorSet!==signature){
+    motorInstrumentTabs.innerHTML=state.motors.map(function(m){
+      return '<button type="button" data-instrument-motor="'+escapeHtml(m.id)+'" aria-pressed="'+(m.id===motor.id)+'">'+(motorIsDc(m)?'ДПТ':'АД')+' · '+escapeHtml(m.tag||m.id)+'</button>';
+    }).join('');
+    const operating=motorIsDc(motor)?dcMotorOperatingPoint(motor):motorVisualOperating(motor,motorPhaseDirection(motor));
+    motorInstrumentBody.innerHTML=motorInstrumentInner(motor,operating);
+    motorInstrumentBody.dataset.motorSet=signature;
+  }
+  updateMotorReadout();
+}
+function openMotorInstruments(){
+  if(!state.motors.length)return;
+  const tools=document.querySelector('.wire-defaults');
+  if(tools)tools.classList.remove('expanded');
+  document.getElementById('wireToolsToggle').setAttribute('aria-expanded','false');
+  hideWireMenu();hideObjectMenu();
+  motorInstrumentsModal.classList.add('open');
+  motorInstrumentsModal.setAttribute('aria-hidden','false');
+  motorInstrumentsToggle.setAttribute('aria-expanded','true');
+  renderMotorInstrumentReader();motorInstrumentsClose.focus();
+}
+motorInstrumentsToggle.addEventListener('click',openMotorInstruments);
+motorInstrumentsClose.addEventListener('click',closeMotorInstruments);
+motorInstrumentsModal.addEventListener('pointerdown',function(evt){if(evt.target===motorInstrumentsModal)closeMotorInstruments();});
+motorInstrumentTabs.addEventListener('click',function(evt){
+  const button=evt.target.closest('[data-instrument-motor]');
+  if(!button)return;
+  const motor=motorById(button.dataset.instrumentMotor);if(!motor)return;
+  motorInstrumentReaderId=motor.id;renderMotorInstrumentReader();
+  const selected=motorInstrumentTabs.querySelector('[aria-pressed="true"]');if(selected)selected.focus();
+});
+document.addEventListener('keydown',function(evt){
+  if(!motorInstrumentsModal.classList.contains('open'))return;
+  if(evt.key==='Escape'){evt.preventDefault();closeMotorInstruments();return;}
+  if(evt.key!=='Tab')return;
+  const controls=Array.from(motorInstrumentsModal.querySelectorAll('button:not([disabled]),input:not([disabled])'));
+  if(!controls.length)return;
+  const first=controls[0],last=controls[controls.length-1];
+  if(evt.shiftKey&&document.activeElement===first){evt.preventDefault();last.focus();}
+  else if(!evt.shiftKey&&document.activeElement===last){evt.preventDefault();first.focus();}
+});
 function renderMotor(){
   renderWorkbench();
   return withElectricalRead(function(){
-    if(!state.motors.length){motorLayer.innerHTML='';updateMotorSound(0);return;}
+    if(!state.motors.length){motorLayer.innerHTML='';renderMotorInstrumentReader();updateMotorSound(0);return;}
     let s='',soundRpm=0,soundDir=0;
     state.motors.forEach(function(motor){
       const visualDirection = Math.abs(motor.rpmActual||0)>1 ? Math.sign(motor.rpmActual) : 0;
@@ -2205,6 +2267,7 @@ function renderMotor(){
         +motorInstrumentInner(motor,operating)+'</foreignObject>';
     });
     motorLayer.innerHTML = s;
+    renderMotorInstrumentReader();
     updateMotorSound(soundDir,soundRpm);
   });
 }
@@ -2407,10 +2470,10 @@ function mobileTouchLayout(){
     && window.matchMedia('(pointer: coarse) and (hover: none)').matches;
 }
 function touchUI(){
-  if(!mobileTouchLayout())return;
+  const compact=mobileTouchLayout()||window.innerWidth<=900;
   const root=document.documentElement||document.body;
-  root.classList.add('touch-ui');
-  document.body.classList.add('touch-input');
+  root.classList.toggle('touch-ui',compact);
+  document.body.classList.toggle('touch-input',compact);
 }
 
 /* Лупа только для точного сенсорного подключения. SVG use показывает живую
@@ -2678,9 +2741,9 @@ function chooseTouchPlacement(item){
   touchStatus('Коснитесь места установки.');
 }
 function initTouchControls(){
-  // Мобильная компоновка включается только когда основное устройство ввода —
-  // палец. Наличие дополнительного сенсорного экрана у ПК не меняет desktop UI.
-  if(mobileTouchLayout())touchUI();
+  // Крупные кнопки нужны узкому окну и экрану с основным сенсорным вводом.
+  // Дополнительный тачскрин широкого рабочего ПК не меняет desktop UI.
+  touchUI();
   document.addEventListener('pointerdown',onTouchStart,{capture:true,passive:false});
   document.addEventListener('pointermove',onTouchMove,{capture:true,passive:false});
   document.addEventListener('pointerup',onTouchEnd,{capture:true,passive:false});
@@ -3351,30 +3414,30 @@ function updateMotorReadout(){
     if(!state.motors.length){updateMotorSound(0);return;}
     let soundRpm=0,soundDir=0;
     state.motors.forEach(function(motor){
-      const input=motorLayer.querySelector('.motor-load[data-mid="'+motor.id+'"]');
-      const box=input&&input.closest('.motor-load-control');
+      const roots=motorInstrumentsModal.classList.contains('open')?[motorLayer,motorInstrumentBody]:[motorLayer];
+      const inputs=roots.map(function(root){return root.querySelector('.motor-load[data-mid="'+motor.id+'"]');}).filter(Boolean);
+      const boxes=inputs.map(function(input){input.value=String(motor.load||0);return input.closest('.motor-load-control');}).filter(Boolean);
+      const set=function(sel,text){boxes.forEach(function(box){const el=box.querySelector(sel);if(el)el.textContent=text;});};
       const visualDir=Math.abs(motor.rpmActual||0)>1?Math.sign(motor.rpmActual):0;
       if(motorIsDc(motor)){
         const operating=dcMotorOperatingPoint(motor);
         const rpm=Math.round(Math.abs(motor.rpmActual||0));
-        if(box){
+        if(boxes.length){
           const values=dcMotorInstrumentValues(motor,operating);
-          const set=function(sel,text){const el=box.querySelector(sel);if(el)el.textContent=text;};
           set('.motor-load-value',operating.load.toFixed(0)+' %');
           set('.motor-rpm-value',values.rpm);
           set('.motor-armature-voltage',values.armatureVoltage);set('.motor-armature-current',values.armatureCurrent);
           set('.motor-field-voltage',values.fieldVoltage);set('.motor-field-current',values.fieldCurrent);
           set('.motor-emf-value',values.emf);set('.motor-power-value',values.power);
           set('.motor-shaft-torque-value',values.torque);
-          const alert=box.querySelector('.motor-alert');if(alert)alert.hidden=!operating.acSupply;
+          boxes.forEach(function(box){const alert=box.querySelector('.motor-alert');if(alert)alert.hidden=!operating.acSupply;});
         }
         if(rpm>soundRpm){soundRpm=rpm;soundDir=visualDir;}
         return;
       }
       const direction=motorPhaseDirection(motor),operating=motorVisualOperating(motor,direction);
-      if(box){
+      if(boxes.length){
         const values=motorInstrumentValues(motor,operating);
-        const set=function(sel,text){const el=box.querySelector(sel);if(el)el.textContent=text;};
         set('.motor-load-value',operating.load.toFixed(0)+' %');
         set('.motor-rpm-value',operating.rpm+' об/мин');
         set('.motor-current-value',operating.current.toFixed(1)+' А');
@@ -3391,12 +3454,14 @@ motorLayer.addEventListener('pointerdown', function(evt){
   // Показания и корпус пропускают навигацию; регулятор перехватывает только своё управление.
   if (evt.button === 0 && evt.target && evt.target.closest && evt.target.closest('.motor-load')) evt.stopPropagation();
 });
-motorLayer.addEventListener('input', function(evt){
+function changeMotorLoad(evt){
   if (!evt.target || !evt.target.classList.contains('motor-load')) return;
   const motor=motorById(evt.target.dataset.mid);if(!motor)return;
   motor.load = Math.max(0, Math.min(100, Number(evt.target.value) || 0));
   updateMotorReadout();
-});
+}
+motorLayer.addEventListener('input',changeMotorLoad);
+motorInstrumentBody.addEventListener('input',changeMotorLoad);
 
 /* Инерция ротора: разгон примерно 2,7 с, свободный выбег около 3,2 с. */
 let motorInertiaLast=performance.now();
@@ -7537,6 +7602,7 @@ function resetView(){
   view={x:0,y:y,w:w,h:h};applyView();
 }
 if(typeof window.addEventListener==='function')window.addEventListener('resize',function(){
+  touchUI();
   if(state.roomScene==='household'){
     const center=view.y+view.h/2;view.h=view.w*viewAspect();view.y=center-view.h/2;
   }
