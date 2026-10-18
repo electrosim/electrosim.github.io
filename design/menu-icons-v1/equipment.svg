@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="#f5a623" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-  <title>Оборудование</title>
-  <rect x="4" y="7" width="24" height="18" rx="2"/>
-  <path d="M12 7v18M20 7v18M8 3v4M16 3v4M24 3v4M8 25v4M16 25v4M24 25v4"/>
-  <rect x="6.5" y="13" width="3" height="6" rx=".7" fill="#f5a623" stroke="none"/>
-  <rect x="14.5" y="13" width="3" height="6" rx=".7" fill="#f5a623" stroke="none"/>
-  <rect x="22.5" y="13" width="3" height="6" rx=".7" fill="#f5a623" stroke="none"/>
-</svg>
