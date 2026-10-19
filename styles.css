@@ -521,8 +521,6 @@ button,summary,label.preset-import{touch-action:manipulation;-webkit-tap-highlig
 
 /* Показания в масштабе экрана телефона, независимо от масштаба всей сцены. */
 .motor-instruments-toggle{display:none;position:absolute;top:74px;left:max(8px,env(safe-area-inset-left));z-index:5;width:112px;min-height:44px;margin:0;font-size:13px;box-shadow:0 6px 18px #0005}
-.touch-ui .motor-instruments-toggle{display:block;top:calc(74px + env(safe-area-inset-top))}
-@media(max-width:900px){.motor-instruments-toggle{display:block}}
 .motor-instruments-toggle[hidden],.touch-ui .wire-defaults.expanded~.motor-instruments-toggle{display:none}
 .motor-instruments-modal{padding:8px;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:max(8px,env(safe-area-inset-bottom))}
 .motor-instruments-dialog{width:min(560px,100%);max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:auto;overscroll-behavior:contain}
