@@ -98,6 +98,7 @@ globalThis.__t = {
   measureNow:measureNow, specialTrayPreview:specialTrayPreview,
   trayPreviewMarkup:trayPreviewMarkup, hydrateTrayCategory:hydrateTrayCategory,
   trayPreviewCache:trayPreviewCache, combTraySettings:combTraySettings,
+  trayPreviewSvg:trayPreviewSvg, trayPreviewGeometry:trayPreviewGeometry, trayRasterKey:trayRasterKey,
   applyPreset:applyPreset,
   mmLayer:function(){return mmLayer;}
 };
@@ -212,6 +213,8 @@ globalThis.__t = {
   vm.createContext(sandbox);
   const catalog = path.join(dir, 'presets', 'catalog.js');
   if (fs.existsSync(catalog)) vm.runInContext(fs.readFileSync(catalog, 'utf8'), sandbox, { filename:'catalog.js' });
+  const trayCatalog = path.join(dir, 'assets', 'tray-previews', 'catalog.js');
+  if (fs.existsSync(trayCatalog)) vm.runInContext(fs.readFileSync(trayCatalog, 'utf8'), sandbox, { filename:'tray-previews/catalog.js' });
   vm.runInContext(src, sandbox, { filename: 'app.js' });
 
   const state = { fails: 0 };

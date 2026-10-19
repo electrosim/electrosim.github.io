@@ -7881,22 +7881,59 @@ function trayPreviewPlaceholder(type,special){
   const size=trayPreviewGeometry(type,special);
   return '<span class="mini tray-preview-placeholder" aria-hidden="true" style="width:'+(74*size.w/size.h)+'px"></span>';
 }
+function trayPreviewSvg(type,special){
+  const size=trayPreviewGeometry(type,special);
+  return special?specialTrayPreview(special):'<svg class="mini" viewBox="'+[size.x,size.y,size.w,size.h].join(' ')+'" preserveAspectRatio="xMidYMid meet">'+deviceInner(type,type==='comb'?combTraySettings:{})+'</svg>';
+}
+function trayRasterKey(type,special){
+  if(type==='comb')return 'comb:'+combPoles(combTraySettings)+':'+combCount(combTraySettings);
+  if(type)return 'type:'+type;
+  if(special==='panel'&&state.special.inbox)return 'special:panel:empty';
+  if(special==='panel'||special==='inbox')return 'special:'+special+':'+(inboxSinglePhase()?'single':'three')+':'+networkLineVoltageRms()+':'+networkFrequencyHz();
+  return 'special:'+special;
+}
+function trayRasterAsset(type,special){
+  const catalog=window.ELECTROSIM_TRAY_PREVIEWS;
+  return catalog&&catalog[trayRasterKey(type,special)];
+}
 function trayPreviewMarkup(type,special){
   const settings=type==='comb'?combTraySettings:
     special==='panel'||special==='inbox'?[state.special.inbox,inboxSinglePhase(),state.specialProps.inbox]:null;
   const key=JSON.stringify([type,special,settings]);
   if(trayPreviewCache.has(key))return trayPreviewCache.get(key);
   const size=trayPreviewGeometry(type,special);
-  let svg=special?specialTrayPreview(special):'<svg class="mini" viewBox="'+[size.x,size.y,size.w,size.h].join(' ')+'" preserveAspectRatio="xMidYMid meet">'+deviceInner(type,type==='comb'?combTraySettings:{})+'</svg>';
-  let markup=svg;
-  // Щит и ввод содержат локальный PNG: оставляем их встроенными, чтобы знак
-  // опасности работал и без сети. Остальные миниатюры браузер кэширует как картинки.
-  if(special!=='panel'&&special!=='inbox'){
-    svg=svg.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="14" ');
-    markup='<img class="mini" width="'+(74*size.w/size.h)+'" height="74" alt="" draggable="false" decoding="async" src="data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)+'">';
+  const raster=trayRasterAsset(type,special);
+  let markup;
+  if(raster){
+    // В лотке используются готовые изображения: iPhone не разбирает и не
+    // растеризует сложный SVG при каждом появлении миниатюры на экране.
+    markup='<img class="mini tray-raster" width="'+(74*size.w/size.h)+'" height="74" alt="" draggable="false" loading="eager" decoding="async" src="'+raster.src+'">';
+  }else{
+    // Нестандартные параметры ввода сохраняют точный рисунок без сети.
+    let svg=trayPreviewSvg(type,special);markup=svg;
+    if(special!=='panel'&&special!=='inbox'){
+      svg=svg.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="14" ');
+      markup='<img class="mini" width="'+(74*size.w/size.h)+'" height="74" alt="" draggable="false" decoding="async" src="data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)+'">';
+    }
   }
   if(trayPreviewCache.size>=64)trayPreviewCache.delete(trayPreviewCache.keys().next().value);
   trayPreviewCache.set(key,markup);return markup;
+}
+const trayWarmImages=[],trayWarmSources=new Set();let trayWarmQueued=false;
+function warmTrayPreviews(){
+  if(trayWarmQueued||typeof window.Image!=='function')return;
+  trayWarmQueued=true;
+  setTimeout(function(){
+    trayWarmQueued=false;
+    const items=document.getElementById('tray').querySelectorAll('.tray-category[open] .tray-item');
+    Array.from(items).slice(0,6).forEach(function(item){
+      const asset=trayRasterAsset(item.dataset.type||null,item.dataset.special||null);
+      if(!asset||trayWarmSources.has(asset.src))return;
+      trayWarmSources.add(asset.src);
+      const image=new window.Image();image.decoding='async';image.src=asset.src;
+      trayWarmImages.push(image);if(trayWarmImages.length>6)trayWarmImages.shift();
+    });
+  },0);
 }
 function trayIsOpen(){
   const box=document.getElementById('tray'),menu=box.closest&&box.closest('.side-menu-item');
@@ -7983,6 +8020,7 @@ function renderTray(){
   if(!visible)box.innerHTML='<div class="tray-empty" role="status">Детали не найдены. Попробуйте другое название.</div>';
   trayRenderKey=key;
   if(trayIsOpen())hydrateTrayPreviews();
+  else warmTrayPreviews();
 }
 function initTrayCategories(){
   const box=document.getElementById('tray');

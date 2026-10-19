@@ -18,7 +18,8 @@ verify('ссылки index.html и идентификаторы элементо
   const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1]);
   if(new Set(ids).size!==ids.length)throw new Error('повторяющиеся id');
   for(const match of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="([^"]+)"/g)){
-    if(!fs.existsSync(path.join(root,match[1])))throw new Error('отсутствует '+match[1]);
+    const file=match[1].split(/[?#]/)[0];
+    if(!fs.existsSync(path.join(root,file)))throw new Error('отсутствует '+match[1]);
   }
   for(const match of app.matchAll(/document\.getElementById\(['"]([^'"]+)['"]\)/g)){
     if(!ids.includes(match[1]))throw new Error('нет элемента '+match[1]);
