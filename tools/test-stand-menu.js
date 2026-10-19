@@ -24,7 +24,8 @@ for(const [button,key,file,motors,devices,wires] of options){
   if(key==='motor-empty'){
     assert.equal(s.motors.filter(m=>m.kind==='dc').length,1);
     assert.equal(s.motors.filter(m=>m.kind==='ac').length,1);
-    assert.equal((e.els.motorLayer.innerHTML.match(/class="motor-instrument"/g)||[]).length,2);
+    assert.equal([...e.els.motorLayer.innerHTML.matchAll(/<g\b[^>]*class="([^"]*)"/g)]
+      .filter(m=>m[1].split(/\s+/).includes('motor-instrument')).length,2);
   }
   if(key==='free-mounting'){
     assert.equal(s.workbench,null);assert.equal(s.special.inbox,false);assert.equal(s.special.multimeter,false);

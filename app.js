@@ -2185,6 +2185,66 @@ function motorInstrumentInner(motor,operating){
     +(dc?'<div class="motor-alert"'+(operating.acSupply?'':' hidden')+'>На зажимы машины подано переменное напряжение.</div>':'')
     +'</div>';
 }
+/* Настоящий SVG сохраняет единый масштаб корпуса, текста и двигателя и в
+   WebKit. HTML используется только в отдельном окне показаний вне сцены. */
+function motorInstrumentSvg(motor,operating,position){
+  const dc=motorIsDc(motor),values=dc?dcMotorInstrumentValues(motor,operating):motorInstrumentValues(motor,operating);
+  const color=dc?'#275e3d':'#264b63',screen=dc?'#e0ebe3':'#e1e8ec';
+  const load=Math.max(0,Math.min(100,Number(operating.load)||0)),thumbX=58+624*load/100;
+  const meters=dc?[
+    [['Напряжение якоря'],'Uя','motor-armature-voltage',values.armatureVoltage],
+    [['Скорость якоря'],'n','motor-rpm-value',values.rpm],
+    [['Ток якоря'],'Iя','motor-armature-current',values.armatureCurrent],
+    [['Напряжение','возбуждения'],'Uв','motor-field-voltage',values.fieldVoltage],
+    [['Ток возбуждения'],'Iв','motor-field-current',values.fieldCurrent],
+    [['Момент на валу'],'M','motor-shaft-torque-value',values.torque]
+  ]:[
+    [['Частота питания'],'f','motor-frequency-value',operating.frequencyHz.toFixed(1)+' Гц'],
+    [['Скорость ротора'],'n','motor-rpm-value',operating.rpm+' об/мин'],
+    [['Ток двигателя'],'I','motor-current-value',operating.current.toFixed(1)+' А'],
+    [['Синхронная','скорость'],'n₀','motor-sync-value',values.sync],
+    [['Скольжение'],'s','motor-slip-value',values.slip],
+    [['Момент на валу'],'M','motor-shaft-torque-value',values.torque]
+  ];
+  function text(x,y,value,cls,extra){
+    return '<text x="'+x+'" y="'+y+'"'+(cls?' class="'+cls+'"':'')+(extra?' '+extra:'')+'>'+escapeHtml(value)+'</text>';
+  }
+  let s='<g class="motor-instrument motor-load-control motor-instrument-panel motor-instrument-svg'+(dc?' dc-motor-instrument':'')+'" data-motor="'+escapeHtml(motor.id)+'" transform="translate('+position.x+','+position.y+')" font-family="Segoe UI,Arial,sans-serif">'
+    +'<rect class="instrument-svg-frame" x="0" y="0" width="740" height="704" rx="12" fill="#dce2e6" stroke="#9aa5ad" stroke-width="5"/>'
+    +'<rect x="7" y="7" width="726" height="690" rx="8" fill="#edf0f2" stroke="#f8fafb" stroke-width="5"/>';
+  [[22,22],[718,22],[22,682],[718,682]].forEach(function(p){
+    s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="7.5" fill="#c6cdd2" stroke="#98a3ac" stroke-width="2"/><path d="M '+(p[0]-4)+' '+(p[1]+3)+' l 8 -6" stroke="#7a8790" stroke-width="1.5"/>';
+  });
+  s+=text(370,72,'СТЕНД ИСПЫТАНИЙ','instrument-svg-heading','text-anchor="middle" font-size="28" font-weight="800" letter-spacing="2" fill="#596168"')
+    +'<path d="M 58 97 H 682" stroke="'+(dc?'#73a989':'#e1bb39')+'" stroke-width="6"/>'
+    +text(370,137,(dc?'ДВИГАТЕЛЬ ПОСТОЯННОГО ТОКА':'АСИНХРОННЫЙ ДВИГАТЕЛЬ')+' · '+(motor.tag||motor.id),'instrument-svg-tag','text-anchor="middle" font-size="19" font-weight="800" fill="'+(dc?'#356348':'#626c75')+'"');
+  meters.forEach(function(m,index){
+    const x=34+(index%3)*229.333,y=170+Math.floor(index/3)*156;
+    s+='<g class="instrument-svg-meter"><rect x="'+x+'" y="'+y+'" width="213.333" height="140" rx="6" fill="#f6f8f9" stroke="#a7b0b7" stroke-width="2"/>';
+    m[0].forEach(function(label,i){s+=text(x+12,y+29+i*20,label,'instrument-svg-label','font-size="16" fill="#616d77"');});
+    s+=text(x+201,y+39,m[1],'instrument-svg-symbol','text-anchor="end" font-size="23" font-style="italic" fill="#89959d"')
+      +'<rect x="'+(x+12)+'" y="'+(y+72)+'" width="189.333" height="46" rx="3" fill="'+screen+'" stroke="#c3cdd4"/>'
+      +text(x+196,y+103,m[3],m[2]+' instrument-svg-value','text-anchor="end" font-size="24" font-weight="700" font-family="Consolas,monospace" fill="'+color+'"')+'</g>';
+  });
+  if(dc){
+    s+=text(36,500,'ЭДС якоря','instrument-svg-extra','font-size="17" fill="#616d77"')
+      +text(155,500,values.emf,'motor-emf-value','font-size="17" font-weight="700" fill="'+color+'"')
+      +text(380,500,'Мощность на валу','instrument-svg-extra','font-size="17" fill="#616d77"')
+      +text(682,500,values.power,'motor-power-value','text-anchor="end" font-size="17" font-weight="700" fill="'+color+'"');
+  }
+  const loadTop=dc?520:496;
+  s+='<rect x="34" y="'+loadTop+'" width="672" height="'+(674-loadTop)+'" rx="6" fill="#e9edf0" stroke="#b5bdc4" stroke-width="2"/>'
+    +text(370,loadTop+36,'Нагрузка на валу','motor-load-title','text-anchor="middle" font-size="23" font-weight="800" fill="#596168"')
+    +'<g class="motor-load motor-load-slider" data-mid="'+escapeHtml(motor.id)+'" data-load-x="'+(position.x+58)+'" data-load-width="624" tabindex="0" role="slider" aria-label="Нагрузка на валу '+escapeHtml(motor.tag||motor.id)+'" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+load+'" aria-valuetext="'+load.toFixed(0)+' %" aria-orientation="horizontal">'
+    +'<rect class="motor-load-hit" x="46" y="566" width="648" height="48" rx="8" fill="transparent" stroke="none"/>'
+    +'<path class="motor-load-track" d="M 58 590 H 682" fill="none" stroke="#b5c0c7" stroke-width="8" stroke-linecap="round" pointer-events="none"/>'
+    +'<line class="motor-load-progress" x1="58" y1="590" x2="'+thumbX+'" y2="590" stroke="'+(dc?'#4c8863':'#657f91')+'" stroke-width="8" stroke-linecap="round" pointer-events="none"/>'
+    +'<circle class="motor-load-thumb" cx="'+thumbX+'" cy="590" r="13" fill="#fff" stroke="#9aa8b1" stroke-width="2" pointer-events="none"/></g>'
+    +text(370,648,load.toFixed(0)+' %','motor-load-value','text-anchor="middle" font-size="26" font-weight="700" font-family="Consolas,monospace" fill="'+color+'"');
+  if(dc)s+='<g class="motor-alert"'+(operating.acSupply?'':' display="none"')+'><rect x="38" y="651" width="664" height="26" rx="5" fill="#ffe9c9"/>'+text(370,670,'На зажимы машины подано переменное напряжение.','','text-anchor="middle" font-size="15" fill="#8a4b0c"')+'</g>';
+  return s+'</g>';
+}
+let motorLoadDrag=null,motorLoadRenderPending=false;
 function closeMotorInstruments(){
   const wasOpen=motorInstrumentsModal.classList.contains('open');
   motorInstrumentsModal.classList.remove('open');
@@ -2242,6 +2302,10 @@ document.addEventListener('keydown',function(evt){
   else if(!evt.shiftKey&&document.activeElement===last){evt.preventDefault();first.focus();}
 });
 function renderMotor(){
+  // Пересоздание SVG во время захвата указателя оборвало бы перетаскивание.
+  if(motorLoadDrag){motorLoadRenderPending=true;updateMotorReadout();return;}
+  const focusedControl=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.motor-load-slider');
+  const focusedMotorId=focusedControl&&focusedControl.dataset.mid;
   renderWorkbench();
   return withElectricalRead(function(){
     if(!state.motors.length){motorLayer.innerHTML='';renderMotorInstrumentReader();updateMotorSound(0);return;}
@@ -2254,8 +2318,7 @@ function renderMotor(){
         if(rpm>soundRpm){soundRpm=rpm;soundDir=visualDirection;}
         s += '<g class="motor-draggable" data-dev="'+motor.id+'" transform="translate('+motor.x+','+motor.y+') scale('+motor.scale+')" style="cursor:grab;touch-action:none">' + dcMotorInner(visualDirection, operating, motor) + '</g>';
         const position=motorInstrumentPosition(motor);
-        s += '<foreignObject class="motor-instrument" data-motor="'+motor.id+'" x="'+position.x+'" y="'+position.y+'" width="740" height="710">'
-          +motorInstrumentInner(motor,operating)+'</foreignObject>';
+        s += motorInstrumentSvg(motor,operating,position);
         return;
       }
       const electricalDirection = motorPhaseDirection(motor);
@@ -2263,10 +2326,10 @@ function renderMotor(){
       if(operating.rpm>soundRpm){soundRpm=operating.rpm;soundDir=visualDirection;}
       s += '<g class="motor-draggable" data-dev="'+motor.id+'" transform="translate('+motor.x+','+motor.y+') scale('+motor.scale+')" style="cursor:grab;touch-action:none">' + motorInner(visualDirection, operating, motor) + '</g>';
       const position=motorInstrumentPosition(motor);
-      s += '<foreignObject class="motor-instrument" data-motor="'+motor.id+'" x="'+position.x+'" y="'+position.y+'" width="740" height="710">'
-        +motorInstrumentInner(motor,operating)+'</foreignObject>';
+      s += motorInstrumentSvg(motor,operating,position);
     });
     motorLayer.innerHTML = s;
+    if(focusedMotorId){const control=motorLayer.querySelector('.motor-load-slider[data-mid="'+focusedMotorId+'"]');if(control&&typeof control.focus==='function')control.focus({preventScroll:true});}
     renderMotorInstrumentReader();
     updateMotorSound(soundDir,soundRpm);
   });
@@ -2653,7 +2716,7 @@ function onTouchStart(evt){
   // Текст карточки прокручивает лоток; за превью деталь можно перетащить.
   if(tray&&!target.closest('.mini'))return;
   if(!tray&&!target.closest('#scene'))return;
-  if(target.closest('input,select,textarea,button'))return;
+  if(target.closest('input,select,textarea,button,.motor-load-slider'))return;
   touchUI();stopTouchEvent(evt);
   const s={id:evt.pointerId,target:target,tray:!!tray,sx:evt.clientX,sy:evt.clientY,
     clientX:evt.clientX,clientY:evt.clientY,mode:'waiting',timer:null};
@@ -3416,7 +3479,16 @@ function updateMotorReadout(){
     state.motors.forEach(function(motor){
       const roots=motorInstrumentsModal.classList.contains('open')?[motorLayer,motorInstrumentBody]:[motorLayer];
       const inputs=roots.map(function(root){return root.querySelector('.motor-load[data-mid="'+motor.id+'"]');}).filter(Boolean);
-      const boxes=inputs.map(function(input){input.value=String(motor.load||0);return input.closest('.motor-load-control');}).filter(Boolean);
+      const boxes=inputs.map(function(input){
+        const load=Math.max(0,Math.min(100,Number(motor.load)||0));
+        input.value=String(load);
+        if(input.classList.contains('motor-load-slider')){
+          input.setAttribute('aria-valuenow',String(load));input.setAttribute('aria-valuetext',load.toFixed(0)+' %');
+          const x=58+624*load/100,thumb=input.querySelector('.motor-load-thumb'),progress=input.querySelector('.motor-load-progress');
+          if(thumb)thumb.setAttribute('cx',String(x));if(progress)progress.setAttribute('x2',String(x));
+        }
+        return input.closest('.motor-load-control');
+      }).filter(Boolean);
       const set=function(sel,text){boxes.forEach(function(box){const el=box.querySelector(sel);if(el)el.textContent=text;});};
       const visualDir=Math.abs(motor.rpmActual||0)>1?Math.sign(motor.rpmActual):0;
       if(motorIsDc(motor)){
@@ -3430,7 +3502,7 @@ function updateMotorReadout(){
           set('.motor-field-voltage',values.fieldVoltage);set('.motor-field-current',values.fieldCurrent);
           set('.motor-emf-value',values.emf);set('.motor-power-value',values.power);
           set('.motor-shaft-torque-value',values.torque);
-          boxes.forEach(function(box){const alert=box.querySelector('.motor-alert');if(alert)alert.hidden=!operating.acSupply;});
+          boxes.forEach(function(box){const alert=box.querySelector('.motor-alert');if(alert){alert.hidden=!operating.acSupply;alert.setAttribute('display',operating.acSupply?'inline':'none');}});
         }
         if(rpm>soundRpm){soundRpm=rpm;soundDir=visualDir;}
         return;
@@ -3452,7 +3524,51 @@ function updateMotorReadout(){
 }
 motorLayer.addEventListener('pointerdown', function(evt){
   // Показания и корпус пропускают навигацию; регулятор перехватывает только своё управление.
-  if (evt.button === 0 && evt.target && evt.target.closest && evt.target.closest('.motor-load')) evt.stopPropagation();
+  if (evt.button !== 0 || !evt.target || !evt.target.closest) return;
+  const control=evt.target.closest('.motor-load');if(!control)return;
+  evt.stopPropagation();
+  if(!control.classList.contains('motor-load-slider'))return;
+  evt.preventDefault();
+  if(motorLoadDrag)return;
+  const motor=motorById(control.dataset.mid);if(!motor)return;
+  motorLoadDrag={pointerId:evt.pointerId,control:control,motorId:motor.id};
+  if(typeof control.focus==='function')control.focus({preventScroll:true});
+  if(typeof control.setPointerCapture==='function')try{control.setPointerCapture(evt.pointerId);}catch(e){}
+  updateMotorLoadPointer(evt);
+});
+function updateMotorLoadPointer(evt){
+  if(!motorLoadDrag||evt.pointerId!==motorLoadDrag.pointerId)return;
+  const control=motorLoadDrag.control,motor=motorById(motorLoadDrag.motorId);if(!motor)return;
+  const start=Number(control.dataset.loadX),width=Number(control.dataset.loadWidth);
+  if(!isFinite(start)||!(width>0))return;
+  motor.load=Math.max(0,Math.min(100,Math.round((svgPoint(evt).x-start)/width*100)));
+  updateMotorReadout();
+}
+document.addEventListener('pointermove',function(evt){
+  if(!motorLoadDrag||evt.pointerId!==motorLoadDrag.pointerId)return;
+  evt.preventDefault();updateMotorLoadPointer(evt);
+},{passive:false});
+function finishMotorLoadDrag(evt){
+  if(!motorLoadDrag||(evt&&evt.pointerId!==undefined&&evt.pointerId!==motorLoadDrag.pointerId))return;
+  if(evt&&evt.type==='pointerup')updateMotorLoadPointer(evt);
+  const drag=motorLoadDrag;motorLoadDrag=null;
+  if(typeof drag.control.releasePointerCapture==='function')try{drag.control.releasePointerCapture(drag.pointerId);}catch(e){}
+  if(motorLoadRenderPending){motorLoadRenderPending=false;renderMotor();}
+  queueActionHistory();
+}
+document.addEventListener('pointerup',finishMotorLoadDrag);
+document.addEventListener('pointercancel',finishMotorLoadDrag);
+motorLayer.addEventListener('lostpointercapture',finishMotorLoadDrag);
+if(typeof window.addEventListener==='function')window.addEventListener('blur',function(){finishMotorLoadDrag();});
+motorLayer.addEventListener('keydown',function(evt){
+  const control=evt.target.closest&&evt.target.closest('.motor-load-slider');
+  if(!control||evt.altKey||evt.ctrlKey||evt.metaKey)return;
+  const motor=motorById(control.dataset.mid);if(!motor)return;
+  const load=Number(motor.load)||0;
+  const next={ArrowLeft:load-1,ArrowDown:load-1,ArrowRight:load+1,ArrowUp:load+1,PageDown:load-10,PageUp:load+10,Home:0,End:100};
+  if(!Object.prototype.hasOwnProperty.call(next,evt.key))return;
+  evt.preventDefault();evt.stopPropagation();beginActionHistory();
+  motor.load=Math.max(0,Math.min(100,next[evt.key]));updateMotorReadout();queueActionHistory();
 });
 function changeMotorLoad(evt){
   if (!evt.target || !evt.target.classList.contains('motor-load')) return;

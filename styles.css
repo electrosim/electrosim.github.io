@@ -553,3 +553,9 @@ button,summary,label.preset-import{touch-action:manipulation;-webkit-tap-highlig
 .touch-ui .conduit-controls{left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));transform:none;width:auto;max-width:none;max-height:calc(100dvh - 80px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:auto;padding:10px}
 .touch-ui .conduit-controls span{flex-basis:100%}
 .touch-ui .conduit-controls button{min-height:44px;flex:1;font-size:13px}
+
+/* SVG-приборы масштабируются вместе со стендом, включая WebKit на iPhone. */
+.motor-load-slider{cursor:ew-resize;touch-action:none;outline:none}
+.motor-load-slider .motor-load-hit{stroke:transparent;stroke-width:3}
+.motor-load-slider:hover .motor-load-thumb{stroke:#315f7f;stroke-width:3}
+.motor-load-slider:focus-visible .motor-load-hit{stroke:#c88717}

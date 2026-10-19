@@ -6,7 +6,8 @@ const panel=s.panels[0];
 assert(t.motorInstrumentPosition(dc).x+740<panel.x);
 assert(t.motorInstrumentPosition(ac).x>panel.x+t.PANEL.width);
 assert.equal(t.motorInstrumentPosition(dc).y,t.motorInstrumentPosition(ac).y);
-assert.equal((e.els.motorLayer.innerHTML.match(/class="motor-instrument"/g)||[]).length,2);
+assert.equal([...e.els.motorLayer.innerHTML.matchAll(/<g\b[^>]*class="([^"]*)"/g)]
+  .filter(m=>m[1].split(/\s+/).includes('motor-instrument')).length,2);
 const dcHtml=t.motorInstrumentInner(dc,t.dcMotorOperatingPoint(dc));
 for(const label of ['Напряжение якоря','Ток якоря','Напряжение возбуждения','Ток возбуждения','Скорость якоря','Момент на валу','ЭДС якоря','Мощность на валу'])assert(dcHtml.includes(label),label);
 for(const label of ['Скольжение','Синхронная скорость','Частота питания'])assert(!dcHtml.includes(label),label);
