@@ -164,6 +164,8 @@
   .tray-item:active{cursor:grabbing}
   .tray-special{cursor:pointer}
   .tray-item .mini{height:74px;width:auto;flex:0 0 auto;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45))}
+  .tray-item img.mini{object-fit:contain}
+  .tray-preview-placeholder{display:block}
   .tray-meta{display:flex;flex-direction:column;min-width:0}
   .tray-meta b{font-size:12.5px;font-weight:600}
   .tray-meta span{font-size:11px;color:var(--muted)}
@@ -221,6 +223,7 @@
   .wireG:hover{filter:brightness(1.15)}
   .wireG.grabbing{cursor:grabbing}
   .wireG.grabbing{filter:brightness(1.15)}
+  .wire-pending-end{cursor:grab;touch-action:none}
   /* точка-захват видна только когда курсор на проводе или провод тянут */
   .wire-dot{opacity:0;transition:opacity .14s}
   .wireG:hover .wire-dot,.wireG.grabbing .wire-dot{opacity:.95}

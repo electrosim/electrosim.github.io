@@ -19,7 +19,7 @@ function begin(){t.cancelWire();s.wires=[];doc.elementFromPoint=()=>null;e.point
 function geometry(svg,preview){
  const body=preview?svg.slice(svg.indexOf('class="wire-preview"')):svg;
  const d=preview?body.match(/<path d="([^"]+)"/)[1]:body.match(/<path class="wire" d="([^"]+)"/)[1];
- const sleeves=[...body.matchAll(/class="wire-ferrule"[^>]*transform="([^"]+)"/g)].map(m=>m[1]);
+ const sleeves=[...body.matchAll(/class="wire-ferrule(?: [^"]+)?"[^>]*transform="([^"]+)"/g)].map(m=>m[1]);
  return {d,sleeves};
 }
 let count=0;
@@ -35,9 +35,11 @@ for(const ref of cases)for(const shape of ['smooth','straight','orthogonal','arc
 }
 begin();doc.elementFromPoint=()=>source;e.pointer(doc,'pointermove',{pointerType:'mouse',clientX:60,clientY:450});assert.equal(t.touchPending().target,null,'своя клемма не является целью');
 const target=hit({devId:1,key:'k0'}),p=t.terminal(1,'k0');doc.elementFromPoint=()=>target;e.pointer(doc,'pointermove',{pointerType:'mouse',clientX:p.x,clientY:p.y});assert(t.touchPending().target);
-doc.elementFromPoint=()=>e.els.scene;e.pointer(doc,'pointermove',{pointerType:'mouse',clientX:1000,clientY:1000});assert.equal(t.touchPending().target,null,'выход с клеммы сбрасывает цель');assert.equal(geometry(e.els.wireLayer.innerHTML,true).sleeves.length,1,'у свободного конца нет наконечника');
+doc.elementFromPoint=()=>e.els.scene;e.pointer(doc,'pointermove',{pointerType:'mouse',clientX:1000,clientY:1000});assert.equal(t.touchPending().target,null,'выход с клеммы сбрасывает цель');assert.equal(geometry(e.els.wireLayer.innerHTML,true).sleeves.length,2,'у свободного конца есть второй наконечник');
 // Сенсорная область захвата совпадает с областью, используемой при отпускании.
 e.els.termLayer.querySelectorAll=()=>[target];doc.elementFromPoint=()=>e.els.scene;
-e.pointer(doc,'pointermove',{pointerType:'touch',clientX:p.x+15,clientY:p.y});assert(t.touchPending().target);
+const free=e.makeEl('circle');free.classList.add('wire-pending-end');free.parentNode=e.els.wireLayer;
+const freePoint=t.touchPending().pt;e.pointer(free,'pointerdown',{pointerType:'touch',clientX:freePoint.x,clientY:freePoint.y});
+e.pointer(doc,'pointermove',{pointerType:'touch',clientX:p.x+15,clientY:p.y});e.runFrames();assert(t.touchPending().target);
 const preview=geometry(e.els.wireLayer.innerHTML,true);e.pointer(doc,'pointerup',{pointerType:'touch',clientX:p.x+15,clientY:p.y});assert.deepEqual(geometry(e.els.wireLayer.innerHTML,false),preview);
 console.log('Призрак: '+count+' подключений, все типы аппаратов, пять форм, оба наконечника, крайние сечения; мышь, выход с клеммы и сенсорный захват — совпадает с готовым проводом.');

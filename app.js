@@ -2549,7 +2549,7 @@ function updateTouchLoupe(session,point){
     hideTouchLoupe();return;
   }
   const probe=session.target.closest('.mm-probe');
-  if(!probe&&!pending){hideTouchLoupe();return;}
+  if(!probe&&(!pending||!session.target.closest('.term,.wire-pending-end'))){hideTouchLoupe();return;}
   const el=document.getElementById('touchLoupe'),svg=document.getElementById('touchLoupeScene');
   if(!el||!svg)return;
   const key=probe&&probe.getAttribute('data-probe');
@@ -2637,10 +2637,13 @@ function startTouchAction(session,point){
   clearTimeout(session.timer);session.timer=null;
   const actual=document.elementFromPoint(session.sx,session.sy);
   if(session.target.closest('.term'))session.target=nearestTouchTerminal({clientX:session.sx,clientY:session.sy})||session.target;
-  else if(actual&&actual.closest&&(actual.closest('#scene')||actual.closest('.tray-item')))session.target=actual;
+  else if(!session.target.closest('.wire-pending-end')&&actual&&actual.closest&&(actual.closest('#scene')||actual.closest('.tray-item')))session.target=actual;
   touchLayoutSnapshot(session);
   session.mode='action';
-  replayTouch('pointerdown',session,{clientX:session.sx,clientY:session.sy},session.target);
+  const term=session.target.closest('.term');
+  const continueWire=pending&&term&&sameTerm(pending.from,toDevId(term.dataset.dev),term.dataset.key)
+    &&Math.hypot(point.clientX-session.sx,point.clientY-session.sy)>8;
+  if(!continueWire)replayTouch('pointerdown',session,{clientX:session.sx,clientY:session.sy},session.target);
   if(session.tray)sideMenuItems.forEach(function(item){item.open=false;});
   updateTouchLoupe(session,point);
 }
@@ -2720,7 +2723,7 @@ function onTouchStart(evt){
   touchUI();stopTouchEvent(evt);
   const s={id:evt.pointerId,target:target,tray:!!tray,sx:evt.clientX,sy:evt.clientY,
     clientX:evt.clientX,clientY:evt.clientY,mode:'waiting',timer:null};
-  if(!tray&&!alignmentDraft&&!target.closest('.mm-probe,.hdl,[data-rcd-test],[data-pb],[data-zone],[data-vfd-control],[data-tp-control],[data-timer-control],.mm-mode,[data-switch-key],[data-two-way-switch],[data-appliance-toggle],[data-alignment-guide]')){
+  if(!tray&&!alignmentDraft&&!target.closest('.mm-probe,.hdl,[data-rcd-test],[data-pb],[data-zone],[data-vfd-control],[data-tp-control],[data-timer-control],.mm-mode,[data-switch-key],[data-two-way-switch],[data-appliance-toggle],[data-alignment-guide],.wire-pending-end')){
     const term=nearestTouchTerminal(evt);if(term)s.target=term;
   }
   touchPointers.set(s.id,s);
@@ -2751,8 +2754,11 @@ function onTouchMove(evt){
     clearTimeout(s.timer);
     const object=touchObjectTarget(s.target);
     const background=!object||(object.key==='panel'&&panelIsFixed(panelById(object.id)));
-    if(!s.tray&&!pending&&!s.target.closest('.term')&&background&&!conduitDraft&&!alignmentDraft&&!s.target.closest('[data-wid],[data-conduit-id],[data-alignment-guide]')){startTouchView(false,s);queueTouchView();return;}
-    if((pending||conduitDraft||alignmentDraft)&&!s.target.closest('.term'))s.mode='route';
+    // При выбранной клемме фон перемещает поле. Провод тянут только за его
+    // свободный наконечник или непосредственно из начальной клеммы.
+    if(!s.tray&&!s.target.closest('.term,.wire-pending-end')&&!conduitDraft&&!alignmentDraft
+      &&(pending||background&&!s.target.closest('[data-wid],[data-conduit-id],[data-alignment-guide]'))){startTouchView(false,s);queueTouchView();return;}
+    if((pending||conduitDraft||alignmentDraft)&&!s.target.closest('.term,.wire-pending-end'))s.mode='route';
     else startTouchAction(s,evt);
   }
   if(s.mode==='action'||s.mode==='route'){
@@ -2794,7 +2800,7 @@ function onTouchEnd(evt){
     startTouchView(touchPointers.size>=2,Array.from(touchPointers.values())[0],true);
   }
   if(!touchPointers.size)touchGesture=null;
-  touchStatus(touchPlacement?'Коснитесь места установки.':(pending?'Коснитесь клеммы или добавьте точку маршрута.':''));
+  touchStatus(touchPlacement?'Коснитесь места установки.':(pending?'Выберите вторую клемму. Поле можно перемещать, конец провода — тянуть за наконечник.':''));
 }
 function chooseTouchPlacement(item){
   if(item.dataset.special==='conduit'){startConduit();return;}
@@ -5787,6 +5793,31 @@ function wireFerruleSvg(t,wr,d,atEnd){
     +'<path d="M '+(offset+10)+','+(-half+1)+' v '+(half*2-2)+'" stroke="#d2a610" stroke-width=".8"/>'
     +'</g>';
 }
+/* Свободный НШВИ: остриё металлической втулки находится у указателя,
+   манжета и провод продолжаются назад по касательной трассы. */
+function wireFreeFerruleSvg(wr,d,tip){
+  const coords=(d.match(/-?\d*\.?\d+(?:e[+-]?\d+)?/gi)||[]).map(Number),last=coords.length-2;
+  if(last<2)return '';
+  const x=tip.x,y=tip.y,dx=coords[last]-x,dy=coords[last+1]-y;
+  if(Math.hypot(dx,dy)<=.01)return '';
+  const angle=Math.atan2(dy,dx)*180/Math.PI,width=wireVisualWidth(wr),half=(width+4.5)/2,pin=12,pinHalf=(width+2.5)/2;
+  return '<g class="wire-ferrule" pointer-events="none" transform="translate('+x+' '+y+') rotate('+angle+')">'
+    +'<g class="wire-free-ferrule"><rect class="wire-ferrule-pin" x="0" y="'+(-pinHalf)+'" width="'+pin+'" height="'+(pinHalf*2)+'" rx=".8" fill="#c2c8cb" stroke="#7c878e" stroke-width=".7"/>'
+    +'<path d="M 2,'+(-pinHalf+1)+' H 11" stroke="#f5f8fa" stroke-width="1"/>'
+    +'<rect x="'+pin+'" y="'+(-half)+'" width="'+WIRE_FERRULE_LENGTH+'" height="'+(half*2)+'" rx="1.5" fill="#f4ce21" stroke="#b58b10" stroke-width=".8"/>'
+    +'<path d="M '+(pin+2)+','+(-half+1.8)+' h 8" stroke="#fff1a0" stroke-width="1.2" stroke-linecap="round"/>'
+    +'<path d="M '+(pin+10)+','+(-half+1)+' v '+(half*2-2)+'" stroke="#d2a610" stroke-width=".8"/></g></g>';
+}
+function wireFreeBodyEndpoint(a,tip,wr){
+  const previous=(wr.pts||[]).slice().reverse().find(function(p){return Math.hypot(p.x-tip.x,p.y-tip.y)>.01;})||wireRoutingEndpoint(a,wr);
+  const dx=previous.x-tip.x,dy=previous.y-tip.y;
+  const side=Math.abs(dx)>=Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'top':'bottom');
+  const v={top:{x:0,y:-1},bottom:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}}[side];
+  // Трасса заканчивается у заднего края манжеты. Металл и сама манжета
+  // находятся перед изоляцией, поэтому цвет провода не выступает из штыря.
+  return {x:tip.x+v.x*(12+WIRE_FERRULE_LENGTH),y:tip.y+v.y*(12+WIRE_FERRULE_LENGTH),
+    entrySide:side,entryInset:-(wireVisualWidth(wr)+2.5)/2};
+}
 
 /* Гофра задаёт только геометрию: электрические концы проводов остаются на клеммах. */
 function normalizeConduits(items){
@@ -6057,20 +6088,24 @@ function renderWires(){
   if (pending && pending.pt){
     const a=terminal(pending.from.devId,pending.from.key);
     const target=pending.target&&terminal(pending.target.devId,pending.target.key);
-    const b=target||{x:pending.pt.x,y:pending.pt.y};
     if(a){
       // Те же параметры и конечная клемма, которые получит готовый провод.
       const preview={pts:pending.pts||[],shape:pending.shape||wireDefaults.shape,
         sectionMm2:normalizeWireSection(pending.sectionMm2),conduitId:pending.conduitId,conduitEntry:pending.conduitEntry,
         conduitPreviewInside:!!(pending.conduitId&&!target&&nearestConduit(pending.pt))};
+      const b=target||(preview.conduitPreviewInside?pending.pt:wireFreeBodyEndpoint(a,pending.pt,preview));
       const lane=target&&wireJumperLane(a,b,preview);
       if(lane)preview.autoLane=chooseWireJumperLane(lane,null,occupiedLanes);
-      const d=wirePathD(a,b,preview),color=pending.color||wireDefaults.color,width=wireVisualWidth(preview);
+      const start=wireVisualEndpoint(a,preview);
+      const d=pending.pristine&&!target&&!preview.pts.length&&!preview.conduitId
+        ?'M '+start.x+','+start.y+' L '+b.x+','+b.y:wirePathD(a,b,preview);
+      const color=pending.color||wireDefaults.color,width=wireVisualWidth(preview);
       s+='<g class="wire-preview" pointer-events="none">';
       s+='<path d="'+d+'" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="'+(width+2.5)+'" stroke-linecap="round"/>';
       s+=wireStrokeGeom(d,color,null,true,width);
       s+=wireFerruleSvg(a,preview,d,false);
-      if(target)s+=wireFerruleSvg(target,preview,d,true);
+      s+=target?wireFerruleSvg(target,preview,d,true):preview.conduitPreviewInside?'':wireFreeFerruleSvg(preview,d,pending.pt);
+      if(!target)s+='<circle class="wire-pending-end" cx="'+pending.pt.x+'" cy="'+pending.pt.y+'" r="1" fill="transparent" stroke="transparent" stroke-width="36" vector-effect="non-scaling-stroke" pointer-events="all"><title>Потяните свободный конец провода</title></circle>';
       (preview.conduitId?[]:(target?wirePointList(a,b,preview):(pending.pts||[]))).forEach(function(p){
         s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4.5" fill="'+color+'" stroke="#fff" stroke-width="1.2" pointer-events="none"/>';
       });
@@ -6324,6 +6359,7 @@ function cancelWire(){
   hideTouchLoupe();
   if (!pending) return;
   pending = null;
+  touchStatus('');
   conduitMagnet=null;renderConduits();
   renderTerminalGuides();
   renderWires();
@@ -6341,7 +6377,16 @@ function updatePendingPointer(evt){
   const hit=wirePointerTerminal(evt);
   const id=hit?toDevId(hit.dataset.dev):null,key=hit&&hit.dataset.key;
   const target=hit&&!sameTerm(pending.from,id,key)?terminal(id,key):null;
+  const source=terminal(pending.from.devId,pending.from.key);
+  // У своей клеммы показываем прямой выходящий хвост, а не обратный ввод
+  // в тот же винт. Клеммы назначения по-прежнему имеют приоритет.
+  if(!target&&source&&!(pending.pts&&pending.pts.length)&&!pending.conduitId
+    &&(hit&&sameTerm(pending.from,id,key)||Math.hypot(raw.x-source.x,raw.y-source.y)<Math.max(8,8/alignmentScale()))){
+    pending.target=null;pending.pt={x:pending.initialPoint.x,y:pending.initialPoint.y};pending.pristine=true;
+    conduitMagnet=null;renderConduits();return;
+  }
   pending.target=target?{devId:target.devId,key:target.key}:null;
+  pending.pristine=false;
   const tube=!target&&nearestConduit(raw);
   if(tube)pendingConduitEntry(tube,false);
   conduitMagnet=tube?tube.id:null;renderConduits();
@@ -6378,6 +6423,12 @@ function wireStartColor(t){
   if([WC.L1,WC.L2,WC.L3].includes(t.color))return WC.L1;
   return wireDefaults.color;
 }
+function initialWirePoint(t){
+  const direction={top:{x:0,y:-1},bottom:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}}[t.entrySide]||{x:0,y:1};
+  const wire={sectionMm2:wireDefaults.sectionMm2},lead=wireRoutingEndpoint(t,wire);
+  const distance=Math.max(48,36/alignmentScale());
+  return {x:lead.x+direction.x*distance,y:lead.y+direction.y*distance};
+}
 
 termLayer.addEventListener('pointerdown', function(evt){
   const hit = evt.target.closest('.term');
@@ -6389,7 +6440,8 @@ termLayer.addEventListener('pointerdown', function(evt){
   if (pending){ connectTerminals(id, key); return; }
   const t = terminal(id, key);
   if (!t) return;
-  pending = { from:{ devId:id, key:key }, pt:{ x:t.x, y:t.y }, pts:[], color:wireStartColor(t), shape:wireDefaults.shape, sectionMm2:wireDefaults.sectionMm2, guideX:null, guideY:null };
+  const point=initialWirePoint(t);
+  pending = { from:{ devId:id, key:key }, pt:point, initialPoint:{x:point.x,y:point.y}, pristine:true, pts:[], color:wireStartColor(t), shape:wireDefaults.shape, sectionMm2:wireDefaults.sectionMm2, guideX:null, guideY:null };
   log('Провод: начало на зажиме ' + tagOf(id)+' : '+t.label + ' — ЛКМ на поле добавляет точку маршрута; клик по второй клемме завершает провод.', 'info');
   renderTerminalGuides();
   renderWires();
@@ -6415,6 +6467,7 @@ document.addEventListener('pointermove', function(evt){
     return;
   }
   if (!pending) return;
+  if(evt.pointerType==='touch'&&!evt.touchReplay)return;
   updatePendingPointer(evt);
   renderTerminalGuides();
   renderWires();
@@ -6438,7 +6491,7 @@ document.addEventListener('pointerup', function(evt){
   connectTerminals(id, key);
 });
 scene.addEventListener('pointerdown', function(evt){
-  if (!pending || evt.target.closest('.term')) return;
+  if (!pending || evt.target.closest('.term,.wire-pending-end')) return;
   // Средняя кнопка предназначена для панорамирования и не отменяет провод.
   if (evt.button === 1) return;
   if (evt.button === 0){
@@ -6452,6 +6505,7 @@ scene.addEventListener('pointerdown', function(evt){
     pending.pts = pending.pts || [];
     pending.pts.push({ x:p.x, y:p.y });
     pending.target=null;
+    pending.pristine=false;
     pending.pt = { x:p.x, y:p.y };
     log('Добавлена точка маршрута провода №'+pending.pts.length+'. Продолжайте прокладку.', 'info');
     renderTerminalGuides();
@@ -7811,6 +7865,53 @@ const TRAY_CATEGORIES=[
 ];
 const TRAY_CATEGORY_KEY='electrosim-tray-categories-v1';
 let trayExpanded={mounting:true},traySearchOpen={},trayQuery='',trayRenderKey=null;
+const trayPreviewCache=new Map();
+function trayPreviewGeometry(type,special){
+  if(type){
+    const t=TYPES[type],w=type==='comb'?combWidth(combTraySettings):t.modules*MODULE;
+    return {x:0,y:-(t.over||0),w:w+(t.overR||0),h:t.h+(t.over||0)};
+  }
+  const sizes={conduit:[0,0,180,100],panel:[0,0,PANEL.width,panelHeight({railCount:2})],
+    inbox:[0,0,inboxWidth(),INBOX.h],clamp:[-36,-36,172,72],motor:[-20,-20,272,292],
+    dcmotor:[-20,-20,272,292],pushbutton:[-36,0,206,320],
+    multimeter:[-18,-60,METER.w+36,METER.h+68]};
+  const size=sizes[special];return {x:size[0],y:size[1],w:size[2],h:size[3]};
+}
+function trayPreviewPlaceholder(type,special){
+  const size=trayPreviewGeometry(type,special);
+  return '<span class="mini tray-preview-placeholder" aria-hidden="true" style="width:'+(74*size.w/size.h)+'px"></span>';
+}
+function trayPreviewMarkup(type,special){
+  const settings=type==='comb'?combTraySettings:
+    special==='panel'||special==='inbox'?[state.special.inbox,inboxSinglePhase(),state.specialProps.inbox]:null;
+  const key=JSON.stringify([type,special,settings]);
+  if(trayPreviewCache.has(key))return trayPreviewCache.get(key);
+  const size=trayPreviewGeometry(type,special);
+  let svg=special?specialTrayPreview(special):'<svg class="mini" viewBox="'+[size.x,size.y,size.w,size.h].join(' ')+'" preserveAspectRatio="xMidYMid meet">'+deviceInner(type,type==='comb'?combTraySettings:{})+'</svg>';
+  let markup=svg;
+  // Щит и ввод содержат локальный PNG: оставляем их встроенными, чтобы знак
+  // опасности работал и без сети. Остальные миниатюры браузер кэширует как картинки.
+  if(special!=='panel'&&special!=='inbox'){
+    svg=svg.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Roboto,Arial,sans-serif" font-size="14" ');
+    markup='<img class="mini" width="'+(74*size.w/size.h)+'" height="74" alt="" draggable="false" decoding="async" src="data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)+'">';
+  }
+  if(trayPreviewCache.size>=64)trayPreviewCache.delete(trayPreviewCache.keys().next().value);
+  trayPreviewCache.set(key,markup);return markup;
+}
+function trayIsOpen(){
+  const box=document.getElementById('tray'),menu=box.closest&&box.closest('.side-menu-item');
+  return !!(menu&&menu.open);
+}
+function hydrateTrayCategory(category){
+  if(!category.open||!trayIsOpen())return;
+  category.querySelectorAll('.tray-preview-placeholder').forEach(function(placeholder){
+    const item=placeholder.closest('.tray-item');
+    placeholder.outerHTML=trayPreviewMarkup(item.dataset.type||null,item.dataset.special||null);
+  });
+}
+function hydrateTrayPreviews(){
+  document.getElementById('tray').querySelectorAll('.tray-category[open]').forEach(hydrateTrayCategory);
+}
 try{
   const saved=JSON.parse(localStorage.getItem(TRAY_CATEGORY_KEY)||'null');
   if(saved&&typeof saved==='object'&&!Array.isArray(saved)){
@@ -7849,11 +7950,11 @@ function renderTray(){
     groups[category.id].push(card);
   }
   Object.keys(STOCK).forEach(function(type){
-    const t=TYPES[type],w=type==='comb'?combWidth(combTraySettings):t.modules*MODULE,h=t.h,over=t.over||0,overR=t.overR||0;
+    const t=TYPES[type];
     const description=type==='comb'?'Только на верхние клеммы ряда автоматов':(t.freeOnly?'свободное размещение':t.modules+' мод. · '+(t.modules*17.5).toFixed(1)+' мм')+' · '+(KIND_RU[t.kind]||'');
     add(type,null,t.title,description,
       '<div class="tray-item" data-type="'+type+'">'
-      +'<svg class="mini" viewBox="0 '+(-over)+' '+(w+overR)+' '+(h+over)+'" preserveAspectRatio="xMidYMid meet">'+deviceInner(type,type==='comb'?combTraySettings:{})+'</svg>'
+      +trayPreviewPlaceholder(type,null)
       +'<div class="tray-meta"><b>'+escapeHtml(t.title)+'</b><span>'+escapeHtml(description)+'</span>'
       +'</div>'
       +'<span class="stock" title="Количество не ограничено">∞</span><button type="button" class="tray-add" aria-label="Разместить: '+escapeHtml(t.title)+'">+</button></div>');
@@ -7865,7 +7966,7 @@ function renderTray(){
     if(!unlimitedSpecials[special]&&state.special[special])return;
     add(null,special,specialTitles[special],'Перетащите на рабочее поле',
       '<div class="tray-item tray-special" data-special="'+special+'">'
-      +specialTrayPreview(special)+'<div class="tray-meta"><b>'+specialTitles[special]+'</b>'
+      +trayPreviewPlaceholder(null,special)+'<div class="tray-meta"><b>'+specialTitles[special]+'</b>'
       +'<span>Перетащите на рабочее поле</span></div><span class="stock">'+(unlimitedSpecials[special]?'∞':'×1')+'</span>'
       +'<button type="button" class="tray-add" aria-label="Разместить: '+specialTitles[special]+'">+</button></div>');
   });
@@ -7881,9 +7982,12 @@ function renderTray(){
   }).join('');
   if(!visible)box.innerHTML='<div class="tray-empty" role="status">Детали не найдены. Попробуйте другое название.</div>';
   trayRenderKey=key;
+  if(trayIsOpen())hydrateTrayPreviews();
 }
 function initTrayCategories(){
   const box=document.getElementById('tray');
+  const menu=box.closest&&box.closest('.side-menu-item');
+  if(menu)menu.addEventListener('toggle',function(evt){if(evt.target===menu&&menu.open)hydrateTrayPreviews();});
   box.addEventListener('toggle',function(evt){
     const category=evt.target;
     if(!category.classList||!category.classList.contains('tray-category')||!box.contains(category))return;
@@ -7892,6 +7996,7 @@ function initTrayCategories(){
     if(trayQuery)traySearchOpen[id]=category.open;
     else{trayExpanded[id]=category.open;saveTrayCategories();}
     trayRenderKey=trayCacheKey();
+    if(category.open)hydrateTrayCategory(category);
   },true);
   document.getElementById('traySearch').addEventListener('input',function(evt){
     trayQuery=traySearchText(evt.target.value);traySearchOpen={};renderTray();

@@ -96,6 +96,8 @@ globalThis.__t = {
   meterDrag:function(){return meterDrag;}, meterProbeDrag:function(){return meterProbeDrag;},
   renderMM:renderMM, mmScreen:mmScreen,
   measureNow:measureNow, specialTrayPreview:specialTrayPreview,
+  trayPreviewMarkup:trayPreviewMarkup, hydrateTrayCategory:hydrateTrayCategory,
+  trayPreviewCache:trayPreviewCache, combTraySettings:combTraySettings,
   applyPreset:applyPreset,
   mmLayer:function(){return mmLayer;}
 };
